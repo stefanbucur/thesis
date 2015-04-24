@@ -1,0 +1,180 @@
+% geo.sty - to be used with latex2e
+%
+% A few hacks to make life easier.
+%
+% $Id$
+%
+
+
+%%
+%% Simple shortcuts
+%%
+\usepackage{amssymb,amsmath,calc,epsfig,xspace}
+\newcommand{\approximately}{\ensuremath{\stackrel{\sim}{}}}
+\newcommand{\unix}{{\small UNIX}\xspace}
+\newcommand{\mysql}{{\small M}y{\small SQL}\xspace}
+\newcommand{\errno}{{\small \tt errno}\xspace}
+\newcommand{\kloc}{{\small KLOC}\xspace}
+\newcommand{\klee}{{\small KLEE}\xspace}
+\newcommand{\dart}{{\small DART}\xspace}
+\newcommand{\cute}{{\small CUTE}\xspace}
+\newcommand{\exe}{{\small EXE}\xspace}
+\newcommand{\ddt}{{\small DDT}\xspace}
+
+%%
+%% Layout, formatting, etc.
+%%
+\newcommand{\tightText}{
+  \usepackage[medium,compact]{titlesec}
+}
+
+\newcommand{\usletter}{
+  \usepackage[margin=1in]{geometry}
+  \textwidth 6.5in
+  \textheight 9in
+}
+\usepackage[T1]{fontenc}
+\usepackage{courier,mathptmx,times}
+\usepackage{textcomp}
+\usepackage{setspace}
+\usepackage[hyphens]{url}
+
+
+%%
+%% Outlining new papers, ideas, etc.
+%%
+\newcommand{\q}[1]{\medskip\noindent $\triangleright$~ {#1} \medskip}
+
+%%
+%% Macros for commenting
+%%
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\newcommand{\topic}[1]{{\color{Orange} #1}}
+% \newcommand{\topic}[1]{{\it #1}}
+\newcommand{\p}[2]{{\color{Orange}#1} {\color{Black}#2}}
+
+
+\newcommand{\code}[1]{\texttt{\small{#1}}}
+\newcommand{\comment}[1]{\medskip\noindent \fbox{\parbox{\columnwidth}{\bf \em {#1}}}\medskip}
+\newcommand{\geo}[1]{\noindent{\color{Red} {\bf \fbox{GC}} \textbf{#1}}}
+\newcommand{\silviu}[1]{\noindent{\color{Plum} {\bf \fbox{SA}} {\it#1}}}
+\newcommand{\vitaly}[1]{\noindent{\color{OliveGreen} {\bf \fbox{VC}} {\it#1}}}
+\newcommand{\cristi}[1]{\noindent{\color{RoyalBlue} {\bf \fbox{CZ}} {\it#1}}}
+\newcommand{\radu}[1]{\noindent{\color{Bittersweet} {\bf \fbox{RB}} {\it#1}}}
+\newcommand{\stefan}[1]{\noindent{\color{Orange}{\bf \fbox{SB}} {\it#1}}}
+\newcommand{\vova}[1]{\noindent{\color{RedViolet}{\bf \fbox{VK}} {\it#1}}}
+\newcommand{\baris}[1]{\noindent{\color{Red} {\bf \fbox{BK}} \textbf{#1}}}
+\newcommand{\barisk}[1]{\noindent{\color{Green}{\bf \fbox{BK}} {\it#1}}}
+\newcommand{\johannes}[1]{\noindent{\color{Green}{\bf \fbox{JK}} {\it#1}}}
+\newcommand{\jonas}[1]{\noindent{\color{MidnightBlue}{\bf \fbox{JW}} {\it#1}}}
+
+\@ifundefined{urlwofont}{
+ \newcommand{\urlwofont}{\url}
+}{}
+
+%
+% The draft box
+%
+\definecolor{DraftGray}{rgb}{0.90,0.90,0.90}
+\makeatletter\newenvironment{draftbox}{%
+   \vspace{5pt}\begin{lrbox}{\@tempboxa}\begin{minipage}{\columnwidth}}{\end{minipage}\end{lrbox}%
+   \noindent\colorbox{DraftGray}{\usebox{\@tempboxa}}\vspace{5pt}
+}\makeatother
+
+%%
+%% Various draft modes
+%%
+\def\draft{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   200 50 translate 
+                   65 rotate 
+                   /Times-Roman findfont 
+                   216 scalefont 
+                   setfont 
+                   0 0 moveto 
+                   .96 setgray 
+                   (DRAFT) show 
+                   grestore}
+         def end}}
+
+\def\confidential{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   10 20 translate 
+                   /Times-Roman findfont 
+                   27 scalefont 
+                   setfont 
+                   50 0 moveto 
+                   .9 setgray 
+                   (CONFIDENTIAL - DO NOT DISTRIBUTE) show 
+                   50 730 moveto 
+                   .9 setgray 
+                   (CONFIDENTIAL - DO NOT DISTRIBUTE) show 
+                   grestore}
+         def end}}
+
+\def\insubmission{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   10 20 translate 
+                   /Times-Roman findfont 
+                   27 scalefont 
+                   setfont 
+                   0 0 moveto 
+                   .9 setgray 
+                   (IN SUBMISSION - PLEASE DO NOT DISTRIBUTE) show 
+                   0 730 moveto 
+                   .9 setgray 
+                   (IN SUBMISSION - PLEASE DO NOT DISTRIBUTE) show 
+                   grestore}
+         def end}}
+
+\def\donotdistribute{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   66 20 translate 
+                   /Times-Roman findfont 
+                   27 scalefont 
+                   setfont 
+                   60 0 moveto 
+                   .9 setgray 
+                   (PLEASE DO NOT DISTRIBUTE) show 
+                   60 730 moveto 
+                   .9 setgray 
+                   (PLEASE DO NOT DISTRIBUTE) show 
+                   grestore}
+         def end}}
+
+\def\draftdonotdistribute{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   66 20 translate 
+                   /Times-Roman findfont 
+                   27 scalefont 
+                   setfont 
+                   0 0 moveto 
+                   .9 setgray 
+                   (DRAFT - PLEASE DO NOT DISTRIBUTE) show 
+                   0 730 moveto 
+                   .9 setgray 
+                   (DRAFT - PLEASE DO NOT DISTRIBUTE) show 
+                   grestore}
+         def end}}
+
+\def\draftupdown{
+\special{!userdict begin 
+         /bop-hook{gsave
+                   66 20 translate 
+                   /Times-Roman findfont 
+                   27 scalefont 
+                   setfont 
+                   20 0 moveto 
+                   .9 setgray 
+                   (DRAFT - DRAFT - DRAFT - DRAFT) show 
+                   20 730 moveto 
+                   .9 setgray 
+                   (DRAFT - DRAFT - DRAFT - DRAFT) show 
+                   grestore}
+         def end}}
