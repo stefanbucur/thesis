@@ -1,4 +1,36 @@
+\section{Motivation}
 
+\begin{itemize}
+\item ``Throw hardware at the problem''.
+\item No linear scalability demonstrated with previous approaches. Main cause: imbalanced tree shape, unknown a priori.
+\item Foundation for a software testing service.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Overview}
+
+\begin{itemize}
+\item Introduce workers + load balancer.
+\item Goal: disjoint and complete tree exploration.
+\item Each worker explores tree independently, with minimal synchronization overhead.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Worker-level Operation}
+
+\begin{itemize}
+\item Introduce dead, fence, and candidate nodes.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Cluster-level Operation}
+
+\begin{itemize}
+\item Describe the load balancer operation.
+\end{itemize}
 
 %%% Local Variables: 
 %%% mode: latex

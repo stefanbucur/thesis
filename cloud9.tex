@@ -1,3 +1,50 @@
+\section{Motivation}
+
+\begin{itemize}
+\item Real-world system applications use a rich set of OS abstractions: processes, threads, files, sockets, pipes, signals, etc.
+\item Supporting these abstractions efficiently in a symbolic execution engine is challenging.
+\item One alternative is to bundle them with the program and execute as one (S2E). Another alternative is to handle OS calls as external and concretize them (Klee).
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Environment Model Design}
+
+\begin{itemize}
+\item Our insight is that these primitives can be abstracted (modeled) with reasonable precision using a two-tiered approach: (1) A set of primitives built into the symbolic execution engine for address spaces, threads, and synchronization, and (2) A guest-level model built on top of these primitives.
+\item Our model builds on top of KLEE.
+\item We replaced operations from the C library with our own model, calling into the symbolic execution engine primitives.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Symbolic Execution Engine Primitives}
+
+\begin{itemize}
+\item Discuss address spaces.
+\item Discuss mulithreading and scheduling.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{POSIX Interface Model}
+
+\begin{itemize}
+\item Discuss design decisions in building the POSIX model.
+\item Discuss stream buffers and block buffers.
+\item Give example of thread synchronization primitives.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Symbolic Test Suites}
+
+\begin{itemize}
+\item Symbolic test suites are like unit tests, except for the additional interface for creating symbolic inputs and tweaking the settings of the symbolic environment.
+\item Can be encapsulated and executed both symbolically and concretely (for replay purposes).
+\item Symbolic POSIX environment: stream fragmentation, fault injection, symbolic scheduler.
+\end{itemize}
+
 %%% Local Variables: 
 %%% mode: latex
 %%% eval: (visual-line-mode)
