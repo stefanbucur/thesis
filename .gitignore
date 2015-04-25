@@ -1,0 +1,14 @@
+# Emacs temporary files
+*~
+
+# LaTeX Makefile intermediary files
+*.log
+*.*.make
+*.aux
+*.bbl
+*.blg
+*.d
+*.fls
+*.lof
+*.lot
+*.toc
