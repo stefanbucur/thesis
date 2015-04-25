@@ -1,36 +1,42 @@
 \section{Motivation}
 
 \begin{itemize}
-  \item To be determined.
+  \item Building a symbex engine for high-level languages is hard engineering.
+\end{itemize}
+
+\section{Symbolically Executing the Interpreter}
+
+\begin{itemize}
+\item We can use the interpreter as ``executable language specs'' by plugging it into a low-level (e.g., binary) symbolic execution engine.
+\item However, this won't work out of the box.
 \end{itemize}
 
 \section{High-level Symbolic Execution}
-
 \begin{itemize}
-  \item To be determined.
-\end{itemize}
-
-\section{The Chef System}
-
-\begin{itemize}
-  \item To be determined.
+\item Define the concept of high-level path.
+\item Define the notion of high-level state.  Introduce the notion of completeness model, and discuss the tradeoffs between each.
 \end{itemize}
 
 \section{High-level Control Flow Reconstruction}
-
 \begin{itemize}
-  \item To be determined.
+\item We need to bridge the gap between the stream of x86 instructions and stream of high-level instructions.
+\item Manual approach: interpreter loop annotation.
+\item Automated approach: use calibration program + look for memory access patterns inside the interpreter.
 \end{itemize}
 
 \section{Interpreter Optimizations}
 
 \begin{itemize}
-  \item To be determined.
+\item Goal: reduce path explosion in the interpreter.
+\item Approach: ``anti-optimizations'' that slow down linear execution, but boost multi-path execution.
+\item Hash neutralization.
+\item String interning.
+\item Handling memory allocations.
 \end{itemize}
 
-\section{Future Work}
+\section{Towards Hand-written Engine Performance}
 
-Bridging the performance gap between Chef and hand-written engines.
+Bridging the performance gap between Chef and hand-written engines: state merging, compositionality, memory models.
 
 %%% Local Variables: 
 %%% mode: latex
