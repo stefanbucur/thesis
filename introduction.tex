@@ -1,0 +1,49 @@
+\section{Problem Statement}
+
+\begin{itemize}
+\item The thesis addresses the problem of focusing the symbolic execution on a program of interest in the presence of the path explosion occurring inside the program environment.
+\item Real-world programs have complex interfaces to the environment: hundreds of call points and large environment state.
+\item Reducing the path explosion should improve the effectiveness of the search strategy inside the program, while maintaining the soundness of the execution (minimize false positives).
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Motivation}
+
+\begin{itemize}
+\item Software testing today is inadequate, due to human error.
+\item Symbolic execution is promising at finding corner-case bugs, missed by manual testing.  It is attractive for its thoroughness, completeness, and flexibility.
+\item However, it suffers from the path explosion problem.
+\item In particular, path explosion manifests in the environment of the component under test.
+\item When the execution control flow leaves the component of interest, we can either execute the environment symbolically, concretize the call, or abstract the behavior.  Each approach has its own tradeoffs (the ``environment problem'').
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Background}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Thesis Objectives}
+
+\begin{itemize}
+\item This thesis addresses the environment problem on two classes of software systems that represent an important fraction of the software running in the real-world today: (1) low-level system software running in UNIX operating systems, and (2) high-level interpreted programs used for web applications and system integration.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+
+\section{Solution Overview}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Thesis Roadmap}
+
+To be determined.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
