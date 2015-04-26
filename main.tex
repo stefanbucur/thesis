@@ -1,5 +1,19 @@
+\iftrue % CHANGE TO iffalse FOR RELEASE
+\documentclass[letterpaper,10pt,oneside]{book}
+\usepackage[compact]{titlesec}   % Reduce the space between titles and text
+\titleclass{\chapter}{straight}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter} {0pt}{50pt}{40pt}
+\else
 \documentclass[letterpaper,12pt]{book}
+\usepackage{setspace}
+\onehalfspacing
+\fi
+
+
 \usepackage{geo}
+\usletter
 
 \usepackage{times}                 % Times New font
 \usepackage{pifont}                % Ding symbols (for Cloud9)
@@ -8,8 +22,7 @@
 \usepackage[labelfont=bf]{caption} % Bold caption labels
 \usepackage{wrapfig}               % Side figures without caption
 
-\onehalfspacing
-\usletter
+
 
 
 %% Global definitions
