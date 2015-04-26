@@ -24,13 +24,14 @@ We originally viewed the building of a complete environment model as an engineer
 
 The {\em third challenge} is using an automated test generator in the context of a development organization's quality assurance processes.  To take full advantage of the automated exploration of paths, a testing tool must provide ways to control all aspects of the environment.  For example, there needs to be a clean API for injecting failures at the boundary between programs and their environment, there must be a way to control thread schedules, and so on.  There should be a way to programmatically orchestrate all environment-related events, but doing so should not require deep expertise in the technology behind the testing tools themselves.
 
-The work presented here aims to address these three challenges.  Cluster-based parallel symbolic execution (\S\ref{sec:parsymbex}) provides the illusion of running a classic symbolic execution engine on top of a large, powerful computer.  Without changing the exponential nature of the problem, parallel symbolic execution harnesses cluster resources to make it feasible to run automated testing on larger systems than what was possible until now. Our work complements and benefits all tools and approaches based on symbolic execution.  We describe a way to accurately model the environment (\S\ref{sec:posix}) with sufficient completeness to test complex, real software, like the Apache web server and the Python interpreter.  We present the APIs and primitives that we found necessary in developing a true testing platform (\S\ref{sec:platform}).  We show how using these APIs enables, for instance, finding errors in bug patches by reproducing environment conditions which otherwise would have been hard or impossible to set up with regular test cases.
+The work presented here aims to address these three challenges.  Cluster-based parallel symbolic execution (\S\ref{ch:parsymbex}) provides the illusion of running a classic symbolic execution engine on top of a large, powerful computer.  Without changing the exponential nature of the problem, parallel symbolic execution harnesses cluster resources to make it feasible to run automated testing on larger systems than what was possible until now. Our work complements and benefits all tools and approaches based on symbolic execution.  We describe a way to accurately model the environment (\S\ref{ch:cloud9}) with sufficient completeness to test complex, real software, like the Apache web server and the Python interpreter.  We present the APIs and primitives that we found necessary in developing a true testing platform (\S\ref{sec:platform}).  We show how using these APIs enables, for instance, finding errors in bug patches by reproducing environment conditions which otherwise would have been hard or impossible to set up with regular test cases.
 
 In this section we present the design of the \cnine engine, focusing on the algorithmic aspects: after a conceptual overview~(\S\ref{sec:concept}), we describe how \cnine operates at the worker level~(\S\ref{sec:workerView}) and then at the cluster level~(\S\ref{sec:loadBalancing}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Overview}
+\label{sec:concept}
 
 \begin{itemize}
 \item Introduce workers + load balancer.
@@ -76,6 +77,7 @@ The goal is to dynamically partition the execution tree such that the parts are 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Worker-level Operation}
+\label{sec:workerView}
 
 \begin{itemize}
 \item Introduce dead, fence, and candidate nodes.
@@ -149,6 +151,7 @@ As suggested in Fig.~\ref{fig:transitions}, once a tree node is \dead, it has re
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Cluster-level Operation}
+\label{sec:loadBalancing}
 
 \begin{itemize}
 \item Describe the load balancer operation.

@@ -90,6 +90,7 @@ Symbolically executing real-world software is challenging not only because of pa
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Symbolic Execution Engine Primitives}
+\label{sec:symbolic-engine-modifications}
 
 \begin{itemize}
 \item Discuss address spaces.
@@ -154,7 +155,7 @@ In this section, we describe the key design decisions involved in building the \
 
 \topic{The constraint solver used in \cnine operates on bit vectors; as a result, symbolic formulas refer to contiguous areas of memory.}  In order to reduce the constraint solving overhead, we aim to reduce the amount of intermixing of concrete and symbolic data in the same memory region.  Thus,  \cnine's POSIX model segregates concrete from symbolic data by using static arrays for concrete data and linked lists (or other specialized structures) for symbolic data.  We allocate into separate buffers potentially-symbolic data passed by the tested program through the POSIX interface.
 
-\topic{In order to enable testing the systems presented in the evaluation section (\S\ref{sec:evaluation}), we had to add support for various other components: IPC routines, \codebit{mmap()} calls, time-related functions, etc.}  Even though laborious, this was mostly an engineering exercise, so we do not discuss it further.
+\topic{In order to enable testing the systems presented in the evaluation section (\S\ref{ch:evaluation}), we had to add support for various other components: IPC routines, \codebit{mmap()} calls, time-related functions, etc.}  Even though laborious, this was mostly an engineering exercise, so we do not discuss it further.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,7 +230,7 @@ SIO\_FAULT\_INJ & Enables fault injection for operations on this descriptor \\
 
 \paragraph{Symbolic Data and Streams} The generality of a test case can be expanded by introducing bytes of symbolic data. This is done by calling \codebit{\cninesuffix\_make\_symbolic}, a wrapper around \codebit{klee\_make\_symbolic}, with an argument that points to a memory region. \codebit{klee\_make\_symbolic} is a primitive provided by \klee to mark data symbolic.  In addition to wrapping this call, we added several new primitives to the testing API (Table~\ref{table:globalapi}). In \cnine, symbolic data can be written/read to/from files, can be sent/received over the network, and can be passed via pipes. Furthermore, the \codebit{SIO\_SYMBOLIC} \codebit{ioctl} code (Table~\ref{table:ioctlapi}) turns on/off the reception of symbolic bytes from individual files or sockets.
 
-\paragraph{Network Conditions} Delay, reordering, or dropping of packets causes a network data stream to be fragmented.  Fragmentation can be turned on or off at the socket level using one of the \cnine \codebit{ioctl} extensions.  \S\ref{sec:evaluation} presents a case where symbolic fragmentation enabled \cnine to prove that a bug fix for the lighttpd web server was incomplete. 
+\paragraph{Network Conditions} Delay, reordering, or dropping of packets causes a network data stream to be fragmented.  Fragmentation can be turned on or off at the socket level using one of the \cnine \codebit{ioctl} extensions.  \S\ref{ch:evaluation} presents a case where symbolic fragmentation enabled \cnine to prove that a bug fix for the lighttpd web server was incomplete. 
 
 \paragraph{Fault Injection} Calls in a POSIX system can return an error code when they fail. Most programs can tolerate such failed calls, but even high-quality production software misses some~\cite{lfi}. Such error return codes are simulated by \cnine whenever fault injection is turned on. 
 
