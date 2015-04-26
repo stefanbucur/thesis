@@ -12,3 +12,6 @@
 *.lof
 *.lot
 *.toc
+*.out
+
+*-converted-to.pdf
