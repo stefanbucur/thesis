@@ -1,13 +1,35 @@
 \documentclass[letterpaper,12pt]{book}
 \usepackage{geo}
 
-\usepackage{times}
+\usepackage{times}                 % Times New font
+\usepackage{pifont}                % Ding symbols (for Cloud9)
+\usepackage{multirow}              % Cells spanning rows in tables
+\usepackage{xspace}
+\usepackage[labelfont=bf]{caption} % Bold caption labels
 
 \onehalfspacing
 \usletter
 
 
+%% Global definitions
 \newcommand{\thesistitle}{Improving Scalability of Symbolic Execution for Software with Complex Environment Interfaces}
+
+\newcommand{\codebit}[1]{\textsf{\footnotesize #1}}
+
+%% Cloud9 definitions
+\newcommand{\cnine}{Cloud9\xspace}
+\newcommand{\cninesuffix}{cloud9}
+
+%% PDF SUPPORT
+%% -----------
+
+\usepackage[hidelinks]{hyperref} % Add cross references inside the PDF
+\usepackage[all]{hypcap} % Fix the jump position when clicking figure references
+
+\hypersetup{
+  pdftitle={\thesistitle},
+  pdfauthor={Stefan Bucur}
+}
 
 
 
@@ -96,7 +118,7 @@ Discuss overhead of Chef compared to hand-written engines.
 To be determined.
 
 \bibliographystyle{plain}
-\bibliography{biblio}
+\bibliography{header-standard,biblio}
 
 \end{document}
 
