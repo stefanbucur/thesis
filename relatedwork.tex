@@ -1,0 +1,73 @@
+\section{Automated Testing Using Symbolic Execution}
+
+Automated Test Case Generation Tools using Symbolic Execution: SAGE, Pex, Mayhem
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Addressing Path Explosion}
+
+Dealing with the path explosion problem: grammar-based whitebox fuzzing (abstracting inputs), MultiSE (merging states), using symbolic execution friendly primitives (OVerify), underconstrained execution (dealing with a single module at a time).
+
+\subsection{Pruning}
+
+\subsection{State Merging}
+
+\subsection{Compositionality}
+
+\subsection{Abstraction}
+
+\subsection{Solver Optimizations}
+
+Addressing the solver bottleneck: query caches, memory models (Mayhem only models symbolic reads)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Supporting Real-world Targets}
+
+\subsection{System Software}
+
+Handling real-world targets: C, C++ (KLOVER), parallel systems (explain the two ways to run these systems symbolically, depending on what bugs we're looking for).
+
+Modeling the program environment: using the real environment, using abstractions.
+
+\subsection{Interpreted Languages}
+
+Jalangi for JavaScript using dynamic instrumentation.
+
+Using the interpreter for symbolic execution: Lorenzo's paper (consider x86 as interpreted by Qemu or Bochs, then compare the two implementations to find bugs in the more complex one).
+
+\subsection{Cooperating with the Symbolic Environment}
+
+Cooperative symbolic execution (where the program uses special APIs of the engine).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Search Heuristics}
+
+Group heuristics by their goals and their inputs (the state information they use).
+
+Search Heuristics in Symbolic Execution
+
+Generational search in SAGE.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Parallel Symbolic Execution}
+
+Parallelizing Symbolic Execution : The work from Fujitsu, the work on JSP
+
+Cloud Testing Services.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Interfaces for the Symbolic Execution Engine}
+
+Symbolic tests: the work from MSR
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
