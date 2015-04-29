@@ -1,50 +1,122 @@
-\section{Problem Statement}
+\section{Problem Definition}
 
-\begin{itemize}
-\item The thesis addresses the problem of focusing the symbolic execution on a program of interest in the presence of the path explosion occurring inside the program environment.
-\item Real-world programs have complex interfaces to the environment: hundreds of call points and large environment state.
-\item Reducing the path explosion should improve the effectiveness of the search strategy inside the program, while maintaining the soundness of the execution (minimize false positives).
-\end{itemize}
+\subsection{Limitations of Software Testing}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Software testing is resource-hungry, time-consuming, labor-intensive, and prone to human omission and error.  Despite massive investments in quality assurance, serious code defects are routinely discovered after software has been released~\cite{redHatSecurityX}, and fixing them at so late a stage carries substantial cost~\cite{codeComplete}.
 
-\section{Motivation}
+Software testing is resource-hungry, time-consuming, labor-intensive, and prone to human omission and error.  A lot of bugs escape quality assurance into production, where they cause disruptions and data loss. For instance, in 2014, there were 19 CVE vulnerabilities reported on average per day, and estimates show that software bugs cost the global economy more than \$300 billion in 2013.
 
-\begin{itemize}
-\item Software testing today is inadequate, due to human error.
-\item Symbolic execution is promising at finding corner-case bugs, missed by manual testing.  It is attractive for its thoroughness, completeness, and flexibility.
-\item However, it suffers from the path explosion problem.
-\item In particular, path explosion manifests in the environment of the component under test.
-\item When the execution control flow leaves the component of interest, we can either execute the environment symbolically, concretize the call, or abstract the behavior.  Each approach has its own tradeoffs (the ``environment problem'').
-\end{itemize}
+The security implications driven by today's connected world amplify the problem, with the largest disasters making the headlines.
+
+At the same time, resources invested in testing are peaking. In 2014, about a quarter of the entire IT budget in enterprises was allocated to software testing, which was the highest figure to that date.  On average, developer teams spend as much as half of their time doing testing and fixing bugs.
+
+Facing this situation, organizations recognize that software testing is cumbersome.  In a recent survely, more than two thirds of the organizations questioned admitted they have difficulties determining relevant tests for their software and pointed at the lack of adequate tools to support that.
+
+\subsection{The Promise of Automated Test Case Generation}
+
+%% Existing automated techniques, like model checking and symbolic execution, are highly effective at uncovering corner-case bugs typically missed by human scrutinity and hand-written tests.  However, their adoption in industrial general-purpose software testing has been hampered by two main challenges: applicability and scalability.
+
+%% First, real-world systems interact heavily with the environment (e.g., through system calls or library calls) and may communicate with other parties (e.g., over sockets, IPC, shared memory).  A practical automated testing tool must be capable of handling these interactions while maintaining soundness (no false positives) and completeness (no false negatives).
+
+%% Second, path explosion---the fact that the number of paths through a program is roughly exponential in program size---severely limits the extent to which large software can be thoroughly tested.
+
+Existing automated techniques, like model checking and symbolic execution, are highly effective at uncovering corner-case bugs typically missed by human scrutinity and hand-written tests.
+
+Symbolic execution, in particular, is attractive for targeting complex real-world software. It works by systematically enumerating all execution paths through a program.  It is attractive for three attributes: thoroughness (eventually enumerates all execution paths), soundness (unlike static analysis, there are no false positives), and flexibility (selection of paths can be prioritized, makes it attractive for targeting complex real-world software).
+
+However, its adoption in industrial general-purpose software testing has been hampered by the path explosion problem---the fact that the number of paths through a program is roughly exponential in program size.
+
+An important dimension of path explosion is the proliferation of execution paths outside the scope of the program of interest (e.g., inside system calls or library calls).  Dealing with that is challenging, as naively discarding possible executions may reduce the coverage, while abstracting (modeling) them inside the symbolic execution engine can be a significant engineering task.  We collectively call this set of challenges the \emph{environment problem} of symbolic execution.
+
+In this thesis, we address the environment problem for two important classes of software that collectively cover a significant fraction of the real-world software running today: (1) low-level systems making rich use of the operating system interface, and (2) programs written in interpreted languages.  By expanding the scope of symbolic execution, we enable for the first time effective automated test case generation on a wide range of systems, which we demonstrate can find bugs and generate high-coverage test suites.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Background}
 
-\begin{itemize}
-\item Briefly introduce the notion of symbolic execution and how it's useful for automated testing.
-\item Present path explosion.
-\item One alternative: S2E and consistency models.  Present their limitations on the POSIX interface and when using interpreters.
-\end{itemize}
+%% Testing a program consists of exercising many different paths through it and checking whether they ``do the right thing.''  In other words, testing is a way to produce partial evidence of correctness, and thus increase confidence in the tested software.  Yet, due to the typically poor coverage one can get today, testing often turns into a mere hunt for bugs.
+
+%% In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{codeComplete}.  Such suites tend to be tedious to write and maintain but, once in place, they can be reused and extended.  In practice, the state of the art consists mostly of fuzzing, i.e., trying various inputs in the hope of finding bugs and improving test coverage.
+
+\subsection{Symbolic Execution Primer}
+
+In research, the state of the art consists of model checkers and automated test generators based on symbolic execution~\cite{dart,klee}.  Instead of running a program with regular concrete inputs (e.g., $x\!=\!5$), symbolic execution consists of running a program with ``symbolic'' inputs that can take on all values allowed by the type (e.g., $x\!=\!\lambda$, where $\lambda \in \mathbb{N}$).  Whenever a conditional branch is encountered that involves a predicate $\pi$ that depends (directly or indirectly) on $x$, state and execution are forked into two alternatives: one following the then-branch ($\pi$) and another following the else-branch ($\neg \pi$). The two executions can now be pursued independently.  When a bug is found, test generators can compute concrete values for program inputs that take the program to the bug location.  This approach is efficient because it analyzes code for entire classes of inputs at a time, thus avoiding the redundancy inherent in fuzzing.
+
+\subsection{Path Explosion}
+
+%% The {\em first challenge} for such tools is path explosion, as mentioned earlier.  One way to cope is to memoize the symbolic execution of sub-paths into test summaries that can be subsequently reused when the same sub-path is encountered again, as done in compositional test generation~\cite{godefroid:compdyntest}.  Alternatively, it is possible to use various heuristics to prioritize the most interesting paths first, as done in \klee~\cite{klee}.  Another approach is to execute symbolically only paths that are of interest to the test, as done in selective symbolic execution~\cite{s2e}.
+
+The size of the symbolic execution tree is exponential in the number of branches. Loops and recursion make things worse, with the number of paths potentially being infinite.
+
+Dealing with the path explosion is crucial in ensuring the scalability of symbex.
+
+Existing approaches work by either \emph{prioritizing}, \emph{folding}, or \emph{abstracting} paths.
+
+Prioritizing paths means to use heuristics for determining the paths to select next, and optionally discarding the rest (pruning).  Randomness and static-analysis based heuristics are the most popular.
+
+Folding paths means joining their representation either when they join in the CFG, or compositionally by computing summaries of sub-paths and reuse them when encountered again.
+
+Abstracting paths mean replacing the execution of a complex part of the program with a simpler model that can be reasoned about symbolically more easily.
+
+Neither of the approaches works well in all cases. The first two approaches help reduce the number of paths, at the expense of making each path more complex and slower (the entire complexity of the program is still encoded in the symbolic expressions).  The last approach simplifies the complexity, but in most cases it has a high upfront cost of determining the model, and risks being unsound (hence introducing false positives).
+
+\subsection{The Environment Problem}
+
+%% The {\em second challenge} is mediating between a program and its environment, i.e., symbolically executing a program that calls into libraries and the OS, or communicates with other systems, neither of which execute symbolically.  One possible approach is to simply allow the call to go through into the ``concrete'' environment (e.g., to write a file)~\cite{dart,exe}; unfortunately, this causes the environment to be altered for \emph{all} forked executions being explored in parallel, thus introducing inconsistency.  Another approach is to replace the real environment with a symbolic model, i.e., a piece of code linked with the target program that provides the illusion of interacting with a symbolically executing environment.  For instance, \klee uses a symbolic model of the file system~\cite{klee}. Of course, real-world programs typically interact in richer ways than just file I/O: they fork processes, synchronize threads, etc.  
+
+%% We originally viewed the building of a complete environment model as an engineering task, but our ``mere engineering'' attempt failed: for any functionality that, in a normal execution, requires hardware support (such as enforcing isolation between address spaces), the core symbolic execution engine had to be modified.  The research challenge therefore is to find the minimal set of engine primitives required to support a rich model of a program's environment. 
+
+Employing the three approaches is difficult when the source of path explosion is the program environment.  For instance, a program making use of libraries or OS syscalls.
+
+One can employ pruning and allow the environment calls to go ``concretely'' in the environment.  In particular, the environment can be shared with the host, but this causes it to be altered for all forked executions and introduce inconsistency.
+
+Another approach is to abstract the system (either model linked with program, or built into the engine).  But this is challenging for any non-trivial runtime, such as an operating system with hundreds of system calls.  For instance, \klee uses a symbolic model of the file system, but real-world programs interact in richer ways than just file I/O: they fork processes, synchronize threads, etc.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Thesis Objectives}
-
-\begin{itemize}
-\item This thesis addresses the environment problem on two classes of software systems that represent an important fraction of the software running in the real-world today: (1) low-level system software running in UNIX operating systems, and (2) high-level interpreted programs used for web applications and system integration.
-\end{itemize}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-
 \section{Solution Overview}
+
+In this thesis, we address the path explosion of symbolic execution of real-world programs with complex environment interfaces by attacking two representative instances of the problem: low-level system software making rich use of the OS interface, and programs written in high-level interpreted languages, such as JavaScript, Python, Lua, etc.  These two correspond to two different environment scenarios: in the former, the interface is standardized and rather fixed, while in the latter it is highly volatile.
+
+We prototyped the two approaches in two systems: Cloud9 is a symbolic execution platform for POSIX systems, while Chef is a platform for obtaining symbolic execution engines for interpreted languages by plugging the interpreter.
+
+\subsection{Cloud9: Modeling Operating System Abstractions}
+
+Cloud9 addresses the environment problem for the POSIX interface by leveraging the insight that only three abstractions need to be built into the engine, while the others can be implemented as guest code with less effort.  It also relies on the fact that in a symbolic environment, performance is less important (which in the real world would have been taken up by caches and additional layers of complexity).  By finding this sweetspot, Cloud9 keeps the model complexity low (hence reduced maintenance and extension effort), while supporting faithful execution for a wide set of real-world software, ranging from system utilities to web servers and distributed systems.
+
+\subsection{Chef: Using Interpreters as Executable Language Specifications}
+
+Chef addresses the environment problem for high-level interpreted languages (the environment here is the semantics and set of libraries available in the language).  The semantics of these languages are complex and volatile, so building a symbolic execution engine by hand is tedious.
+
+Our insight is that we can use the interpreter of the language as an executable language specification.  By plugging in the interpreter into a low-level engine, we execute the high-level program.
+
+We deal with the path explosion problem by providing a system where the high-level and low-level strategies are decoupled and can be optimized independently for the testing goal.
+
+\subsection{Circumventing Path Explosion with CUPA}
+
+Orthogonal to the two techniques addressing the environment problem, we further improved the performance of symbolic execution across all range of applications with two techniques.
+
+Class Uniform Path Analysis is a path prioritization heuristic that leverages the observation that path explosion tends to be clustered in the so called ``fork bombs'':  regions of code, where states accumulate and bias a global selection strategy.  Instead, CUPA groups the states into classes, and then selects classes uniformly, effectively containing the path explosion.
+
+\subsection{Addressing Path Explosion through Massive Parallelization}
+
+%% We pursue a complementary approach---{\em parallel symbolic execution}---in which we symbolically execute a program in parallel on a cluster, thus harnessing the machines into a ``distributed computer'' whose aggregate CPU and memory surpass that of an individual machine.  An alternative to a cluster-based approach would be to run a classic single-node symbolic execution engine on a Blue Gene-like supercomputer with vast shared memory and CPUs communicating over MPI.  Supercomputers, however, are expensive, so we favor instead clusters of cheap commodity hardware.
+
+%% One way to parallelize symbolic execution is by statically dividing up the task among nodes and having them run independently.   However, when running on large programs, this approach leads to high workload imbalance among nodes, making the entire cluster proceed at the pace of the slowest node~\cite{parallelSymbex}.  If this node gets stuck, for instance, while symbolically executing a loop, the testing process may never terminate.  Parallelizing symbolic execution on shared-nothing clusters in a way that scales well is difficult.
+
+%% The work presented here aims to address these three challenges.  Cluster-based parallel symbolic execution (\S\ref{sec:parsymbex}) provides the illusion of running a classic symbolic execution engine on top of a large, powerful computer.  Without changing the exponential nature of the problem, parallel symbolic execution harnesses cluster resources to make it feasible to run automated testing on larger systems than what was possible until now. Our work complements and benefits all tools and approaches based on symbolic execution.  We describe a way to accurately model the environment (\S\ref{sec:posix}) with sufficient completeness to test complex, real software, like the Apache web server and the Python interpreter.  We present the APIs and primitives that we found necessary in developing a true testing platform (\S\ref{sec:platform}).  We show how using these APIs enables, for instance, finding errors in bug patches by reproducing environment conditions which otherwise would have been hard or impossible to set up with regular test cases.
+
+Parallel symbolic execution.
+
+\subsection{Symbolic Tests for Encapsulating the Symbolic Execution Task}
+
+The {\em third challenge} is using an automated test generator in the context of a development organization's quality assurance processes.  To take full advantage of the automated exploration of paths, a testing tool must provide ways to control all aspects of the environment.  For example, there needs to be a clean API for injecting failures at the boundary between programs and their environment, there must be a way to control thread schedules, and so on.  There should be a way to programmatically orchestrate all environment-related events, but doing so should not require deep expertise in the technology behind the testing tools themselves.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Thesis Roadmap}
 
-To be determined.
+The rest of the thesis is structured as follows: ...
 
 
 %%% Local Variables: 
