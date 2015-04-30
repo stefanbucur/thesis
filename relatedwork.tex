@@ -1,40 +1,32 @@
-A lot of work in the area of model checking and symbolic execution~\cite{jhala2009software, woodcock2009formal}.  In this chapter, we focus on the use of symbolic execution for automated test case generation, applied on real-world software (complex structure, complex environment interface).
+There is substantial related work in the area of symbolic execution and formal methods in general.  In this chapter, we review the use of symbolic execution for automated test case generation (Section~\ref{sec:relwork:atcg}) and its applications on real-world software targets (Section~\ref{sec:relwork:targets}).  In particular, we focus on how previous work addressed the path explosion problem (Section~\ref{sec:relwork:pathexpl}).
 
 \section{Automated Testing Using Symbolic Execution}
+\label{sec:relwork:atcg}
 
-Earliest symbolic execution: King~\cite{king:symbolic:2, boyer:symbolic}
+Symbolic execution was introduced almost four decades ago as a test generation technique~\cite{king:symbolic:2, boyer:symbolic}.  King~\cite{king:symbolic:2} described symbolic execution as a practical middle ground between testing a program with a set of concrete inputs and using formal correctness proofs.  The paper introduced EFFIGY, an interactive symbolic execution tool where developers manually step through paths and switch states in the execution tree.  However, the tool could only handle small programs written in a custom language supporting basic integer operations, and had limited performance, due to limited solver capabilities.
+
+It was only in the past decade that symbolic execution has become a feasible approach to test generation for real-world software, with the advent of modern constraint solvers, such as Chaff~\cite{chaff}, MiniSAT~\cite{minisat}, STP~\cite{stp}, Z3~\cite{Z3}, or CVC~\cite{cvc}, and the exponential increase in hardware performance.  Our tools build on this foundation, too---both Cloud9 and Chef resort to the STP solver for all symbolic queries, such as branch feasibility checks.
+
+DART~\cite{dart} and CUTE~\cite{cute} were among the first in the new crop of symbolic execution engines.  
 
 Pure symbolic execution: KLEE~\cite{klee}, EXE~\cite{exe}
 
-Whitebox fuzzing: SAGE~\cite{sage2012,godefroid:fuzz}, DART~\cite{dart}
+Whitebox fuzzing: SAGE~\cite{sage2012,godefroid:fuzz}.
 
-Pex~\cite{tillmann-pex}
+Symbolic execution support for the Java PathFinder model checker for Java programs~\cite{jpf-symbex}.
+
+Pex~\cite{tillmann-pex}.
 
 Security-oriented tools: Mayhem~\cite{mayhem}, AEG~\cite{aeg}
 
-Testing as verification: Bounded model checkers: CBMC~\cite{cbmc}, LLBMC~\cite{llbmc2012}, F-Soft~\cite{f-soft}, Magic~\cite{magic}, Saturn~\cite{saturn}.
+Closely related to symbolic execution is the concept of bounded model checking (BMC).  Instead of exploring individual execution paths and generate test cases, a BMC unfolds the control flow graph of the program and constructs a verification condition---a formula encompassing the behavior of the entire program with respect to a property to be checked.  Popular model checkers include CBMC~\cite{cbmc}, LLBMC~\cite{llbmc2012}, F-Soft~\cite{f-soft}, Magic~\cite{magic}, or Saturn~\cite{saturn}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Addressing Path Explosion}
-
-Dealing with the path explosion problem: grammar-based whitebox fuzzing (abstracting inputs), MultiSE (merging states), using symbolic execution friendly primitives (OVerify), underconstrained execution (dealing with a single module at a time).
-
-\subsection{Pruning}
-
-\subsection{State Merging}
-
-\subsection{Compositionality}
-
-\subsection{Abstraction}
-
-\subsection{Solver Optimizations}
-
-Addressing the solver bottleneck: query caches, memory models (Mayhem only models symbolic reads)
+Beyond symbolic execution, there is substantial work done in the field of model checking and formal methods in general, which goes beyond the scope of this thesis.  We refer the interested reader to survey papers that cover the topic in more breadth~\cite{jhala2009software, woodcock2009formal}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Supporting Real-world Targets}
+\label{sec:relwork:targets}
 
 \subsection{System Software}
 
@@ -52,9 +44,31 @@ Using the interpreter for symbolic execution: Lorenzo's paper (consider x86 as i
 
 Cooperative symbolic execution (where the program uses special APIs of the engine).
 
+OVerify.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Addressing Path Explosion}
+\label{sec:relwork:pathexpl}
+
+Dealing with the path explosion problem: grammar-based whitebox fuzzing (abstracting inputs), MultiSE (merging states), using symbolic execution friendly primitives (OVerify), underconstrained execution (dealing with a single module at a time).
+
+\subsection{Pruning}
+
+\subsection{State Merging}
+
+\subsection{Compositionality}
+
+\subsection{Abstraction}
+
+\subsection{Solver Optimizations}
+
+Addressing the solver bottleneck: query caches, memory models (Mayhem only models symbolic reads)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Search Heuristics}
+\label{sec:relwork:heuristics}
 
 Group heuristics by their goals and their inputs (the state information they use).
 
@@ -65,6 +79,7 @@ Generational search in SAGE.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Parallel Symbolic Execution}
+\label{sec:relwork:parallel}
 
 Parallelizing Symbolic Execution : The work from Fujitsu, the work on JSP
 
@@ -73,6 +88,7 @@ Cloud Testing Services.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Interfaces for the Symbolic Execution Engine}
+\label{sec:relwork:ifaces}
 
 Symbolic tests: the work from MSR
 
