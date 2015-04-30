@@ -7,13 +7,43 @@ Symbolic execution was introduced almost four decades ago as a test generation t
 
 It was only in the past decade that symbolic execution has become a feasible approach to test generation for real-world software, with the advent of modern constraint solvers, such as Chaff~\cite{chaff}, MiniSAT~\cite{minisat}, STP~\cite{stp}, Z3~\cite{Z3}, or CVC~\cite{cvc}, and the exponential increase in hardware performance.  Our tools build on this foundation, too---both Cloud9 and Chef resort to the STP solver for all symbolic queries, such as branch feasibility checks.
 
-DART~\cite{dart} and CUTE~\cite{cute} were among the first in the new crop of symbolic execution engines.  
+DART~\cite{dart} and CUTE~\cite{cute} were among the first in the new crop of symbolic execution engines.
+
+\paragraph{DART}
+
+DART automatically extracts the environment interface of a C program using static analysis.  DART augment the classic random fuzzing with a dynamic analysis that collects. The advantage of concrete execution is that DART can fall back on concrete semantics when symbolic ones are not supported (e.g., multiplications) DART detects standard errors such as crashes, assertion violations, and hangs.  Dart extracts the static interface of a program, consisting of global variables and inputs to the program entry function.  It concretizes calls to library functions.
+
+Initializing values in DART: either randomly, or NULL or malloced values (for pointer types).  Chef and Cloud9 leaves it to the symbolic test the job of creating inputs. The basic primitives are marking allocated buffers (or integers or strings) as symbolic.
+
+Dealing with environment inconsistencies in DART: Not a problem, as programs are re-executed (so no cross-talking in paths).  But assume no side effects in the program.
+
+Solver in DART: lp\_solve (linear constraints of integers and reals).
+
+DART was applied on C benchmarks and an implementation of the SIP protocol, finding hundreds of crashes.
+
+DART uses DFS, BFS, or random.
+
+\paragraph{CUTE}
+
+Unit testing using concolic execution, with memory graphs as inputs.  Separates memory constraints from scalar constraints and keeps pointer constraints simple to keep the decision procedure tractable and efficient.
+
+CUTE uses DFS.
+
+CUTE uses its own in-house solver, built on top of lp\_solve, which adds optimizations such as incrementality.
+
+CUTE supports generation of structured data by either calling sequences of operations, or solving data structure invariants (repOk operations), similar to Korat~\cite{boyapati:korat}.
+
+\paragraph{Others}
 
 Pure symbolic execution: KLEE~\cite{klee}, EXE~\cite{exe}
 
 Whitebox fuzzing: SAGE~\cite{sage2012,godefroid:fuzz}.
 
-Symbolic execution support for the Java PathFinder model checker for Java programs~\cite{jpf-symbex}.
+Symbolic execution support for the Java PathFinder model checker for Java programs~\cite{jpf-symbex}.  Test input generation with Java PathFinder~\cite{jpf-testgen}.
+
+Other older test input generation tools: \cite{genptrinputs}.
+
+Korat~\cite{boyapati:korat}.
 
 Pex~\cite{tillmann-pex}.
 
