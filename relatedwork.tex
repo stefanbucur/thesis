@@ -33,6 +33,39 @@ CUTE uses its own in-house solver, built on top of lp\_solve, which adds optimiz
 
 CUTE supports generation of structured data by either calling sequences of operations, or solving data structure invariants (repOk operations), similar to Korat~\cite{boyapati:korat}.
 
+Used for testing data structures.
+
+\paragraph{EXE}
+
+Dedicated constraint solver STP, codesigned with EXE, optimized for reasoning about bitvectors and arrays, which accurately encode machine operations at good performance.
+
+Has a flat view of memory.
+
+Works by translating the C code to an instrumented format that includes checks for concrete/symbolic values, forks (UNIX forks), and checks for properties (memory errors, division by zero).
+
+Introduced constraint optimization: caching, constraint independence.
+
+DFS/BFS as search heuristics.
+
+Found bugs in udhcpd, packet filters (BPF), pcre regexp library.
+
+
+\paragraph{KLEE}
+
+Uses symbolic execution for testing real-world systems code (Coreutils, Hi-star kernel, Busybox).  They built a high-performance symbolic execution engine that finds bugs in highly tested code and achieves high coverage levels.
+
+Compact state representation using COW.
+
+Uses a high-performance SMT solver (STP), and optimizes interface to the solver (constraint caching, expression simplifications).
+
+Handles the environment problem through a model of files (used by the Coreutils), and external calls into the host environment.
+
+Handles C code by compiling and running LLVM.
+
+Uses static heuristics to maximize coverage, plus standard strategies.
+
+Command line interface for marking inputs symbolic.
+
 \paragraph{Others}
 
 Pure symbolic execution: KLEE~\cite{klee}, EXE~\cite{exe}
@@ -43,7 +76,7 @@ Symbolic execution support for the Java PathFinder model checker for Java progra
 
 Other older test input generation tools: \cite{genptrinputs}.
 
-Korat~\cite{boyapati:korat}.
+Korat~\cite{boyapati:korat}. Symstra~\cite{xie:symstra}.
 
 Pex~\cite{tillmann-pex}.
 
