@@ -1,76 +1,109 @@
 There is substantial related work in the area of symbolic execution and formal methods in general.  In this chapter, we review the use of symbolic execution for automated test case generation (Section~\ref{sec:relwork:atcg}) and its applications on real-world software targets (Section~\ref{sec:relwork:targets}).  In particular, we focus on how previous work addressed the path explosion problem (Section~\ref{sec:relwork:pathexpl}).
 
-\section{Automated Testing Using Symbolic Execution}
+\section{Automated Test Case Generation}
 \label{sec:relwork:atcg}
 
-Symbolic execution was introduced almost four decades ago as a test generation technique~\cite{king:symbolic:2, boyer:symbolic}.  King~\cite{king:symbolic:2} described symbolic execution as a practical middle ground between testing a program with a set of concrete inputs and using formal correctness proofs.  The paper introduced EFFIGY, an interactive symbolic execution tool where developers manually step through paths and switch states in the execution tree.  However, the tool could only handle small programs written in a custom language supporting basic integer operations, and had limited performance, due to limited solver capabilities.
+\subsection{Symbolic Execution}
 
-It was only in the past decade that symbolic execution has become a feasible approach to test generation for real-world software, with the advent of modern constraint solvers, such as Chaff~\cite{chaff}, MiniSAT~\cite{minisat}, STP~\cite{stp}, Z3~\cite{Z3}, or CVC~\cite{cvc}, and the exponential increase in hardware performance.  Our tools build on this foundation, too---both Cloud9 and Chef resort to the STP solver for all symbolic queries, such as branch feasibility checks.
+We review the most important symbolic execution-based tools.  The story is chronological, illustrating the advancements brought by each tool.
 
-DART~\cite{dart} and CUTE~\cite{cute} were among the first in the new crop of symbolic execution engines.
+%% King~\cite{king:symbolic:2} described symbolic execution as a practical middle ground between testing a program with a set of concrete inputs and using formal correctness proofs.  The paper introduced EFFIGY, an interactive symbolic execution tool where developers manually step through paths and switch states in the execution tree.  However, the tool could only handle small programs written in a custom language supporting basic integer operations, and had limited performance, due to limited solver capabilities.
 
-\paragraph{DART}
+Symbolic execution was introduced almost four decades ago as a test case generation technique~\cite{king:symbolic:2, boyer:symbolic}.  The first tools that used symbolic execution worked on domain-specific languages, supported basic numeric operations, and had an interactive interface.  As a resource-intensive task, symbolic execution was severely limited by the lack of efficient decision procedures for the data types used in programs and slow hardware performance.
 
-DART automatically extracts the environment interface of a C program using static analysis.  DART augment the classic random fuzzing with a dynamic analysis that collects. The advantage of concrete execution is that DART can fall back on concrete semantics when symbolic ones are not supported (e.g., multiplications) DART detects standard errors such as crashes, assertion violations, and hangs.  Dart extracts the static interface of a program, consisting of global variables and inputs to the program entry function.  It concretizes calls to library functions.
+%% It was only in the past decade that symbolic execution has become a feasible approach to test generation for real-world software, with the advent of modern constraint solvers, such as Chaff~\cite{chaff}, MiniSAT~\cite{minisat}, STP~\cite{stp}, Z3~\cite{Z3}, or CVC~\cite{cvc}, and the exponential increase in hardware performance.  Our tools build on this foundation, too---both Cloud9 and Chef resort to the STP solver for all symbolic queries, such as branch feasibility checks.
 
-Initializing values in DART: either randomly, or NULL or malloced values (for pointer types).  Chef and Cloud9 leaves it to the symbolic test the job of creating inputs. The basic primitives are marking allocated buffers (or integers or strings) as symbolic.
+The situation changed in the past decade, with the exponential increase in hardware performance, faster off-the-shelf constraint solvers~\cite{chaff,minisat,stp,Z3,cvc}, and modern decision procedures.
+%
+This enabled symbolic execution to target commonly used software written in languages such as C or Java, where it found bugs and generated high-coverage test suites.
 
-Dealing with environment inconsistencies in DART: Not a problem, as programs are re-executed (so no cross-talking in paths).  But assume no side effects in the program.
+%% \paragraph{DART}
 
-Solver in DART: lp\_solve (linear constraints of integers and reals).
+%% DART automatically extracts the environment interface of a C program using static analysis.  DART augment the classic random fuzzing with a dynamic analysis that collects. The advantage of concrete execution is that DART can fall back on concrete semantics when symbolic ones are not supported (e.g., multiplications) DART detects standard errors such as crashes, assertion violations, and hangs.  Dart extracts the static interface of a program, consisting of global variables and inputs to the program entry function.  It concretizes calls to library functions.
 
-DART was applied on C benchmarks and an implementation of the SIP protocol, finding hundreds of crashes.
+%% Initializing values in DART: either randomly, or NULL or malloced values (for pointer types).  Chef and Cloud9 leaves it to the symbolic test the job of creating inputs. The basic primitives are marking allocated buffers (or integers or strings) as symbolic.
 
-DART uses DFS, BFS, or random.
+%% Dealing with environment inconsistencies in DART: Not a problem, as programs are re-executed (so no cross-talking in paths).  But assume no side effects in the program.
 
-\paragraph{CUTE}
+%% Solver in DART: lp\_solve (linear constraints of integers and reals).
 
-Unit testing using concolic execution, with memory graphs as inputs.  Separates memory constraints from scalar constraints and keeps pointer constraints simple to keep the decision procedure tractable and efficient.
+%% DART was applied on C benchmarks and an implementation of the SIP protocol, finding hundreds of crashes.
 
-CUTE uses DFS.
+%% DART uses DFS, BFS, or random.
 
-CUTE uses its own in-house solver, built on top of lp\_solve, which adds optimizations such as incrementality.
+%% \paragraph{CUTE}
 
-CUTE supports generation of structured data by either calling sequences of operations, or solving data structure invariants (repOk operations), similar to Korat~\cite{boyapati:korat}.
+%% Unit testing using concolic execution, with memory graphs as inputs.  Separates memory constraints from scalar constraints and keeps pointer constraints simple to keep the decision procedure tractable and efficient.
 
-Used for testing data structures.
+%% CUTE uses DFS.
 
-\paragraph{EXE}
+%% CUTE uses its own in-house solver, built on top of lp\_solve, which adds optimizations such as incrementality.
 
-Dedicated constraint solver STP, codesigned with EXE, optimized for reasoning about bitvectors and arrays, which accurately encode machine operations at good performance.
+%% CUTE supports generation of structured data by either calling sequences of operations, or solving data structure invariants (repOk operations), similar to Korat~\cite{boyapati:korat}.
 
-Has a flat view of memory.
+%% Used for testing data structures.
 
-Works by translating the C code to an instrumented format that includes checks for concrete/symbolic values, forks (UNIX forks), and checks for properties (memory errors, division by zero).
+Two of the challenges of a symbolic execution engine is providing support for all language features, and handling the execution outside the scope of the program.  To address this problem, DART~\cite{dart} and CUTE~\cite{cute} introduced the concept of concolic (concrete + symbolic) execution, where a concrete input drives a concrete execution through the program, while collecting symbolic constraints along the way.  The constraints were used to generate a new concrete input, and the program was re-executed.  Whenever the symbolic mode was not supported (e.g., unsupported operations or external library calls), the execution would fall back to concrete mode only.  The tools found crashes in C programs, such as protocol implementations and data structure libraries.
 
-Introduced constraint optimization: caching, constraint independence.
+%% \paragraph{EXE}
 
-DFS/BFS as search heuristics.
+%% Dedicated constraint solver STP, codesigned with EXE, optimized for reasoning about bitvectors and arrays, which accurately encode machine operations at good performance.
 
-Found bugs in udhcpd, packet filters (BPF), pcre regexp library.
+%% Has a flat view of memory.
+
+%% Works by translating the C code to an instrumented format that includes checks for concrete/symbolic values, forks (UNIX forks), and checks for properties (memory errors, division by zero).
+
+%% Introduced constraint optimization: caching, constraint independence.
+
+%% DFS/BFS as search heuristics.
+
+%% Found bugs in udhcpd, packet filters (BPF), pcre regexp library.
 
 
-\paragraph{KLEE}
+EXE~\cite{exe} further expanded the scope and scale of symbolic execution by relying on STP~\cite{stp}, an efficient constraint solver with dedicated support for bitvectors and arrays, theories that can accurately express machine operations in languages such as C.
+%
+This allowed EXE to have a flat symbolic representation of program memory, with support for arbitrary pointer and integer operations.
+%
+EXE found bugs in udhcpd, packet filters (BPF), and the pcre PERL regular expression library.
 
-Uses symbolic execution for testing real-world systems code (Coreutils, Hi-star kernel, Busybox).  They built a high-performance symbolic execution engine that finds bugs in highly tested code and achieves high coverage levels.
+%% \paragraph{SAGE}~\cite{sage2012,godefroid:fuzz}
 
-Compact state representation using COW.
+%% Used in production, during Windows development, found thousands of vulnerabilities.  Largest known deployment of symbolic execution in production.
 
-Uses a high-performance SMT solver (STP), and optimizes interface to the solver (constraint caching, expression simplifications).
+%% Targeted large applications, binary-level.
 
-Handles the environment problem through a model of files (used by the Coreutils), and external calls into the host environment.
+%% Introduces the generational search heuristic for finding bugs more efficiently in an incomplete search.
 
-Handles C code by compiling and running LLVM.
+SAGE~\cite{sage2012,godefroid:fuzz} is the most successful use of symbolic execution in production.  It relies on concolic execution done at binary (x86) level.  It targets large applications with deep execution paths, such as Windows format parses and Microsoft Office applications.  To effectively explore the large search space, SAGE introduced a generational search heuristic.  The idea is to start from a concrete input that takes the program down a relevant path (e.g., a valid Office document), then alternate all branches on that path, then do the same with the second-generation inputs (hence the ``whitebox fuzzing'' name).
+%
+SAGE found thousands of Windows vulnerabilities at development time.
 
-Uses static heuristics to maximize coverage, plus standard strategies.
+%% \paragraph{KLEE}
 
-Command line interface for marking inputs symbolic.
+%% Uses symbolic execution for testing real-world systems code (Coreutils, Hi-star kernel, Busybox).  They built a high-performance symbolic execution engine that finds bugs in highly tested code and achieves high coverage levels.
+%% Compact state representation using COW.
+%% Uses a high-performance SMT solver (STP), and optimizes interface to the solver (constraint caching, expression simplifications).
+%% Handles the environment problem through a model of files (used by the Coreutils), and external calls into the host environment.
+%% Handles C code by compiling and running LLVM.
+%% Uses static heuristics to maximize coverage, plus standard strategies.
+%% Command line interface for marking inputs symbolic.
+
+KLEE~\cite{klee} was the first symbolic execution engine to target system software that communicates with its environment.  KLEE provides robust support for complex system software by having the software compiled to LLVM~\cite{llvm} IR, which is then interpreted symbolically.  KLEE introduced environment models as approximations of the real OS interface: the models replace parts of the standard C library and provided support for files.
+%
+This resulted in KLEE uncovering crashes and generating test suites with over 90\% coverage on average in the popular Coreutils utilities (e.g., \codebit{ls}, \codebit{echo}), testing Busybox and an OS kernel.
+%
+Our Cloud9 system builds on top of KLEE, providing symbolic primtives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
+
+S2E~\cite{s2eSystem} enabled symbolic execution for arbitrary parts of a system, by running them in-vivo, inside a symbolic VM environment.  As the entire VM could potentially become symbolic, S2E provides consistency models, which are ways to specify how branching is limited outside the component of interest.  S2E found bugs in device drivers, thanks to support for symbolic hardware.
+%
+Chef builds on top of S2E...
+
+Symbolic execution also found use in security tools.  Mayhem~\cite{mayhem}, AEG~\cite{aeg}
+
+
+\paragraph{Pex}~\cite{tillmann-pex}
 
 \paragraph{Others}
-
-Pure symbolic execution: KLEE~\cite{klee}, EXE~\cite{exe}
-
-Whitebox fuzzing: SAGE~\cite{sage2012,godefroid:fuzz}.
 
 Symbolic execution support for the Java PathFinder model checker for Java programs~\cite{jpf-symbex}.  Test input generation with Java PathFinder~\cite{jpf-testgen}.
 
@@ -80,11 +113,17 @@ Korat~\cite{boyapati:korat}. Symstra~\cite{xie:symstra}.
 
 Pex~\cite{tillmann-pex}.
 
-Security-oriented tools: Mayhem~\cite{mayhem}, AEG~\cite{aeg}
+Security-oriented tools: 
 
 Closely related to symbolic execution is the concept of bounded model checking (BMC).  Instead of exploring individual execution paths and generate test cases, a BMC unfolds the control flow graph of the program and constructs a verification condition---a formula encompassing the behavior of the entire program with respect to a property to be checked.  Popular model checkers include CBMC~\cite{cbmc}, LLBMC~\cite{llbmc2012}, F-Soft~\cite{f-soft}, Magic~\cite{magic}, or Saturn~\cite{saturn}.
 
 Beyond symbolic execution, there is substantial work done in the field of model checking and formal methods in general, which goes beyond the scope of this thesis.  We refer the interested reader to survey papers that cover the topic in more breadth~\cite{jhala2009software, woodcock2009formal}.
+
+\subsection{Alternative Approaches}
+
+Random fuzzing.
+
+Unsound approaches.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
