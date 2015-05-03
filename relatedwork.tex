@@ -17,71 +17,77 @@ The exponential increase in hardware performance and the availability of fast of
 
 In this section, we highlight the most important tools and position \cnine and \chef with respect to them.
 
-\subsection{System-level Software}
+\subsection{System-level Software Targets}
 
 %% \paragraph{DART}
 
 %% DART automatically extracts the environment interface of a C program using static analysis.  DART augment the classic random fuzzing with a dynamic analysis that collects. The advantage of concrete execution is that DART can fall back on concrete semantics when symbolic ones are not supported (e.g., multiplications) DART detects standard errors such as crashes, assertion violations, and hangs.  Dart extracts the static interface of a program, consisting of global variables and inputs to the program entry function.  It concretizes calls to library functions.
 
 %% Initializing values in DART: either randomly, or NULL or malloced values (for pointer types).  Chef and Cloud9 leaves it to the symbolic test the job of creating inputs. The basic primitives are marking allocated buffers (or integers or strings) as symbolic.
-
 %% Dealing with environment inconsistencies in DART: Not a problem, as programs are re-executed (so no cross-talking in paths).  But assume no side effects in the program.
-
 %% Solver in DART: lp\_solve (linear constraints of integers and reals).
-
 %% DART was applied on C benchmarks and an implementation of the SIP protocol, finding hundreds of crashes.
-
 %% DART uses DFS, BFS, or random.
 
 %% \paragraph{CUTE}
-
 %% Unit testing using concolic execution, with memory graphs as inputs.  Separates memory constraints from scalar constraints and keeps pointer constraints simple to keep the decision procedure tractable and efficient.
-
 %% CUTE uses DFS.
-
 %% CUTE uses its own in-house solver, built on top of lp\_solve, which adds optimizations such as incrementality.
-
 %% CUTE supports generation of structured data by either calling sequences of operations, or solving data structure invariants (repOk operations), similar to Korat~\cite{boyapati:korat}.
-
 %% Used for testing data structures.
 
-Two of the challenges of a symbolic execution engine is providing support for all language features, and handling the execution outside the scope of the program.  To address this problem, DART~\cite{dart} and CUTE~\cite{cute} introduced the concept of concolic (concrete + symbolic) execution, where a concrete input drives a concrete execution through the program, while collecting symbolic constraints along the way.  The constraints were used to generate a new concrete input, and the program was re-executed.  Whenever the symbolic mode was not supported (e.g., unsupported operations or external library calls), the execution would fall back to concrete mode only.  The tools found crashes in C programs, such as protocol implementations and data structure libraries.
+\paragraph{Concrete + Symbolic Execution}
+
+Targeting system software using symbolic execution is challenging, as the engine should support all program constructs, as well as the calls the program makes into its environment.
+%
+A solution adopted by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, was to instrument the original C source of the program, using tools such as CIL~\cite{cil}, with additional statements that maintain the symbolic state as the program executes.  This approach resulted in the so called \emph{concolic} (\emph{conc}rete + symb\emph{olic}) execution model, where the program executes normally with a concrete input, while collecting constraints for each branch taken, used to generate a new input for a new execution.
+%
+Whenever the symbolic execution was not supported, such as when dealing with external library calls, the program would simply stop collecting constraints and execute concrete-only.
+%
+Using this approach, DART and CUTE found crashes in C programs, such as protocol implementations and data structure libraries.
 
 %% \paragraph{EXE}
-
 %% Dedicated constraint solver STP, codesigned with EXE, optimized for reasoning about bitvectors and arrays, which accurately encode machine operations at good performance.
-
 %% Has a flat view of memory.
-
 %% Works by translating the C code to an instrumented format that includes checks for concrete/symbolic values, forks (UNIX forks), and checks for properties (memory errors, division by zero).
-
 %% Introduced constraint optimization: caching, constraint independence.
-
 %% DFS/BFS as search heuristics.
-
 %% Found bugs in udhcpd, packet filters (BPF), pcre regexp library.
 
+\paragraph{Specialized Solver Support}
 
-EXE~\cite{exe} further expanded the scope and scale of symbolic execution by relying on STP~\cite{stp}, an efficient constraint solver with dedicated support for bitvectors and arrays, theories that can accurately express machine operations in languages such as C.
+In addition, non-trivial software also generates constraints that are hard to reason about, containing expressions such as memory accesses with symbolic addresses, or complex arithmetics such as bit-wise multiplications and divisions.  Without solver support, a symbolic execution engine needs to concretize the state or abandon the path, hence losing completeness.
+
+To address this problem, modern symbolic execution engines employ off-the-shelf constraint solvers, such as Z3~\cite{Z3}, STP~\cite{stp}, or CVC~\cite{cvc}.  These solvers can reason efficiently about a large set of operations commonly encountered in program execution, such as bit-wise arithmetic and array access.
 %
-This allowed EXE to have a flat symbolic representation of program memory, with support for arbitrary pointer and integer operations.
+The EXE~\cite{exe} symbolic execution engine was among the first to employ such a solver (STP), co-designed with the symbolic execution engine to accurately express machine operations in languages such as C.
 %
-EXE found bugs in udhcpd, packet filters (BPF), and the pcre PERL regular expression library.
+For example, EXE modeled the program memory as a flat array of bytes, with support for arbitrary pointer reads and writes, mixed with fixed-width integer operations.
+%
+As a result, EXE found bugs in system software such as the \codebit{udhcpd} DHPC server, packet filters, and the \codebit{pcre} Perl regular expression library.
+
+\paragraph{Low-level Symbolic Interpretation}
+
+Implementing symbolic execution semantics through source code instrumentation becomes difficult for large software with multiple units, or for more complex languages, such as C++.
+%
+As a result, the most recent (and most successful) symbolic execution engines target the lower-level compiled representations of programs, such as x86 binary or LLVM~\cite{llvm} bytecode~\cite{godefroid:fuzz,klee,bitBlaze,s2eSystem,mayhem}.  These representations consist of a smaller set of simpler instructions that are well specified and relatively stable.
 
 %% \paragraph{SAGE}~\cite{sage2012,godefroid:fuzz}
-
 %% Used in production, during Windows development, found thousands of vulnerabilities.  Largest known deployment of symbolic execution in production.
-
 %% Targeted large applications, binary-level.
-
 %% Introduces the generational search heuristic for finding bugs more efficiently in an incomplete search.
 
-SAGE~\cite{sage2012,godefroid:fuzz} is the most successful use of symbolic execution in production.  It relies on concolic execution done at binary (x86) level.  It targets large applications with deep execution paths, such as Windows format parses and Microsoft Office applications.  To effectively explore the large search space, SAGE introduced a generational search heuristic.  The idea is to start from a concrete input that takes the program down a relevant path (e.g., a valid Office document), then alternate all branches on that path, then do the same with the second-generation inputs (hence the ``whitebox fuzzing'' name).
+%% SAGE~\cite{sage2012,godefroid:fuzz} is the most successful use of symbolic execution in production.  It relies on concolic execution done at binary (x86) level.  It targets large applications with deep execution paths, such as Windows format parses and Microsoft Office applications.  To effectively explore the large search space, SAGE introduced a generational search heuristic.  The idea is to start from a concrete input that takes the program down a relevant path (e.g., a valid Office document), then alternate all branches on that path, then do the same with the second-generation inputs (hence the ``whitebox fuzzing'' name).
+%% %
+%% SAGE found thousands of Windows vulnerabilities at development time.
+
+For example, SAGE~\cite{sage2012,godefroid:fuzz}---the most successful use of symbolic execution in production---performs concolic execution at binary level.
+%
+SAGE targets large applications with deep execution paths, such as Windows format parsers and Microsoft Office applications.
 %
 SAGE found thousands of Windows vulnerabilities at development time.
 
 %% \paragraph{KLEE}
-
 %% Uses symbolic execution for testing real-world systems code (Coreutils, Hi-star kernel, Busybox).  They built a high-performance symbolic execution engine that finds bugs in highly tested code and achieves high coverage levels.
 %% Compact state representation using COW.
 %% Uses a high-performance SMT solver (STP), and optimizes interface to the solver (constraint caching, expression simplifications).
@@ -90,54 +96,55 @@ SAGE found thousands of Windows vulnerabilities at development time.
 %% Uses static heuristics to maximize coverage, plus standard strategies.
 %% Command line interface for marking inputs symbolic.
 
-To target systems of increasing complexity, symbolic execution engines needed to address the environment problem.
-%
-KLEE~\cite{klee} was the first symbolic execution engine to target system software that communicates with its environment.  KLEE provides robust support for complex system software by having the software compiled to LLVM~\cite{llvm} IR, which is then interpreted symbolically.
-%
-KLEE~\cite{klee} introduced environment models as approximations of the real OS interface: the models replace parts of the standard C library and provided support for files.
-%
-This resulted in KLEE uncovering crashes and generating test suites with over 90\% coverage on average in the popular Coreutils utilities (e.g., \codebit{ls}, \codebit{echo}), testing Busybox and an OS kernel.
-%
-Our Cloud9 system builds on top of KLEE, providing symbolic primtives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
+%% To target systems of increasing complexity, symbolic execution engines needed to address the environment problem.
+%% %
+%% KLEE~\cite{klee} was the first symbolic execution engine to target system software that communicates with its environment.  KLEE provides robust support for complex system software by having the software compiled to LLVM~\cite{llvm} IR, which is then interpreted symbolically.
+%% %
+%% KLEE~\cite{klee} introduced environment models as approximations of the real OS interface: the models replace parts of the standard C library and provided support for files.
+%% %
+%% This resulted in KLEE uncovering crashes and generating test suites with over 90\% coverage on average in the popular Coreutils utilities (e.g., \codebit{ls}, \codebit{echo}), testing Busybox and an OS kernel.
+%% %
+%% Our Cloud9 system builds on top of KLEE, providing symbolic primtives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
 
-S2E~\cite{s2eSystem} enabled symbolic execution for arbitrary parts of a system, by running them in-vivo, inside a symbolic VM environment.  As the entire VM could potentially become symbolic, S2E provides consistency models, which are ways to specify how branching is limited outside the component of interest.  S2E found bugs in device drivers, thanks to support for symbolic hardware.
+KLEE~\cite{klee} is currently the most popular symbolic execution engine.  It is openly available and has served as a basis for a wide range of other tools.
 %
-Chef builds on top of S2E.
+KLEE works as a symbolic interpreter for LLVM IR bytecode, obtained by compiling source programs using an LLVM-based compiler such as Clang.
+%
+KLEE tackles the environment problem by introducing \emph{models} that approximate the real OS interface.  The KLEE models replace parts of the standard C library and provide basic support for file operations.  Unmodeled system calls are passed on to the host environment, executed concretely on behalf of the KLEE process.
+%
+KLEE found bugs and generated test suites with over 90\% statement coverage on average in the popular Coreutils suite.  It also found bugs in other systems software, such as Busybox and the HiStar kernel.
+
+Modeling the environment is not always feasible.  In some cases, a component is so deeply integrated in the system that there is no clear separation between the component and the rest of the system.  Device drivers running in OS kernels are one notable example.
+%
+For those cases, an alternative approach to the environment problem is to bundle the program, together with all its dependencies, in one large unit executed symbolically.
+
+S2E~\cite{s2eSystem} takes this approach by providing a full virtual machine x86 symbolic execution environment, which includes programs, libraries, the operating system, and the hardware.
+%
+This allows S2E to accurately run ``in-vivo'' any part of the software stack, without the need of the source code.
+%
+Most notably, S2E discovered vulnerabilities in several Windows device drivers, some of whom were Microsoft-certified~\cite{ddt}.
 
 %% \paragraph{AEG}~\cite{aeg}
-
 %% Automated testing with the specific purpose of generating proofs of vulnerabilities (exploits), i.e., inputs that explicitly hijack the program control flow and get a shell.
-
 %% Takes as input LLVM + binary, produces exploit.
-
 %% Generated 16 exploits on 14 open-source projects.
-
 %% Buggy path-first heuristic: When a path has a bug (unexploitable), it is likely that it'll exhibit more bugs that could be exploitable.
-
 %% Loop exhaustion strategy: prioritize paths exploring maximum number of iterations.
-
 %% Symbolic files: simplifies KLEE's interface.
-
 %% Symbolic sockets: supplies fresh symbolic data.
-
 %% Environment variables (concrete values, fully symbolic, failures).
-
 %% Network, multithreading, formatting functions (about 70 system calls).  Not clear how sound the support is, nor what happens when a syscall is not supported.
 
 %% \paragraph{Mayhem}~\cite{mayhem}
-
 %% Finds 29 exploitable vulnerabilities in Linux and Windows programs.
-
 %% System designed to handle efficiently (at the expense of completeness) large state spaces generated by large programs.  Efficient reasoning about symbolic memory (symbolic writes are concretized, symbolic reads are replaced with nested ite expressions).
-
 %% Uses only binaries (no debug info needed).
 
 %% \paragraph{Bitblaze}~\cite{bitBlaze}
-
 %% Unified binary analysis platform, used mainly for malware analysis.
 
 
-Symbolic execution is also useful for security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs.
+Symbolic execution also found use in security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs.
 %
 For example, the AEG~\cite{aeg} tool uses symbolic analysis to both find bugs and automatically generate exploits (get a shell) from the bugs.  AEG uses heuristics that prioritize buggt paths and employs simple operating system models that minimize path explosion.
 %
@@ -145,9 +152,9 @@ The Mayhem~\cite{mayhem} tool employs a simplified symbolic memory model where w
 %
 Both tools found exploitable vulnerabilities in Linux and Windows programs.
 
-Handling real-world targets: C, C++ (KLOVER), parallel systems (explain the two ways to run these systems symbolically, depending on what bugs we're looking for).
+%% Handling real-world targets: C, C++ (KLOVER), parallel systems (explain the two ways to run these systems symbolically, depending on what bugs we're looking for).
 
-\subsection{VM Languages}
+\subsection{Virtual Machine-based Languages}
 
 %% \paragraph{Java Path Finder}
 %% \cite{jpf-symbex,jpf-testgen,generalized-symbex}.
@@ -184,6 +191,8 @@ Apollo~\cite{artzi-apollo} is another engine targeting PHP code to detect runtim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Program Environment Support}
+
+We now discuss in more detail the environment problem in symbolic execution and how existing work approaches it.
 
 In order to efficiently achieve the testing goals for the target program, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
 %
