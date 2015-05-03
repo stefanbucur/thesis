@@ -1,9 +1,9 @@
 There is substantial related work in the area of symbolic execution and formal methods in general.  In this chapter, we review the use of symbolic execution for automated test case generation (Section~\ref{sec:relwork:atcg}) and its applications on real-world software targets (Section~\ref{sec:relwork:targets}).  In particular, we focus on how previous work addressed the path explosion problem (Section~\ref{sec:relwork:pathexpl}).
 
-\section{Automated Test Case Generation}
-\label{sec:relwork:atcg}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Symbolic Execution}
+\section{Overview of Automated Testing Using Symbolic Execution}
 
 We review the most important symbolic execution-based tools.  The story is chronological, illustrating the advancements brought by each tool.
 
@@ -16,6 +16,8 @@ Symbolic execution was introduced almost four decades ago as a test case generat
 The situation changed in the past decade, with the exponential increase in hardware performance, faster off-the-shelf constraint solvers~\cite{chaff,minisat,stp,Z3,cvc}, and modern decision procedures.
 %
 This enabled symbolic execution to target commonly used software written in languages such as C or Java, where it found bugs and generated high-coverage test suites.
+
+\subsection{System-level Software}
 
 %% \paragraph{DART}
 
@@ -88,7 +90,11 @@ SAGE found thousands of Windows vulnerabilities at development time.
 %% Uses static heuristics to maximize coverage, plus standard strategies.
 %% Command line interface for marking inputs symbolic.
 
-KLEE~\cite{klee} was the first symbolic execution engine to target system software that communicates with its environment.  KLEE provides robust support for complex system software by having the software compiled to LLVM~\cite{llvm} IR, which is then interpreted symbolically.  KLEE introduced environment models as approximations of the real OS interface: the models replace parts of the standard C library and provided support for files.
+To target systems of increasing complexity, symbolic execution engines needed to address the environment problem.
+%
+KLEE~\cite{klee} was the first symbolic execution engine to target system software that communicates with its environment.  KLEE provides robust support for complex system software by having the software compiled to LLVM~\cite{llvm} IR, which is then interpreted symbolically.
+%
+KLEE~\cite{klee} introduced environment models as approximations of the real OS interface: the models replace parts of the standard C library and provided support for files.
 %
 This resulted in KLEE uncovering crashes and generating test suites with over 90\% coverage on average in the popular Coreutils utilities (e.g., \codebit{ls}, \codebit{echo}), testing Busybox and an OS kernel.
 %
@@ -96,137 +102,106 @@ Our Cloud9 system builds on top of KLEE, providing symbolic primtives for a larg
 
 S2E~\cite{s2eSystem} enabled symbolic execution for arbitrary parts of a system, by running them in-vivo, inside a symbolic VM environment.  As the entire VM could potentially become symbolic, S2E provides consistency models, which are ways to specify how branching is limited outside the component of interest.  S2E found bugs in device drivers, thanks to support for symbolic hardware.
 %
-Chef builds on top of S2E...
+Chef builds on top of S2E.
 
-Symbolic execution also found use in security tools.  Mayhem~\cite{mayhem}, AEG~\cite{aeg}
+%% \paragraph{AEG}~\cite{aeg}
 
-\paragraph{AEG}~\cite{aeg}
+%% Automated testing with the specific purpose of generating proofs of vulnerabilities (exploits), i.e., inputs that explicitly hijack the program control flow and get a shell.
 
-Automated testing with the specific purpose of generating proofs of vulnerabilities (exploits), i.e., inputs that explicitly hijack the program control flow and get a shell.
+%% Takes as input LLVM + binary, produces exploit.
 
-Takes as input LLVM + binary, produces exploit.
+%% Generated 16 exploits on 14 open-source projects.
 
-Generated 16 exploits on 14 open-source projects.
+%% Buggy path-first heuristic: When a path has a bug (unexploitable), it is likely that it'll exhibit more bugs that could be exploitable.
 
-Buggy path-first heuristic: When a path has a bug (unexploitable), it is likely that it'll exhibit more bugs that could be exploitable.
+%% Loop exhaustion strategy: prioritize paths exploring maximum number of iterations.
 
-Loop exhaustion strategy: prioritize paths exploring maximum number of iterations.
+%% Symbolic files: simplifies KLEE's interface.
 
-Symbolic files: simplifies KLEE's interface.
+%% Symbolic sockets: supplies fresh symbolic data.
 
-Symbolic sockets: supplies fresh symbolic data.
+%% Environment variables (concrete values, fully symbolic, failures).
 
-Environment variables (concrete values, fully symbolic, failures).
+%% Network, multithreading, formatting functions (about 70 system calls).  Not clear how sound the support is, nor what happens when a syscall is not supported.
 
-Network, multithreading, formatting functions (about 70 system calls).  Not clear how sound the support is, nor what happens when a syscall is not supported.
+%% \paragraph{Mayhem}~\cite{mayhem}
 
-\paragraph{Mayhem}~\cite{mayhem}
+%% Finds 29 exploitable vulnerabilities in Linux and Windows programs.
 
-Finds 29 exploitable vulnerabilities in Linux and Windows programs.
+%% System designed to handle efficiently (at the expense of completeness) large state spaces generated by large programs.  Efficient reasoning about symbolic memory (symbolic writes are concretized, symbolic reads are replaced with nested ite expressions).
 
-System designed to handle efficiently (at the expense of completeness) large state spaces generated by large programs.  Efficient reasoning about symbolic memory (symbolic writes are concretized, symbolic reads are replaced with nested ite expressions).
+%% Uses only binaries (no debug info needed).
 
-Uses only binaries (no debug info needed).
+%% \paragraph{Bitblaze}~\cite{bitBlaze}
 
-\paragraph{Bitblaze}~\cite{bitBlaze}
-
-Unified binary analysis platform, used mainly for malware analysis.
-
-\paragraph{Java Path Finder}
-
-\cite{jpf-symbex,jpf-testgen,generalized-symbex}.
-
-Code that manipulates complex data structures.  Uses lazy initialization to instantiate data structures.
-
-Built on top of the JVM.
-
-Uses iterative deepening combined with DFS.
-
-Model checking as a form of testing: since the program environment is typically way too large, model checking ends up being testing.
-
-Can be used to either execute a repOk method and generate blackbox inputs, or do whitebox testing.
-
-\paragraph{Pex}
-
-Pex~\cite{tillmann-pex}.
-
-Whitebox fuzzing for .NET.  Integrated in Visual Studio.  Found errors in a core .NET component.
-
-Uses PUTs (parameterized unit tests)~\cite{tillmann-puts}.
-
-Uses a ``meta-strategy'' that groups branches in equivalence classes, and then selects the lest chosen class.  Different sets of equivalence classes are chosen uniformly.
-
-Constructing objects: run symbolically the object constructor.
-
-\paragraph{Others}
-
-Symbolic execution support for the Java PathFinder model checker for Java programs~\cite{jpf-symbex}.  Test input generation with Java PathFinder~\cite{jpf-testgen}.
-
-Other older test input generation tools: \cite{genptrinputs}.
-
-Korat~\cite{boyapati:korat}. Symstra~\cite{xie:symstra}.
+%% Unified binary analysis platform, used mainly for malware analysis.
 
 
-Closely related to symbolic execution is the concept of bounded model checking (BMC).  Instead of exploring individual execution paths and generate test cases, a BMC unfolds the control flow graph of the program and constructs a verification condition---a formula encompassing the behavior of the entire program with respect to a property to be checked.  Popular model checkers include CBMC~\cite{cbmc}, LLBMC~\cite{llbmc2012}, F-Soft~\cite{f-soft}, Magic~\cite{magic}, or Saturn~\cite{saturn}.
-
-Beyond symbolic execution, there is substantial work done in the field of model checking and formal methods in general, which goes beyond the scope of this thesis.  We refer the interested reader to survey papers that cover the topic in more breadth~\cite{jhala2009software, woodcock2009formal}.
-
-\subsection{Alternative Approaches}
-
-Black-box (random) fuzzing.
-
-Unsound approaches.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{The Environment Problem in Symbolic Execution}
-
-
-
-\section{Supporting Real-world Targets}
-\label{sec:relwork:targets}
-
-\subsection{System Software}
+Symbolic execution is also useful for security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs.
+%
+For example, the AEG~\cite{aeg} tool uses symbolic analysis to both find bugs and automatically generate exploits (get a shell) from the bugs.  AEG uses heuristics that prioritize buggt paths and employs simple operating system models that minimize path explosion.
+%
+The Mayhem~\cite{mayhem} tool employs a simplified symbolic memory model where write addresses are concretized.
+%
+Both tools found exploitable vulnerabilities in Linux and Windows programs.
 
 Handling real-world targets: C, C++ (KLOVER), parallel systems (explain the two ways to run these systems symbolically, depending on what bugs we're looking for).
 
-Modeling the program environment: using the real environment, using abstractions.
+\subsection{VM Languages}
 
-\subsection{Interpreted Languages}
+%% \paragraph{Java Path Finder}
+%% \cite{jpf-symbex,jpf-testgen,generalized-symbex}.
+%% Code that manipulates complex data structures.  Uses lazy initialization to instantiate data structures.
+%% Built on top of the JVM.
+%% Uses iterative deepening combined with DFS.
+%% Model checking as a form of testing: since the program environment is typically way too large, model checking ends up being testing.
+%% Can be used to either execute a repOk method and generate blackbox inputs, or do whitebox testing.
+
+%% \paragraph{Pex}
+%% Pex~\cite{tillmann-pex}.
+%% Whitebox fuzzing for .NET.  Integrated in Visual Studio.  Found errors in a core .NET component.
+%% Uses PUTs (parameterized unit tests)~\cite{tillmann-puts}.
+%% Uses a ``meta-strategy'' that groups branches in equivalence classes, and then selects the lest chosen class.  Different sets of equivalence classes are chosen uniformly.
+%% Constructing objects: run symbolically the object constructor.
+
+Symbolic execution is also used for languages compiled to a virtual machine environment, such as Java or .NET~\cite{jpf-symbex,tillmann-pex}.  These languages pose additional challenges for symbolic execution, as they are object-oriented, so program inputs could also be structured data in addition to scalar values.
+%
+The Java PathFinder~\cite{visser-jpf,jpf-symbex,jpf-testgen} employs generalized symbolic execution~\cite{generalized-symbex} to handle symbolic objects.  The symbolic objects remain uninitialized until they are referenced in the code and lazily unfold in response to member access statements.
+
+\subsection{Dynamic Interpreted Languages}
+
+To our knowledge, no symbolic execution engine for Lua exists.  For Python, we found three research tools, which we compare \chef to.  (1) \cutiepy~\cite{cutie-py} is a concolic engine based on a formal model of the Python language.  It uses a custom CPython interpreter to drive a concrete execution, along with updating the symbolic state according to model semantics. (2) NICE-PySE~\cite{nice} is part of the NICE framework for testing OpenFlow applications.  We will refer to it as \nicese, for brevity. It wraps supported data types into symbolic counterparts that carry the symbolic store, and uses Python's tracing mechanisms to implement the interpretation loop fully in Python.  (3) The symbolic execution engine of the scalability testing tool Commuter~\cite{commuter} is also entirely built in Python.  Its primary purpose is the construction of models that explicitly use an API of symbolic data types.
 
 Jalangi for JavaScript using dynamic instrumentation.
 
 Using the interpreter for symbolic execution: Lorenzo's paper (consider x86 as interpreted by Qemu or Bochs, then compare the two implementations to find bugs in the more complex one).
 
-\subsection{Cooperating with the Symbolic Environment}
+To the best of our knowledge, we are the first to use symbolic execution on an interpreter to symbolically execute a program written in the target interpreted language.  However, there has been work on writing dedicated symbolic execution engines for interpreted languages directly.  Beside Python engines, the Kudzu~\cite{saxena-kudzu} symbolic execution engine for JavaScript was used to detect code injection vulnerabilities. It relies on an intermediate representation of JavaScript that it directly executes symbolically.
+%
+Apollo~\cite{artzi-apollo} is another engine targeting PHP code to detect runtime and HTML errors, while Ardilla~\cite{kiezun-ardilla} uses this system to discover SQL injection and cross-site scripting attacks in PHP.
 
-Cooperative symbolic execution (where the program uses special APIs of the engine).
-
-OVerify.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Addressing Path Explosion}
-\label{sec:relwork:pathexpl}
+\section{Program Environment Support}
+
+In order to efficiently achieve the testing goals for the target program, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
+%
+The existing approaches fall into three categories: concretizing the calls into the environment, bundling the environment with the rest of the program, and abstracting (modeling) the environment.
+
+Concretizing calls into the environment can be easily done in concolic mode, by simply dropping the symbolic operations while the execution carries outside the program [cite CUTE, DART, SAGE].  In pure symbolic mode, an alternative is to call the environment of the host [cite KLEE].  The disadvantage is that different execution paths can interfere for stateful calls (e.g., resource operations).
+
+The opposite approach is to treat the program + environment as one large target.  Full-VM symbolic execution engines take this approach.  The problem is that path explosion in the entire system reduces the focus on the target program.  S2E introduced consistency models as a principled path pruning outside the module of interest.
+
+The last approach is to replace a concrete interface implementation with a simplified one, as either part of the symbolic execution engine (e.g., symbolic hardware in S2E), or as guest code running at the same level as the target program (e.g., uClibc models in KLEE).  The simpler the model, the less path explosion, but may introduce unsoundness or missed bugs.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Path Explosion Mitigation}
 
 Dealing with the path explosion problem: grammar-based whitebox fuzzing (abstracting inputs), MultiSE (merging states), using symbolic execution friendly primitives (OVerify), underconstrained execution (dealing with a single module at a time).
 
-\subsection{Pruning}
-
-\subsection{State Merging}
-
-\subsection{Compositionality}
-
-\subsection{Abstraction}
-
-\subsection{Solver Optimizations}
-
-Addressing the solver bottleneck: query caches, memory models (Mayhem only models symbolic reads)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Search Heuristics}
-\label{sec:relwork:heuristics}
+\subsection{Search Heuristics}
 
 Group heuristics by their goals and their inputs (the state information they use).
 
@@ -234,21 +209,60 @@ Search Heuristics in Symbolic Execution
 
 Generational search in SAGE.
 
+\subsection{Path Pruning}
+
+Eliminate or deprioritize the paths are are less likely to lead to the exploration goal.  Goes hand in hand with prioritization heuristics.
+
+Replace two states meeting in the CFG with one that combines the memory locations and path conditions of the two.  Doesn't lead to improvements all the time, due to increased solver overhead [cite Trevor Hansen's study].
+
+Compositionality means executing symbolically individual functions and storing the disjunction of path conditions as a function summary.  Can be computed incrementally, in response to program executions [cite demand-driven].
+
+\subsection{Improving Constraint Solving}
+
+Addressing the solver bottleneck: query caches, memory models (Mayhem only models symbolic reads). Guarded sets in multiSE.
+
+\subsection{Parallel Symbolic Execution}
+
+Recently, \cite{parallelSymbex} described an extension to Java Pathfinder (JPF) that parallelizes symbolic execution by using parallel random searches on a static partition of the execution tree.  JPF pre-computes a set of disjoint constraints that, when used as preconditions on a worker's exploration of the execution tree, steer each worker to explore a subset of paths disjoint from all other workers.  In this approach, using constraints as preconditions imposes, at {\em every} branch in the program, a solving overhead relative to exploration without preconditions.  The complexity of these preconditions increases with the number of workers, as the preconditions need to be more selective.  Thus, per-worker solving overhead increases as more workers are added to the cluster.  This limits scalability: the largest evaluated program had 447 lines of code and did not interact with its environment.  Due to the {\em static} partitioning of the execution tree, total running time is determined by the worker with the largest subtree.  As a result, increasing the number of workers can even increase total test time instead of reducing it~\cite{parallelSymbex}.  \cnine mitigates these drawbacks.
+
+Several sequential symbolic execution engines~\cite{godefroid:fuzz,dart,hct,klee} have had great success in automated testing. These state-of-the-art tools exhaust available memory and CPU fairly quickly.  \cnine can help such tools scale beyond their current limits, making symbolic execution a viable testing methodology for a wider spectrum of software systems.
+
+\topic{To our knowledge, we are the first to scalably parallelize symbolic execution to shared-nothing clusters.} 
+There has been work, however, on parallel model checking~\cite{parallelMurphi,distributed-spin,loadBalModelchecking,spin:multicore-modelchecking,modelCheckBDD}. The SPIN model checker has been parallelized two-way for dual-core machines~\cite{parallelSPIN}. Nevertheless, there are currently no model checkers that can scale to many loosely connected computers, mainly due to the overhead of coordinating the search across multiple machines and transferring explicit states. \cnine uses an encoding of states that is compact and enables better scaling.
+
+The work from Fujitsu.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Parallel Symbolic Execution}
-\label{sec:relwork:parallel}
+\section{Symbolic Tests}
 
-Parallelizing Symbolic Execution : The work from Fujitsu, the work on JSP
+The general area of automated software testing has a rich body of published literature. We highlight here only the closest concepts. Symbolic tests are closely related to the idea of parameterized unit tests~\cite{tillmann-puts}. These extend regular unit tests with parameters marked as symbolic inputs during symbolic execution.
+%
+QuickCheck~\cite{quickcheck} allows writing specifications in Haskell, which again share their basic concept with symbolic tests, and tries to falsify them using random testing.  Symbolic execution can offer an alternative to random testing in evaluating QuickCheck test specifications.
 
-Cloud Testing Services.
+The KLEE command line interface for marking symbolic arguments.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Interfaces for the Symbolic Execution Engine}
-\label{sec:relwork:ifaces}
+\section{UNSORTED}
 
-Symbolic tests: the work from MSR
+Closely related to symbolic execution is the concept of bounded model checking (BMC).  Instead of exploring individual execution paths and generate test cases, a BMC unfolds the control flow graph of the program and constructs a verification condition---a formula encompassing the behavior of the entire program with respect to a property to be checked.  Popular model checkers include CBMC~\cite{cbmc}, LLBMC~\cite{llbmc2012}, F-Soft~\cite{f-soft}, Magic~\cite{magic}, or Saturn~\cite{saturn}.
+
+Beyond symbolic execution, there is substantial work done in the field of model checking and formal methods in general, which goes beyond the scope of this thesis.  We refer the interested reader to survey papers that cover the topic in more breadth~\cite{jhala2009software, woodcock2009formal}.
+
+Black-box (random) fuzzing.
+
+Unsound approaches.
+
+Cooperative symbolic execution (where the program uses special APIs of the engine).
+
+OVerify.
+
+%% \paragraph{Others}
+
+%% Other older test input generation tools: \cite{genptrinputs}.
+
+%% Korat~\cite{boyapati:korat}. Symstra~\cite{xie:symstra}.
 
 
 %%% Local Variables: 
