@@ -171,11 +171,27 @@ Both tools found exploitable vulnerabilities in Linux and Windows programs.
 %% Uses a ``meta-strategy'' that groups branches in equivalence classes, and then selects the lest chosen class.  Different sets of equivalence classes are chosen uniformly.
 %% Constructing objects: run symbolically the object constructor.
 
-Symbolic execution is also used for languages compiled to a virtual machine environment, such as Java or .NET~\cite{jpf-symbex,tillmann-pex}.  These languages pose additional challenges for symbolic execution, as they are object-oriented, so program inputs could also be structured data in addition to scalar values.
+Beyond low-level system software, a significant amount of software is written in higher-level languages, offering features such as garbage collection, reflection, and rich built-in data structures.
+
+Some of these languages, such as Java and C\#, are compiled to a lower-level bytecode representation and executed in a virtual machine.
 %
-The Java PathFinder~\cite{visser-jpf,jpf-symbex,jpf-testgen} employs generalized symbolic execution~\cite{generalized-symbex} to handle symbolic objects.  The symbolic objects remain uninitialized until they are referenced in the code and lazily unfold in response to member access statements.
+The bytecode format is standardized and well-documented, which facilitates the development of dedicated symbolic execution engines for their runtimes.
+%
+For example, the Java PathFinder project~\cite{visser-jpf,jpf-symbex,jpf-testgen} provides a model checker and symbolic execution framework for Java bytecode.
+%
+Similarly, Pex~\cite{tillmann-pex} is a symbolic execution engine for .NET that has recently been distributed as part of Visual Studio.
+
+The high-level environments pose additional challenges for symbolic execution related to the complexity of their data and execution model.  For example, symbolic program inputs can now be both scalar and object-based.
+%
+Java PathFinder handles symbolic object inputs using a technique called generalized symbolic execution~\cite{generalized-symbex}, where symbolic objects are lazily initialized in response to the member accessess encountered during program execution.
 
 \subsection{Dynamic Interpreted Languages}
+
+A significantly more challenging class of high-level languages are those that are never compiled, but source-interpreted, such as Python, JavaScript, Ruby, or Lua.
+%
+These languages are a difficult target for symbolic execution because they have complex semantics, they are under-specified, and the language features evolve rapidly from one version to the other.
+%
+This resulted in existing symbolic execution engines targeting only domain-specific subsets of these languages.
 
 To our knowledge, no symbolic execution engine for Lua exists.  For Python, we found three research tools, which we compare \chef to.  (1) \cutiepy~\cite{cutie-py} is a concolic engine based on a formal model of the Python language.  It uses a custom CPython interpreter to drive a concrete execution, along with updating the symbolic state according to model semantics. (2) NICE-PySE~\cite{nice} is part of the NICE framework for testing OpenFlow applications.  We will refer to it as \nicese, for brevity. It wraps supported data types into symbolic counterparts that carry the symbolic store, and uses Python's tracing mechanisms to implement the interpretation loop fully in Python.  (3) The symbolic execution engine of the scalability testing tool Commuter~\cite{commuter} is also entirely built in Python.  Its primary purpose is the construction of models that explicitly use an API of symbolic data types.
 
