@@ -5,17 +5,17 @@ There is substantial related work in the area of symbolic execution and formal m
 
 \section{Overview of Automated Testing Using Symbolic Execution}
 
-We review the most important symbolic execution-based tools.  The story is chronological, illustrating the advancements brought by each tool.
+%% We review the most important symbolic execution-based tools.  The story is chronological, illustrating the advancements brought by each tool.
 
 %% King~\cite{king:symbolic:2} described symbolic execution as a practical middle ground between testing a program with a set of concrete inputs and using formal correctness proofs.  The paper introduced EFFIGY, an interactive symbolic execution tool where developers manually step through paths and switch states in the execution tree.  However, the tool could only handle small programs written in a custom language supporting basic integer operations, and had limited performance, due to limited solver capabilities.
 
-Symbolic execution was introduced almost four decades ago as a test case generation technique~\cite{king:symbolic:2, boyer:symbolic}.  The first tools that used symbolic execution worked on domain-specific languages, supported basic numeric operations, and had an interactive interface.  As a resource-intensive task, symbolic execution was severely limited by the lack of efficient decision procedures for the data types used in programs and slow hardware performance.
+Symbolic execution was introduced almost four decades ago as a test case generation technique~\cite{king:symbolic:2, boyer:symbolic}.  The first tools worked on domain-specific languages, supported basic numeric operations, and were mostly used for interactive debugging.  The effectiveness of the technique on more complex programs was limited by the lack of efficient and expressive constraint solvers and slow hardware.
 
 %% It was only in the past decade that symbolic execution has become a feasible approach to test generation for real-world software, with the advent of modern constraint solvers, such as Chaff~\cite{chaff}, MiniSAT~\cite{minisat}, STP~\cite{stp}, Z3~\cite{Z3}, or CVC~\cite{cvc}, and the exponential increase in hardware performance.  Our tools build on this foundation, too---both Cloud9 and Chef resort to the STP solver for all symbolic queries, such as branch feasibility checks.
 
-The situation changed in the past decade, with the exponential increase in hardware performance, faster off-the-shelf constraint solvers~\cite{chaff,minisat,stp,Z3,cvc}, and modern decision procedures.
-%
-This enabled symbolic execution to target commonly used software written in languages such as C or Java, where it found bugs and generated high-coverage test suites.
+The exponential increase in hardware performance and the availability of fast off-the-shelf constraint solvers~\cite{chaff,minisat,stp,Z3,cvc} amplified the research in symbolic execution.  Over the past decade, the new crop of symbolic execution engines generated test suites and found bugs on real-world software ranging from small system utilities to large application suites.
+
+In this section, we highlight the most important tools and position \cnine and \chef with respect to them.
 
 \subsection{System-level Software}
 
