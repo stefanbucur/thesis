@@ -187,11 +187,16 @@ Java PathFinder handles symbolic object inputs using a technique called generali
 
 \subsection{Dynamic Interpreted Languages}
 
-A significantly more challenging class of high-level languages are those that are never compiled, but source-interpreted, such as Python, JavaScript, Ruby, or Lua.
+The high-level languages that are never compiled, but source-interpreted, such as Python, JavaScript, Ruby, or Lua, are significantly more challenging for symbolic execution.
 %
-These languages are a difficult target for symbolic execution because they have complex semantics, they are under-specified, and the language features evolve rapidly from one version to the other.
+These languages have complex semantics that are under-specified, their features evolve rapidly from one version to another, and they rely on large built-in support libraries.
 %
-This resulted in existing symbolic execution engines targeting only domain-specific subsets of these languages.
+Building and maintaining a symbolic execution engine for these languages is a significant engineering effort.  As a result, the existing engines target only domain-specific subsets of their languages.
+
+Three ways to address the problem: concolic execution of the interpreter, cooperative symbolic execution, and reflection with interpretation, dynamic instrumentation.
+
+Despite the limitations, existing engines showed promising results for bug finding, especially in the realm of web applications.
+
 
 To our knowledge, no symbolic execution engine for Lua exists.  For Python, we found three research tools, which we compare \chef to.  (1) \cutiepy~\cite{cutie-py} is a concolic engine based on a formal model of the Python language.  It uses a custom CPython interpreter to drive a concrete execution, along with updating the symbolic state according to model semantics. (2) NICE-PySE~\cite{nice} is part of the NICE framework for testing OpenFlow applications.  We will refer to it as \nicese, for brevity. It wraps supported data types into symbolic counterparts that carry the symbolic store, and uses Python's tracing mechanisms to implement the interpretation loop fully in Python.  (3) The symbolic execution engine of the scalability testing tool Commuter~\cite{commuter} is also entirely built in Python.  Its primary purpose is the construction of models that explicitly use an API of symbolic data types.
 
