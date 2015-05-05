@@ -3,7 +3,7 @@ There is substantial related work in the area of symbolic execution and formal m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Overview of Automated Testing Using Symbolic Execution}
+\section{Symbolic Execution for Automated Testing of Commodity Software}
 
 %% We review the most important symbolic execution-based tools.  The story is chronological, illustrating the advancements brought by each tool.
 
@@ -154,7 +154,7 @@ Both tools found exploitable vulnerabilities in Linux and Windows programs.
 
 %% Handling real-world targets: C, C++ (KLOVER), parallel systems (explain the two ways to run these systems symbolically, depending on what bugs we're looking for).
 
-\subsection{Virtual Machine-based Languages}
+\subsection{Virtual Machine-based Languages: Java and C\#}
 
 %% \paragraph{Java Path Finder}
 %% \cite{jpf-symbex,jpf-testgen,generalized-symbex}.
@@ -211,7 +211,7 @@ Apollo~\cite{artzi-apollo} is another engine targeting PHP code to detect runtim
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Program Environment Support}
+\section{Approaches to the Environment Problem}
 
 We now discuss in more detail the environment problem in symbolic execution and how existing work approaches it.
 
@@ -219,11 +219,17 @@ In order to efficiently achieve the testing goals for the target program, symbol
 %
 The existing approaches fall into three categories: concretizing the calls into the environment, bundling the environment with the rest of the program, and abstracting (modeling) the environment.
 
+\subsection{Over-approximation (Concretization)}
+
 Concretizing calls into the environment can be easily done in concolic mode, by simply dropping the symbolic operations while the execution carries outside the program [cite CUTE, DART, SAGE].  In pure symbolic mode, an alternative is to call the environment of the host [cite KLEE].  The disadvantage is that different execution paths can interfere for stateful calls (e.g., resource operations).
 
-The opposite approach is to treat the program + environment as one large target.  Full-VM symbolic execution engines take this approach.  The problem is that path explosion in the entire system reduces the focus on the target program.  S2E introduced consistency models as a principled path pruning outside the module of interest.
+\subsection{Abstraction (Modeling)}
 
 The last approach is to replace a concrete interface implementation with a simplified one, as either part of the symbolic execution engine (e.g., symbolic hardware in S2E), or as guest code running at the same level as the target program (e.g., uClibc models in KLEE).  The simpler the model, the less path explosion, but may introduce unsoundness or missed bugs.
+
+\subsection{Inlining (Whole-system Analysis)}
+
+The opposite approach is to treat the program + environment as one large target.  Full-VM symbolic execution engines take this approach.  The problem is that path explosion in the entire system reduces the focus on the target program.  S2E introduced consistency models as a principled path pruning outside the module of interest.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
