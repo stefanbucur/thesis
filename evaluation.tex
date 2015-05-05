@@ -94,6 +94,43 @@ We optimized the Lua interpreter for symbolic execution by eliminating string in
 
 \subsection{Running Low-level Systems with Cloud9}
 
+For all our experiments, we used a heterogeneous cluster environment, with worker CPU frequencies between 2.3--2.6 GHz and with 4--6 GB of RAM available per core.
+
+On each worker, the underlying \klee engine used the best searchers from \cite{klee}, namely an interleaving of random-path and coverage-optimized strategies. At each step, the engine alternately selects one of these heuristics to pick the next state to explore. Random-path traverses the execution tree starting from the root and randomly picks the next descendant node, until a \candidate state is reached. The coverage-optimized strategy weighs the states according to an estimated distance to an uncovered line of code, and then randomly selects the next state according to these weights.
+
+To quantify coverage, we report both line coverage and path coverage numbers. Line coverage measures the fraction of program statements executed during a test run, while path coverage reports how many execution paths were explored during a test. Path coverage is the more relevant metric when comparing thoroughness of testing tools.  Nevertheless, we also evaluate properties related to line coverage, since this is still a de facto standard in software testing practice. Intuitively, and confirmed experimentally, path coverage in \cnine scales linearly with the number of workers.
+
+Table~\ref{table:tested} shows a selection of the systems we tested with \cnine, covering several types of software.  We confirmed that each system can be tested properly under our POSIX model. In the rest of this section, we focus our in-depth evaluation on several networked servers and tools, as they are frequently used in settings where reliability matters.
+
+\begin{table}[h!]
+\addtolength{\tabcolsep}{-2pt}
+\centering
+\small
+\begin{tabular}{| l | r@{.}p{1pt} | l |}
+\hline
+\textbf{~~~~~~~System} & \multicolumn{2}{|l|}{\textbf{Size (\kloc)}} & \textbf{~~~~Type of Software} \\
+\hline
+Apache httpd 2.2.16 & ~~~~~~~226 & 4 & \multirow{3}{*}{Web servers}\\
+Lighttpd 1.4.28         &                 39 & 5 & \\
+Ghttpd 1.4.4             &                   0 & 6  & \\ \hline
+Memcached 1.4.5     &                   8 & 3 &  Distributed object cache \\\hline
+Python 2.6.5             &               388 & 3 & Language interpreter \\ \hline
+Curl 7.21.1               &                  65 & 9 & \multirow{2}{*}{Network utilities} \\ 
+Rsync 3.0.7               &                  35 & 6 & \\\hline 
+Pbzip 2.1.1               &                  3 & 6 & Compression utility \\ \hline
+Libevent 1.4.14         &                  10 & 2 & Event notification library \\ \hline
+Coreutils 6.10          &                  72 & 1 & Suite of system utilities \\ \hline
+Bandicoot 1.0           &                   6 & 4 & Lightweight DBMS \\ \hline
+\end{tabular}
+\caption{Representative selection of testing targets that run on \cnine.  Size was measured using the \codebit{sloccount} utility.}
+\label{table:tested}
+\end{table}
+
+Due to its comprehensive POSIX model, \cnine can test many kinds of servers.  One example is lighttpd, a web server used by numerous high-profile web sites, such as YouTube, Wikimedia, Meebo, and SourceForge.  For lighttpd, \cnine proved that a certain bug fix was incorrect, and the bug could still manifest even after applying the patch (\S\ref{sec:lighttpd}). \cnine also found a bug in curl, an Internet transfer application that is part of most Linux distributions and other operating systems (\S\ref{sec:curl}).  \cnine also found a hang bug in the UDP handling code of memcached, a distributed memory object cache system used by many Internet services, such as Flickr, Craigslist, Twitter, and Livejournal (\S\ref{sec:memcached}).
+
+In addition to the testing targets mentioned above, we also tested a benchmark consisting of a multi-threaded and multi-process producer-consumer simulation. The benchmark exercises the entire functionality of the POSIX model: threads, synchronization, processes, and networking. 
+
+We conclude that \cnine is practical and capable of testing a wide range of real-world software systems.
 
 
 \subsection{Targeting Python and Lua Packages with Chef}
@@ -174,13 +211,304 @@ Since our prototype only supports strings and integers as symbolic program input
 
 \section{Bug Finding Effectiveness}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Cloud9 Effectiveness as a Testing Platform}
 
-\section{Scalability Analysis}
+In this section we present several case studies that illustrate how \cnine can explore and find new bugs, confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
 
-Discuss scalability of the Cloud9 parallelization algorithm.
+%--------------------------------------------------
+\subsubsection{Case Study \#1: Curl}
+\label{sec:curl}
 
-Discuss overhead of Chef compared to hand-written engines.
+Curl is a popular data transfer tool for multiple network protocols, including HTTP and FTP.  When testing it, \cnine\ found a new bug which causes Curl to crash when given a URL regular expression of the form ``\codebit{http://site.\{one,\linebreak two,three\}.com\{}''. \cnine exposed a general problem in Curl's handling of the case when braces used for regular expression globbing are not matched properly.  The bug was confirmed and fixed within 24 hours by the developers. 
+
+This problem had not been noticed before because the globbing functionality in Curl was shadowed by the same functionality in command-line interpreters (e.g., Bash).  This case study illustrates a situation that occurs often in practice: when a piece of software is used in a way that has not been tried before, it is likely to fail due to latent bugs.
+
+\subsubsection{Case Study \#2: Memcached}
+\label{sec:memcached}
+
+Memcached is a distributed memory object cache system, mainly used to speed up web application access to persistent
+data, typically residing in a database. % Memcached is deployed at many large sites like Facebook, Twitter, and YouTube. 
+
+Memcached comes with an extensive test suite comprised of C and Perl code. Running it completely takes about 1 minute; it runs 6,472 different test cases  and explores $83.66\%$ of the code. While this is considered thorough by today's standards, two easy \cnine\ test cases further increased code coverage. Table~\ref{table:memcached} contains a summary of our results, presented in more details in the following paragraphs.
+
+
+\paragraph{Symbolic Packets}
+
+The memcached server accepts commands over the network. Based on memcached's C test suite, we wrote a test case that sends memcached a generic, symbolic binary command (i.e., command content is fully symbolic), followed by a second symbolic command. This test captures all operations that entail a pair of commands.
+
+A 24-worker \cnine\ explored in less than 1 hour all 74,503 paths associated with this sequence of two symbolic packets, covering an additional 1.13\% of the  code relative to the original test suite.  What we found most encouraging in this result is that such exhaustive tests constitute first steps toward using symbolic tests to \emph{prove} properties of real-world programs, not just to look for bugs.  Symbolic tests may provide an alternative to complex proof mechanisms that is more intuitive for developers and thus more practical.
+
+\paragraph{Symbolic Fault Injection}
+
+We also tested memcached with fault injection enabled, whereby we injected all feasible failures in memcached's calls to the C Standard Library.  After 10 minutes of testing, a 24-worker \cnine\ explored 312,465 paths, adding $1.28\%$ over the base test suite.  The fact that {\em line} coverage increased by so little, despite having covered almost $50\times$ more paths, illustrates the weakness of line coverage as a metric for test quality---high line coverage should offer no high confidence in the tested code's quality.
+
+For the fault injection experiment, we used a special strategy that sorts the execution states according to the number of faults recorded along their paths, and favors the states with fewer fault injection points. This led to a uniform injection of faults: we first injected one fault in every possible fault injection point along the original C test suite path, then injected pairs of faults, and so on.  We believe this is a practical approach to using fault injection as part of regular testing.
+
+\begin{table}
+\small
+\centering
+\addtolength{\tabcolsep}{-1.3pt}
+\begin{tabular}{| p{2.3cm} | r | c | c | }
+\hline
+{\bf Testing Method}   & {\bf Paths}~~       & {\bf Isolated}             & {\bf Cumulated}          \\ 
+                                & {\bf  Covered}  & {\bf Coverage$^{*}$} & {\bf Coverage$^{**}$}      \\
+\hline
+Entire test suite               & 6,472         & $83.67\%$        &---                   \\
+\hline
+\raggedright Binary protocol test suite      & 27            & $46.79\%$        & $84.33\%$ ($+0.67\%$) \\
+\hline
+Symbolic packets                & 74,503        & $35.99\%$        & $84.79\%$ ($+1.13\%$) \\
+\hline
+\raggedright Test suite + fault~injection    & 312,465       & $47.82\%$        & $84.94\%$ ($+1.28\%$) \\
+\hline
+\end{tabular}
+\caption{Path and code coverage increase obtained by each symbolic testing technique on memcached. We show total coverage obtained with each testing method (*), as well as total coverage obtained by augmenting the original test suite with the indicated method  (**); in parentheses, we show the increase over the entire test suite's coverage.}
+\label{table:memcached}
+% \vspace{-0.3cm}
+\end{table}
+
+\paragraph{Hang Detection}
+
+We tested memcached with symbolic UDP packets, and \cnine discovered a hang condition in the packet parsing code: 
+when a sequence of packet fragments of a certain size arrive at the server, memcached enters an infinite loop, which prevents it from serving any further UDP connections. This bug can seriously hurt the availability of infrastructures using memcached.
+
+We discovered the bug by limiting the maximum number of instructions executed per path to $5 \times 10^6$.  The paths without the bug terminated after executing $\approximately 3\times 10^5$ instructions; the other paths that hit the maximum pointed us to the bug.
+
+%--------------------------------------------------
+\subsubsection{Case Study \#3: Lighttpd}
+\label{sec:lighttpd}
+
+
+The lighttpd web server is specifically engineered for high request throughput, and it is quite sensitive to the rate at which new data is read from a socket.  Alas, the POSIX specification offers no guarantee on the number of bytes that can be read from a file descriptor at a time.  lighttpd 1.4.12 has a bug in the command-processing code that causes the server to crash (and connected clients to hang indefinitely) depending on how the incoming stream of requests is fragmented. 
+
+We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in \S\ref{sec:platform}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
+
+This case study shows that \cnine can find bugs caused by specific interactions with the environment which are hard to test with a concrete test suite. It also shows how \cnine can be used to write effective regression test suites---had a stream-fragmentation symbolic test been run after the fix, the lighttpd developers would have promptly discovered the incompleteness of their fix.
+
+\begin{table}
+\small
+\centering
+\begin{tabular}{| p{3.8cm} | p{1.65cm} | p{1.65cm} |}
+\hline
+\bf Fragmentation pattern & \bf ver. 1.4.12 & \bf ver. 1.4.13 \\
+\bf (data sizes in bytes) & \bf (pre-patch)     & \bf (post-patch)\\
+\hline
+$1 \times 28$ 			& 		OK		& OK \\
+\hline
+$1 \times 26 + 1 \times 2$  & crash + hang 	& OK \\
+\hline
+$2+5+1+5+2 \times 1 + 3 \times 2 + 5 + 2 \times 1 $	& crash + hang 	& crash + hang \\
+\hline
+\end{tabular}
+\caption{The behavior of different versions of lighttpd to three ways of fragmenting the HTTP request "GET /index.html HTTP/1.0\textsc{Cr}\textsc{Lf}\textsc{Cr}\textsc{Lf}" (string length 28).}
+\label{table:lighttpd}
+\end{table}
+
+\subsubsection{Case Study \#4: Bandicoot DBMS}
+\label{sec:bandicoot}
+
+Bandicoot is a lightweight DBMS that can be accessed over an HTTP interface.  We exhaustively explored all paths handling the GET commands and found a bug in which Bandicoot reads from outside its allocated memory.  The particular test we ran fortuitously did not result in a crash, as Bandicoot ended up reading from the libc memory allocator's metadata preceding the allocated block of memory. However, besides the read data being wrong, this bug could cause a crash depending on where the memory block was allocated.
+
+To discover and diagnose this bug without \cnine is difficult. First, a concrete test case has little chance of triggering the bug.  Second, searching for the bug with a sequential symbolic execution tool seems impractical: the exhaustive exploration took 9 hours with a 4-worker \cnine (and less than 1 hour with a 24-worker cluster). 
+
+\subsubsection{Discussion}
+
+\cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions. We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).  Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model allows \cnine to reach more paths and explore deeper portions of the tested program's code---this exposes additional potentially buggy situations. \cnine also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
+
+\subsection{Chef's Effectiveness for Automated Testing}
+
+We evaluate the effectiveness of the generated symbolic execution engines for bug detection and exception exploration.
+
+\paragraph{Bug Detection}
+
+The specifications we used for our experiments are application-agnostic and only check for per-path termination within a given time bound and for the absence of unrecoverable crashes.  The first specification checks whether a call into the runtime returns within 60 seconds.  In this way, we discovered a bug in the Lua JSON package that causes the parser to hang in an infinite loop: if the JSON string contains the \codebit{/*} or \codebit{//} strings marking the start of a comment but no matching \codebit{*/} or line terminator, the parser reaches the end of the string and continues spinning waiting for another token.
+%
+This bug is interesting for two reasons: First, comments are not part of the JSON standard, and the parser accepts them only for convenience, so this is a clear case of an interpreter-specific bug.  Second, JSON encodings are normally automatically generated and transmitted over the network, so they are unlikely to contain comments; traditional testing is thus likely to miss this problem. However, an attacker could launch a denial of service attack by sending a JSON object with a malformed comment.
+
+The second implicit specification checks that a program never terminates non-gracefully, i.e., the interpreter implementation or a native extension crashes without giving the program a chance to recover through the language exception mechanisms.  In our experiments, our test cases did not expose any such behavior.
+
+\paragraph{Exception Exploration}
+
+This scenario focuses on finding undocumented exceptions in Python code.
+%
+Being memory-safe languages, crashes in Python and Lua code tend to be due to \emph{unhandled exceptions} rather than bad explicit pointers.  When such exceptions are not caught by the program, they propagate to the top of the stack and cause the program to be terminated prematurely. 
+%
+In dynamic languages, it is difficult to determine all the possible exceptions that a function can throw to the callee, because there is no language-enforced type-based API contract.  Users of an API can only rely on the documentation or an inspection of the implementation.  Therefore, undocumented exceptions are unlikely to be checked for in \codebit{try}-\codebit{except} constructs and can erroneously propagate further.
+%
+They can then hurt productivity (e.g., a script that crashes just as it was about to complete a multi-TB backup job) or disrupt service (e.g., result in an HTTP 500 Internal Server Error).
+
+We looked at all the Python exceptions triggered by the test cases generated using \chef and classified them into \emph{documented} and \emph{undocumented}.  The documented exceptions are either exceptions explicitly mentioned in the package documentation or common Python exceptions that are part of the standard library (e.g., \codebit{KeyError}, \codebit{ValueError}, \codebit{TypeError}).  Undocumented exceptions are all the rest.
+
+The sixth column in Table~\ref{tab:targets} summarizes our findings.  We found four undocumented exceptions in \codebit{xlrd}, the largest package.  These exceptions occur when parsing a Microsoft Excel file, and they are \codebit{BadZipfile}, \codebit{IndexError}, \codebit{error}, and \codebit{AssertionError}.  These errors occur inside the inner components of the Excel parser, and should have either been documented or, preferably, been caught by the parser and re-raised as the user-facing \codebit{XLRDError}.
+
+\subsection{Impact of \cupa Heuristics and Interpreter Optimizations}
+\label{sec:sub:perf-cupa}
+
+We now analyze the impact of the \cupa heuristics (described in \S\ref{sec:cupa}) and the interpreter optimizations (described in \S\ref{sec:optimzeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
+
+We compare the results obtained in 4 different configurations: (1) the baseline, consisting of performing random state selection while executing the unmodified interpreter, and then either use (2) the path- or coverage-optimized CUPA only, (3) the optimized interpreter only, or (4) both CUPA and the optimized interpreter.  This way we measure the individual contribution of each technique, as well as their aggregate behavior.
+
+\paragraph{Test Case Generation}
+
+Figure~\ref{fig:tc-improv} compares the number of test cases generated with each of the 4 \chef configurations, using the path-optimized CUPA~(\S\ref{sec:cupa-paths}).  We only count the \textit{relevant} high-level test cases, that is, each test case exercises a unique high-level path in the target Python program.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.27in]{figures/evaluation/bkdown-path-python} \\
+  \includegraphics[width=3.27in]{figures/evaluation/bkdown-path-lua}
+  \caption{The number of Python and Lua test cases generated by
+    coverage- and path-optimized \cupa relative to random state
+    selection (logarithmic scale).}
+  \label{fig:tc-improv}
+\end{figure}
+
+For all but one of the 11 packages (6 Python plus 5 Lua), the aggregate CUPA + interpreter optimizations performs the best, often by a significant margin over the baseline.  This validates the design premises behind our techniques.
+
+The CUPA strategy and the interpreter optimizations may interact non-linearly.  In two cases (Python's \codebit{xlrd} and \codebit{simplejson}), the aggregate significantly outperforms either individual technique. These are cases where the result is better than the sum of its parts.  In the other cases, the result is roughly the sum of each part, although the contribution of each part differs among targets.  This is visually depicted on the log-scale graph: for each cluster, the heights of the middle bars measured from level $1 \times$ roughly add up to the height of the aggregate (left) bar.
+
+In one case (Lua's \codebit{JSON}), the aggregate performs worse on average than using the interpreter optimizations alone.  Moreover, the performance of each configuration is less predictable, as shown by the large error bars.  This behavior is due to the generated tests that cause the interpreter to hang, as explained in \S\ref{sec:sub:effectiveness}.  To detect hangs, the test runs for 60 seconds before switching to another test case.  This acts as a ``penalty'' for the configurations that find more paths leading to the hang and also skews the distribution of path execution times, since the hanging paths take significantly longer than the normal (terminating) paths.
+
+\paragraph{Line Coverage}
+
+Figure~\ref{fig:coverage-improv} shows the line coverage achieved by each configuration, using CUPA optimized for line coverage~(\S\ref{sec:cupa-coverage}).  In 6 out of 11 packages, the coverage improvement is noticeable, and for Python's \codebit{simplejson} and \codebit{xlrd}, the improvements are significant ($80\%$ and $40\%$).
+
+Note that these coverage improvements are obtained using basic symbolic tests that do not make assumptions about the input format.  We believe that tailoring the symbolic tests to the specifics of each package could improve these results significantly.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{figures/evaluation/bkdown-stmtcov-python} \\
+  \includegraphics[width=3.2in]{figures/evaluation/bkdown-stmtcov-lua}
+  \caption{Line coverage for the experiments of Figure~\ref{fig:tc-improv}.}
+  \label{fig:coverage-improv}
+\end{figure}
+
+\subsection{Breaking Down Interpreter Optimizations}
+\label{sec:sub:optimizations}
+
+We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in \S\ref{sec:optimzeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
+
+Figure~\ref{fig:optimizations} shows the results for Python.  The data is normalized such that the number of high-level paths for each target reaches $100\%$.  For 3 out of 6 packages (\codebit{simplejson}, \codebit{argparse}, and \codebit{HTMLParser}), \chef's performance monotonically increases as more optimizations are introduced.  For \codebit{unicodecsv} and \codebit{ConfigParser}, the optimizations do not bring any benefits or even hurt slightly.  
+
+However, in the case of \codebit{xlrd}, hash neutralization and fast path elimination seem to actually \emph{hurt} symbolic execution, since the best performance is attained when only symbolic pointer avoidance is in effect.  We explain this behavior by the fact that the different optimization levels cause the search strategy to explore different behaviors of the target package.  \codebit{xlrd} is by far the largest Python package in our evaluation (7.2KLOC vs. the second largest of 1.4KLOC) and includes a diverse set of behaviors, each with its own performance properties.
+
+This result suggests that, for large packages, a \emph{portfolio} of interpreter builds with different optimizations enabled would help further increase the path coverage.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3.2in]{figures/evaluation/optimizations-bars-python}
+  \caption{The contribution of interpreter optimizations for Python as number of high-level paths explored.  Number of paths is relative to full optimizations ($100\%$) for each package.}
+  \label{fig:optimizations}
+\end{figure}
+
+
+\subsection{Comparison Against Hand-Made Engines}
+\label{sec:sub:comparison}
+
+We now evaluate the trade-offs in using a symbolic execution engine generated with \chef over building one ``by hand''.
+
+\paragraph{Hand-Made Engines}
+
+To our knowledge, no symbolic execution engine for Lua exists.  For Python, we found three research tools, which we compare \chef to.  (1) \cutiepy~\cite{cutie-py} is a concolic engine based on a formal model of the Python language.  It uses a custom CPython interpreter to drive a concrete execution, along with updating the symbolic state according to model semantics. (2) NICE-PySE~\cite{nice} is part of the NICE framework for testing OpenFlow applications.  We will refer to it as \nicese, for brevity. It wraps supported data types into symbolic counterparts that carry the symbolic store, and uses Python's tracing mechanisms to implement the interpretation loop fully in Python.  (3) The symbolic execution engine of the scalability testing tool Commuter~\cite{commuter} is also entirely built in Python.  Its primary purpose is the construction of models that explicitly use an API of symbolic data types.
+
+We perform our comparison along three aspects: language features supported, implementation faithfulness, and performance.  The last two aspects are evaluated only against \nicese, which, besides being open source, is most compatible with our symbolic data representation (based on STP~\cite{stp}).
+
+\paragraph{Language Feature Support}
+
+Table~\ref{tab:langfeats} summarizes the language feature support for \chef, \nicese, \cutiepy, and \commuterse, as implemented at the moment of writing.  We relied on information from the respective papers in all cases and additionally on the implementation in the cases of \nicese and \commuterse, which are available as open source.
+
+We distinguish engines designed to support arbitrary Python code (the ``Vanilla'' label) and those where the symbolic data types are an API used by model code (the ``Model'' label).  Engines in the ``Model'' category essentially offer a ``symbolic domain-specific language'' on top of the interpreted language.  \chef, \cutiepy, and \nicese are ``vanilla'' engines, since their testing targets do not have to be aware that they are being symbolically executed.  \commuterse is a model-based engine, since its testing targets are bound to the symbolic API offered by the engine.
+
+We grouped the supported language features into program state representation (the language data model and types) and manipulation (the operations on data).  We divide data types into values (integers, strings and floating-point), collections (lists and dictionaries), and user-defined classes.  The operations consist of data manipulation, basic control flow (e.g., branches, method calls), advanced control flow (e.g., exception handling, generators), and native method invocations (they are atomic operations at the high level).  We also include in the comparison the ability to execute unsupported operations in concrete-only mode.
+
+
+% Some names unlikely to clash with other definitions...
+\newcommand{\compsupp}{\ensuremath{\CIRCLE}}
+\newcommand{\partsupp}{\ensuremath{\LEFTcircle}}
+\newcommand{\unsupp}{\ensuremath{\Circle}}
+
+\begin{table}[tb]
+\centering
+\small
+\begin{tabular}{@{\hspace*{2pt}}l@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}}}
+                    & \textbf{\chef}            & \textbf{\cutiepy} & \textbf{\nicese} & \textbf{\commuterse} \\
+\hline
+\rule{0pt}{12pt}\textbf{Engine type}& Vanilla   & Vanilla    & Vanilla   & Model       \\
+\rule{0pt}{12pt}\textbf{Data types} &           &            &           &             \\
+Integers            & $\compsupp^{\hphantom{*}}$  & \compsupp  & \compsupp  & \compsupp  \\
+Strings             & $\compsupp^{\hphantom{*}}$  & \unsupp    & \unsupp    & \partsupp  \\
+Floating point      & $\unsupp^{\hphantom{*}}$    & \unsupp    & \unsupp    & \unsupp    \\
+Lists and maps      & $\compsupp^{*}$           & \partsupp   & \unsupp    & \compsupp  \\
+User-defined classes& $\compsupp^{*}$           & \unsupp     & \partsupp   & \partsupp \\
+\rule{0pt}{12pt}\textbf{Operations}   &                          &            &            &             \\
+Data manipulation     & $\compsupp^{\hphantom{*}}$ & \partsupp  &  \partsupp & \partsupp   \\
+Basic control flow    & $\compsupp^{\hphantom{*}}$ & \compsupp  &  \partsupp & \compsupp   \\
+Advanced control flow & $\compsupp^{\hphantom{*}}$ & \compsupp  &  \unsupp   & \compsupp   \\
+Native methods        & $\compsupp^{\hphantom{*}}$ & \partsupp  &  \unsupp   & \unsupp     \\
+\end{tabular}
+\rule{0pt}{12pt}\compsupp Complete \hspace{12pt} \partsupp Partial \hspace{12pt} \unsupp Not supported
+\caption{Language feature support comparison for \chef and dedicated Python symbolic execution engines.  %% A full bullet means complete concrete and symbolic support for the feature available in the implementation.  A half-full bullet means a partial implementation, while an empty bullet means no support for the feature.
+  Complete support with (*) refers to the internal program data flow and not to the initial symbolic variables.}
+\label{tab:langfeats}
+\end{table}
+
+In a nutshell, \cutiepy is able to complete correctly any execution in concrete mode by using the interpreter implementation directly.   However, the symbolic semantics for each data type and native function must be explicitly provided by the developer, which makes \cutiepy impractical to use with rich Python applications.  \nicese suffers from the additional limitation that it has to support each bytecode instruction explicitly, which makes the tool impossible to use beyond its target applications.  Finally, \commuterse provides a rich set of symbolic data types, including lists and maps, by taking advantage of Z3's extended support for arrays~\cite{general-arrays}.  However, it supports only Python programs explicitly written against its API and does not handle native functions.
+
+%% \cutiepy supports the semantics of integers, maps, and lists.  Other data types are supported as uninterpreted types, whose objects are opaque except for their identity.  Other data structures may be added to the model, expressed as uninterpreted functions and arrays.  By using the interpreter implementation to drive the concrete execution, \cutiepy is able to complete correctly any execution in concrete mode, while the symbolic evaluation and branching is limited to what the model offers.
+
+%% \nicese supports only integers and Ethernet frame headers (encapsulated in a class) as symbolic data types, since they are required by the targeted OpenFlow switch applications.  Similarly, the supported operations include those encountered in the target applications.  This leaves out the support for advanced control flow and native methods (other than the built-in calls required by the supported data types).  By using its own (incomplete) interpretation loop, \nicese is not able to fall back on concretizing unsupported operations and so terminates the execution with an error in such cases.
+
+%% \commuterse takes advantage of Z3's extended support for arrays~\cite{general-arrays} to efficiently model lists and maps, in addition to integers.  The support for strings is partially provided by uninterpreted types, which can only reason about object equality.  Moreover, the uninterpreted types can be used as keys in symbolic maps, which allows data structures such as file directories used in the POSIX model.
+
+The engine generated by \chef offers complete symbolic support for almost all language features.  Floating point operations are supported only concretely, due to lack of support in STP, the constraint solver used by S2E.  For the same reasons, the symbolic program inputs can only be integers and strings.  However, all data structures are supported during the execution.
+
+Each half or empty bullet in Table~\ref{tab:langfeats} implies that significant engineering effort would be required to complete a feature.  While useful for their evaluation targets, \nicese and \cutiepy are unable to handle a complex software package that makes use of Python's many language features.
+
+
+\paragraph{Use as Reference Implementation}
+
+When the need for performance justifies investing in a dedicated engine implementation, an engine created from \chef can serve as a reference implementation during development.  One can find bugs in a symbolic execution engine by comparing its test cases with those generated by \chef.  The process can be automated by tracking the test cases generated by the target engine along the high level paths generated by \chef to determine duplicates and missed feasible paths.
+
+%% To automate the engine comparison, we augmented \chef with test case ``seeding''. The tests generated with the target engine (\nicese) are fed to \chef as ``seeds'',  which are tracked along the high-level paths generated by \chef.  A seed test follows a high-level path if the test input matches the path constraint.  If the target engine is correct, each \chef high-level path should track exactly one seed.  More seeds per path indicate test case duplication, while zero seeds flags a missed path.
+
+In this mode, we found a bug in the \nicese implementation, which was causing it to generate redundant test cases and miss feasible paths.  The bug was in the way \nicese handled \codebit{if not <expr>} statements in Python, causing the engine to select for exploration the wrong branch alternate and end up along an old path.  We are assisting the \nicese developers in identifying and fixing any other such bugs.
+
+In conclusion, the experiment provides evidence that a system combining an established low-level symbolic execution engine (e.g., S2E) with a reference interpreter implementation is more robust than a symbolic execution engine built from scratch.
+
+
+%% \johannes{This entire section is strange, because we evaluate this only for NICE, whereas we claimed initially that we would evaluate correctness against all engines}
+
+
+\paragraph{Performance}
+
+The downside of \chef is that the symbolic execution engines produced are slower than their hand-written equivalents.  We quantify this drawback by applying \chef to the experimental setup of \nicese, consisting of an OpenFlow switch controller program that implements a MAC learning algorithm.  The controller receives as input a sequence of Ethernet frames and, in response, updates its forwarding table (stored as a Python dictionary).  We use symbolic tests that supply sequences of between 1 and 10 Ethernet frames, each having the MAC address and frame types marked as symbolic.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3.2in]{figures/evaluation/nice-optimizations}
+  \caption{Average overhead of \chef compared to \nicese, computed as ratio of average per-path execution times.  The average divides total tool execution time by number of high-level paths generated.}
+  \label{fig:nice-overhead}
+\end{figure}
+
+Given the small size of the controller (less than 100~LOC), the number of execution paths is relatively small, and choosing low-level paths at random quickly discovers new high-level paths.  Therefore, the search strategy has no impact (in the experiments we used path-optimized CUPA).  However, the interpreter optimizations are crucial, since the controller code relies heavily on the dictionary.  As in \S\ref{sec:sub:optimizations}, we use several interpreter builds with optimizations introduced one-by-one.
+
+Figure~\ref{fig:nice-overhead} illustrates the overhead for each optimization configuration, as a function of number of Ethernet frames supplied.  The overhead is computed as the ratio between the average execution times per high-level path of \nicese and \chef.  In turn, the execution time per high-level path is computed by dividing the entire execution time of each tool by the number of paths it produced.
+
+%% Basically the same reasons we already gave earlier in the paper
+
+The performance of each optimization configuration illustrates the sources of path explosion and slowdown in the vanilla interpreter.  With no optimizations, symbolic keys in the MAC dictionary cause massive path explosion due to symbolic pointers.  When avoiding symbolic pointers, performance drops even more due to symbolic hash computations.  This penalty is reduced up to two orders of magnitude with hash neutralization.  Finally, fast path elimination reduces the forking inside string key comparisons in the dictionary.
+
+The shape of the final performance curve (the solid line) is convex.  For 1 and 2 symbolic frames, the search space is quickly exhausted and the execution time is dominated by \chef's initialization costs, i.e., setting up the symbolic VM and executing the interpreter initialization inside the guest.  This results in an execution overhead as high as $120 \times$.  For more symbolic frames, the initialization cost is amortized, and the overhead goes below $5 \times$.  However, as the number of frames increases, so does the length of the execution paths and the size of the path constraints, which deepens the gap between \chef's low-level reasoning and \nicese's higher level abstractions.  For 10 symbolic frames, the overhead is around $40 \times$.
+
+Despite \chef's performance penalty, the alternative of writing an engine by hand is daunting. It involves developing explicit models that, for a language like Python, are expensive, error-prone, and require continuous adjustments as the language evolves.
+%
+Where performance is crucial, a hand-written engine is superior; however, we believe that \chef is a good match in many cases.
+
+
+%% \section{Scalability Analysis}
+
+%% Discuss scalability of the Cloud9 parallelization algorithm.
+
+%% Discuss overhead of Chef compared to hand-written engines.
 
 %%% Local Variables: 
 %%% mode: latex
