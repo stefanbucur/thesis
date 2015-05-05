@@ -1,5 +1,122 @@
 \section{Problem Definition}
 
+\subsection{Limitations of Manual Software Testing}
+
+Ensuring that software does the right thing is a critical aspect of the development process, especially as we are increasingly reliant on it in our activities.
+
+The ideal case is when this is done formally, using proofs.  This is also needed in critical operations, such as avionics, or space missions.
+
+However, this is not the case with consumer software.  While there is ongoing work in producing formally verified core components (e.g., the seL4 kernel), most of the software industry relies on testing.  As it turns out, the software complexity (MLOC) and pace of development precludes a formal, rigorous approach.
+
+Testing means poking the software with inputs chosen judiciously that exercise as much behavior as possible in the program.
+
+Today, testing is done mostly manually.  This is takes up lots of resources, yet the process is imperfect and bugs still make it into production.  The security implications of having most of the businesses online amplify the problem, with bugs now causing major disruptions, loss of sensitive data, and a lot of bad PR in the press.
+
+As switching to a formal approach is unfeasible for most of the software written today, the next best option is to try to automate software testing.
+
+\subsection{Automated Testing: Black-box Versus White-box}
+
+The simplest (and most common) approach to test automation is the so called ``black-box fuzzing'': randomly generate program inputs and observe whether the program crashes or not.  The inputs can also be generated based on a known grammar, or start with a real input (e.g., an Office document) and randomly tweak bytes in it.
+
+In either case, however, the procedure is oblivious to the structure of the program.  A vast majority of generated inputs end up being redundant, i.e., taking the same execution paths through the program.
+
+A better approach is called ``white-box testing'', where the input generation takes into account the execution paths that the program takes, such that each input generated aims to discover a new path.
+
+Symbolic execution is the most successful whitebox testing technique to be applied on commodity software.
+
+\subsection{Systematic Path Exploration Using Symbolic Execution}
+
+Symbolic execution works by marking program inputs as symbolic, which means they can take up any value.  The program execution manipulates symbolic data and maintains a symbolic execution state.
+
+When a branch is encountered during execution, the current state forks for each possible branch outcome, and the execution of the two states proceeds independently.  This process repeats for each subsequent branch, creating a symbolic execution tree.
+
+For each path, the conjunction of the branch decisions taken forms the path condition, which is a formula whose solution, if there is one (i.e., it is satisfiable), is a concrete input---a test case---that takes the program along the exact execution path.
+
+Symbolic execution is used for generating high-coverage test suites, bug finding, or even debugging.
+
+% The path conditions are checked for satisfiability by a constraint solver, which employs a decision procedure optimized for the type of formulas that arise in program analysis, e.g., bit-vectors and arrays.
+
+% The satisfiability problem is NP-complete, which means there is no efficient (polynomial) algorithm available.  In practice, modern solvers can handle most formulas efficiently by using heuristics.  However, symbolic execution time is still dominated by constraint solving, as formulas can quickly become complex for non-trivial software.
+
+The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops making the problem even worse.  As any non-trivial software can have at least thousands of branches, the size of the tree quickly becomes too large to be exhaustively covered in a reasonable amount of time.  This is called the ``path explosion'' problem.
+
+In practice, symbolic execution engines resort to prioritizing paths within a given time budget.
+
+
+\subsection{The Environment Problem in Symbolic Execution}
+
+Given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.  For example, say we want to test a system utility.  Even the smallest utility calls into the operating system for opening files, using the network, or printing on the screen.  Symbolically executing all these steps means traversing millions of lines of code, even if we're only interested in covering the utility.
+
+Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
+
+For example, one simple approach is to convert all the environment calls to concrete values.  This causes a single path per call through the environment, but this risks missing feasible paths in the utility itself.  For example, if opening a file with a symbolic name is both successful and failing, concretizing the file name will cause the program to experience only one behavior, say the successful one, and miss the error handling paths.
+
+This is called the ``environment problem'' in symbolic execution and it is the distinctive scalability problem of symbolic execution for real-world software.  This is the topic of the thesis.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Solution Overview: A Tailored Approach to The Environment Problem}
+
+Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the program/environment interface.  For instance, are they components on the same abstraction level, or nested at different layers?  Is the interface well-defined and properly encapsulates the environment or is it porous?  Is the interface small, or does it extend across thousands of environment calls?  Is the interface stable or does it change frequently?
+
+This thesis addresses this problem by focusing on two points in the design space of the program/environment interface that collectively cover a wide range of real-world software: (1) low-level system software interacting with the operating system through the POSIX interface, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  These two points exhibit opposite characteristics.
+
+On the one hand, the POSIX interface is properly encapsulated, well-documented, and stable.  Moreover, while the POSIX API consists of hundreds (or thousands?) of calls, its usage follows a power-law distribution [cite Radu's work], such that about 10s of them are commonly used in most software.
+
+On the other hand, the specifications of most popular dynamic languages are incomplete, vague, and change rapidly from one version of the language to another.
+
+Moreover, these languages rely heavily on built-in methods, i.e. functions that are not implemented in the language itself, but execute as native C code in the interpreter.  This makes the program/environment interface highly porous, as the native calls can have arbitrary side effects on the program state.
+
+\subsection{Symbolic Models for a Stable Operating System Interface}
+
+To address the first problem, we model much of the POSIX interface that we encountered when running widely used and complex real-world software, such as the Apache webserver, memcached, or the Python interpreter.
+
+Our insight is that, for the purpose of automated testing, the POSIX interface can be modeled efficiently on top of a few core abstractions: threads and processes, synchronization, and address spaces with shared memory.
+
+On top of these abstractions, much of the POSIX interface can be implemented as guest code that substitutes the C standard library used by the target programs.
+
+We built the Cloud9 symbolic execution platform, which provides accurate and efficient models of POSIX abstractions such as files, network sockets, threads, processes, thread synchronization, IPC, signals, and other miscellaneous calls.
+
+By using these symbolic models, Cloud9 is the first to efficiently target complex system utilities (e.g., curl), web servers, or distributed systems.
+
+\subsection{Using Interpreters as Specifications for Fast-changing Languages}
+
+The second problem lends itself to a different approach.  As the interface is volatile, porous, and complex, modeling it is an expensive ongoing engineering effort.
+
+Instead, this thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine while executing the target program.  The aggregate system acts as a high-level symbolic execution engine for the target program.
+
+Mapping low-level interpreter paths to high-level program paths is done by segmenting the low-level paths into chunks corresponding to each high-level instruction executed.  Low-level paths with the same sequence of high-level instructions map to the same high-level path.
+
+To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis, a family of path prioritization heuristics for maximizing a given coverage metric.
+
+Additionally, we provide a set of fast recipes for eliminating common sources of path explosion in the interpreter.
+
+We prototyped the Chef symbolic execution platform for interpreted languages and used it to obtain engines for Python, Lua, and JavaScript.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Thesis Roadmap}
+
+The rest of the thesis presents in detail the design, implementation, and evaluation of the two approaches to the environment problem.
+
+Chapter 2 provides more background on symbolic execution and the environment problem, by surveying the related work and positioning our contributions with respect to it.
+
+Chapter 3 expands on the idea of modeling the operating system interface.  It presents the core abstractions that are built into the symbolic execution engine, then elaborates on the specifics of modeling the POSIX interface on top of them.
+
+Chapter 4 presents the approach of using interpreters as executable language specifications.  It presents an overview of the Chef system, then it goes into the details of converting between the low-level symbolic execution of the interpreter and the high-level program execution.
+
+Chapter 5 provides the experimental evaluation of the two systems we built, along two main dimensions: the effectiveness in generating test suites and finding bugs, and the scalability to real-world software.
+
+Chapter 6 presents the ongoing work and longer-term vision of building a cloud-based testing service for cloud applications based on the techniques introduced in this thesis.
+
+Chapter 7 wraps up the thesis with conclusions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\iffalse
+\section{Problem Definition}
+
 \subsection{Limitations of Software Testing}
 
 %% Software testing is resource-hungry, time-consuming, labor-intensive, and prone to human omission and error.  Despite massive investments in quality assurance, serious code defects are routinely discovered after software has been released~\cite{redHatSecurityX}, and fixing them at so late a stage carries substantial cost~\cite{codeComplete}.
@@ -117,6 +234,7 @@ The {\em third challenge} is using an automated test generator in the context of
 \section{Thesis Roadmap}
 
 The rest of the thesis is structured as follows: ...
+\fi
 
 
 %%% Local Variables: 
