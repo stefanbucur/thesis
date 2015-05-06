@@ -48,6 +48,31 @@
 \newcommand{\commuterse}{Commuter\xspace}
 
 
+\usepackage{type1cm}
+\usepackage{eso-pic}
+% Use pdfsync in draft mode
+%\usepackage{pdfsync}
+
+\makeatletter
+\AddToShipoutPicture{%
+            \setlength{\@tempdimb}{.50\paperwidth}%
+            \setlength{\@tempdimc}{.97\paperheight}%
+            \setlength{\unitlength}{1pt}%
+            \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
+        \makebox(0,0){\textcolor[gray]{0.75}%
+        {\fontsize{8mm}{8mm}\selectfont{DRAFT -- PLEASE DO NOT DISTRIBUTE}}}}%
+}
+\AddToShipoutPicture{%
+            \setlength{\@tempdimb}{.50\paperwidth}%
+            \setlength{\@tempdimc}{.03\paperheight}%
+            \setlength{\unitlength}{1pt}%
+            \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
+        \makebox(0,0){\textcolor[gray]{0.75}%
+        {\fontsize{8mm}{8mm}\selectfont{DRAFT -- PLEASE DO NOT DISTRIBUTE}}}}%
+}
+\makeatother
+
+
 
 %% PDF SUPPORT
 %% -----------
@@ -59,8 +84,6 @@
   pdftitle={\thesistitle},
   pdfauthor={Stefan Bucur}
 }
-
-
 
 \begin{document}
 
