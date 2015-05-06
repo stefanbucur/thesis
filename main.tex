@@ -80,20 +80,19 @@ Software testing is laborious, time-consuming, and prone to human error.  Symbol
 %
 The environment problem is challenging to attack systematically, as its manifestations depend on the nature of the environment interface and its implementation.
 
-This thesis addresses two points in the manifestation space of the environment problem, which collectively cover a wide range of real-world software: (1) low-level system software interacting with the OS through the POSIX interface, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two points exhibit opposite characteristics: while the POSIX interface is stable and well-documented, the specifications of dynamic languages are incomplete and volatile.
+This thesis addresses two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
 
-To address the environment problem for the stable POSIX interface, this thesis introduces Cloud9, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by low-level systems, such as system utilities, web servers, or distributed systems.
+To address the environment problem for stable operating system interfaces, this thesis introduces Cloud9, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
 %
-Cloud9 relies on the insight that, for the purpose of automated testing, the POSIX interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions can be built into the symbolic execution engine, while the rest of the model can be emulated as guest code.
+Cloud9 relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
 
-For volatile dynamic language semantics, this thesis introduces Chef, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specificatons.  In Chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
+For incomplete and unstable dynamic language semantics, this thesis introduces Chef, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In Chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
 %
-Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
+%% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
+%
+To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduces Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
 
-To mitigate the path explosion inside interpreters, this thesis introduces Class-uniform Path Analysis (CUPA), a family of state selection heuristics aimed at improving a configurable coverage metric, such as high-level path coverage.  CUPA builds on the observation that path explosion clusters in the program and biases the state population.  By grouping states into equivalence classes and select them uniformly for exploration, the path explosion is contained in one class and the other state classes can make uniform progress.
-
-
-\noindent \textbf{Keywords:} Bla, bla
+\noindent \textbf{Keywords:} Symbolic execution, program environments, systems software, interpreted languages.
 
 
 \chapter*{Acknowledgments}
