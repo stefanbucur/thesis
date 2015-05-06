@@ -2,17 +2,33 @@
 
 \subsection{Limitations of Manual Software Testing}
 
-Ensuring that software does the right thing is a critical aspect of the development process, especially as we are increasingly reliant on it in our activities.
+%% Ensuring that software does the right thing is a critical aspect of the development process, especially as we are increasingly reliant on it in our activities.
 
-The ideal case is when this is done formally, using proofs.  This is also needed in critical operations, such as avionics, or space missions.
+A crucial aspect of software development is ensuring that the code written behaves as intended.  This aspect becomes the more important, the more we depend on software in our lives.
 
-However, this is not the case with consumer software.  While there is ongoing work in producing formally verified core components (e.g., the seL4 kernel), most of the software industry relies on testing.  As it turns out, the software complexity (MLOC) and pace of development precludes a formal, rigorous approach.
+%% The ideal case is when this is done formally, using proofs.  This is also needed in critical operations, such as avionics, or space missions.  However, this is not the case with consumer software.  While there is ongoing work in producing formally verified core components (e.g., the seL4 kernel), most of the software industry relies on testing.  As it turns out, the software complexity (MLOC) and pace of development precludes a formal, rigorous approach.
 
-Testing means poking the software with inputs chosen judiciously that exercise as much behavior as possible in the program.
+Ideally, software would be written correctly by construction~\cite{dijkstra1976discipline}.  In the early days of computer science, writing the code together with the mathematical proof of its correctness was considered best practice.
 
-Today, testing is done mostly manually.  This is takes up lots of resources, yet the process is imperfect and bugs still make it into production.  The security implications of having most of the businesses online amplify the problem, with bugs now causing major disruptions, loss of sensitive data, and a lot of bad PR in the press.
+However, the decades of software development experience that followed have painted a different picture.  As it turns out, the software complexity---up to hundreds of millions of lines of code---and rapid pace of feature development have precluded a formal, rigorous approach.
+%
+With the exception of a few safety-critical segments, such as avionics, automotive, or medical equipment, most of the software industry today relies on \emph{testing} for its quality assurance.
 
-As switching to a formal approach is unfeasible for most of the software written today, the next best option is to try to automate software testing.
+%% Testing means poking the software with inputs chosen judiciously that exercise as much behavior as possible in the program.
+
+Testing a program consists of exercising multiple different paths through it and checking whether ``they do the right thing.''  In other words, testing is a way to produce partial evidence of correctness, and thus increase confidence in the tested software.  Yet, due to the typically poor coverage one can get today, testing often turns into a mere hunt for bugs.
+
+%% Today, testing is done mostly manually.  This is takes up lots of resources, yet the process is imperfect and bugs still make it into production.  The security implications of having most of the businesses online amplify the problem, with bugs now causing major disruptions, loss of sensitive data, and a lot of bad PR in the press.
+
+In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{xxx}.
+%
+Such suites tend to be tedious to write and maintain.  Statistics show that, on average, developers spend as much as half of their time doing testing~\cite{xxx}, and companies allocate up to a quarter of their IT budget for software testing~\cite{xxx}.
+
+However, manual testing is prone to human error, and bugs eventually escape quality assurance and make it into production.  The problem is amplified by the security implications of having most of the businesses today online.  Bugs can be exploited to cause major disruptions, leaks of sensitive data, and a lot of the cases make headlines.
+
+%% As switching to a formal approach is unfeasible for most of the software written today, the next best option is to try to automate software testing.
+
+While switching back to a formal approach is unfeasible for most of the software written today, the next best option is to automate the software testing process itself.
 
 \subsection{Automated Testing: Black-box Versus White-box}
 
