@@ -76,7 +76,7 @@ The issue of pre-determining branches is present also when exploring regular cod
 
 
 
-We now present the architecture of \chef~(\S\ref{sec:architecture}) and introduce \cupa, our state selection mechanism~(\S\ref{sec:cupa}). We then describe \cupa optimized for exploring distinct high-level paths~(\S\ref{sec:cupa-paths}) and optimized for high line coverage~(\S\ref{sec:cupa-coverage}).
+We now present the architecture of \chef (Section~\ref{sec:architecture}) and introduce \cupa, our state selection mechanism (Section~\ref{sec:cupa}). We then describe \cupa optimized for exploring distinct high-level paths (Section~\ref{sec:cupa-paths}) and optimized for high line coverage~(Section~\ref{sec:cupa-coverage}).
 
 \subsection{System Overview}
 \label{sec:architecture}
@@ -94,7 +94,7 @@ The resulting engine can be used like a hand-written one, in particular for test
 
 \chef is built on top of the S2E analysis platform~\cite{s2eSystem}. S2E symbolically executes a virtual machine containing the interpreter and a testing library at the level of machine code,  including the OS kernel, drivers, and user programs.  S2E provides an API that guest code can use to declare memory buffers as symbolic. Comparisons on symbolic values cause S2E to fork new paths, which are enqueued and explored following a search strategy.
 %
-\chef extends the S2E guest API with a high-level instruction instrumentation call~(\S\ref{sec:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths~(\S\ref{sec:cupa}).
+\chef extends the S2E guest API with a high-level instruction instrumentation call (Section~\ref{sec:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths (Section~\ref{sec:cupa}).
 
 The resulting engine is a correct symbolic execution engine for the target language \textit{as defined by the interpreter}. It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths. The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impossible in finite time.
 
@@ -115,7 +115,7 @@ The resulting engine is a correct symbolic execution engine for the target langu
 \item Automated approach: use calibration program + look for memory access patterns inside the interpreter.
 \end{itemize}
 
-We now explain how to prepare an interpreter for \chef: the first and mandatory step is to instrument the main interpreter loop to report \hlpcs~(\S\ref{sec:exposehlpc}); the second and optional step is to optimize the interpreter for efficient symbolic execution~(\S\ref{sec:optimzeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.  Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine~(\S\ref{sec:testingAPI}).
+We now explain how to prepare an interpreter for \chef: the first and mandatory step is to instrument the main interpreter loop to report \hlpcs (Section~\ref{sec:exposehlpc}); the second and optional step is to optimize the interpreter for efficient symbolic execution (Section~\ref{sec:optimzeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.  Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:testingAPI}).
 
 \begin{table}
 \centering
