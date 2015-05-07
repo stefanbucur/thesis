@@ -1,65 +1,301 @@
-\section{Motivation}
+In this chapter, we present our ongoing work of building a cloud-based distributed testing service for PaaS applications.  The foundation of the service is a parallelization algorithm for symbolic execution that is the first to demonstrate linear scalability up to hundreds of cluster nodes.
 
+\section{The Opportunity of the Cloud Application Model}
+
+Modern consumer software is increasingly relying on the ``cloud application'' model, where a browser- or mobile device-based client interacts with a functionally rich cloud service.
+%
+This model is prevalent in major systems like Facebook and GMail, as well as in smartphone and tablet ``apps'' like Instagram, Siri, or Dropbox.
+%
+For both developers and users, the economics are highly \mbox{attractive:} cloud-based applications offer ubiquitous access, transparent scaling, and easy deployment at low cost.
+
+The hidden cost is that cloud apps introduce security, privacy, and availability risks. They store and process critical information remotely, so the impact of failures is higher in this model than for single-user desktop apps~\cite{web-failures-tr}.  This increases the importance of testing for cloud applications.
+
+Rapid advances in development and deployment tools have significantly lowered the barrier to entry for developers, but these tools lack similarly advanced support for testing. Platform-as-a-service (PaaS) offerings, such as Google App Engine or Microsoft Azure, provide easy-to-use interfaces with automated deployment fully integrated into development environments.
+%
+However, testing tools for apps running on PaaS are still immature, test automation is limited, and developers are left with the laborious and error-prone task of manually writing large numbers of individual test cases.
+
+Integration tests, which complement unit tests by checking that all the components of a fully deployed cloud application work together correctly, are especially tedious to write and set up in such an environment.
+%
+PaaS-based cloud applications typically use frameworks with a layered communication architecture and perform some processing at each of the layers. Writing a full integration test then requires to carefully craft an HTTP request that successfully passes through all application and framework layers and triggers the desired behavior, while being transformed from one representation to another at each step (e.g., from an HTTP request to JSON to language objects).
+
+Spending precious developer time on testing for improving security and reliability is particularly unattractive in a viciously competitive environment.  Promoted by the ability to deploy virtually instantly and at low cost, the pressure is to use features to quickly acquire a large user base. Security and reliability testing is a long-term investment and does not pay off immediately, thus it is often deferred for later.
+%
+High-profile failures of cloud applications~\cite{bugs-linkedin,bugs-gmail} are thus likely to become a common occurrence, unless we can make testing easy and cheap.
+
+We argue that {\em testing} must become at least as easy as {\em deploying} a new app. PaaS has made the latter easy, leaving the former just as hard to do as before.  A dedicated testing service must therefore become an integral component of PaaS.
+%
+Recent commercial test automation systems (CloudBees, Skytap, SOASTA, etc.) relieve developers of managing their own test infrastructure, but still require them to write test suites; we aim to further relieve developers of having to write individual tests.
+%
+Just as modern PaaS APIs spare developers from having to manage the building blocks of their applications, so should they spare developers from manually writing test cases, and instead offer means to automatically test apps based on only minimal input from developers.
+
+Recent progress in automated test case generation~\cite{klee,godefroid:fuzz,tillmann-pex} takes an important step in this direction.  For a typical PaaS application like the example in Figure~\ref{fig:running-example}, a test case generator could use \textit{symbolic execution} (a path-based program analysis) to automatically find HTTP packets that drive the execution to different parts of the code.
+%
+\begin{figure}
+  \centering
+  \includegraphics[width=3.1in]{figures/paas/web-flow}
+  \caption{A sample cloud application.  Clients communicate with the server through web requests that traverse several layers inside the server before reaching the request handler logic.  From the total input space, most possible requests trigger errors in one of the processing layers (light arrows).  Only a small fraction of requests successfully traverses all layers and is handled inside the app (dark arrow).}
+  \label{fig:running-example}
+  \vspace{5pt}
+\end{figure}
+%
+Unfortunately, these tools are not (yet) a good fit for cloud apps: the number of execution paths successfully crossing all application layers is dwarfed by the vast number of possible error paths (dark vs.~light arrows in Figure~\ref{fig:running-example}).  Yet, most error paths are irrelevant to testing the high-level logic of the app itself (i.e., the innermost layer), because they test code that is part of the PaaS.
+
+We propose \textit{layered parameterized tests} (LPTs) for integration testing of PaaS-based cloud applications (Section~\ref{sec:paas:abstractions}). LPTs describe families of integration tests (in the spirit of parameterized unit tests~\cite{tillmann-puts}) across several application layers. We rely on developer-provided \textit{onion objects} to describe the layering of the data abstractions in the application; onion objects encode the multiple interpretations of input data as, e.g., an HTTP request, a JSON object, etc.
+%
+For the automatic generation of thorough test cases from LPTs, we introduce \emph{layered symbolic execution} (LSE), an automated program analysis that is tailored for the layered structure of cloud applications (Section~\ref{sec:paas:layeredsymbex}).
+%
+Finally, we present a design and early prototype for a PaaS-integrated testing service based on LSE~(Section~\ref{sec:paas:fedsymbex}).
+
+\section{A PaaS Test Interface}
+\label{sec:paas:abstractions}
+
+We propose an automated testing service integrated in PaaS.  Developers write layered parameterized tests (LPTs) and upload them with the cloud application to be executed by the test service.  The service uses LPTs to automatically generate application inputs (e.g., web requests and persistent data) that exercise the application layers of interest.  The developer writes LPTs by specifying the structure of the application inputs and a target property to be checked.
+
+\paragraph{Developer Workflow}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3.1in]{figures/paas/developer-flow}
+  \caption{Development flow for using a PaaS-integrated testing
+    service.}
+  \label{fig:development-flow}
+\end{figure}
+
+Figure~\ref{fig:development-flow} illustrates the workflow of a developer using our testing service.
+%
+The developer writes layered parameterized tests using a platform-provided testing API (step 1). She then deploys the app in test mode, which invokes the LPT test runner of the PaaS (step 2). This test runner is responsible for generating and running the individual test cases from the LPT, and it returns test results back to the developer (step 3). The develop-deploy-test cycle continues until the code is ready to be deployed in production (step 4).
+
+% Might be misleading - the onion tests are much more powerful
+% , and existing xUnit tests can be converted to onion tests.
+
+%---------------------------------------------------------------------------
+\paragraph{Layered Parameterized Tests}
+
+An LPT specifies a family of executions (or, equivalently, classes of inputs) plus a set of properties (expressed as assertions) that are expected to hold for all these executions.
+%
+The specified family of executions can be large or even infinite; still, the test runner can often efficiently check whether the property is guaranteed to hold for the entire family (we give more details on the symbolic execution-based mechanism in Section~\ref{sec:paas:layeredsymbex}).  A traditional unit test can be seen as a special case of an LPT for which the input is fixed and any provided assertions are checked on a single execution only.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3.2in]{figures/paas/overlay}
+  \caption{An LPT example in Python for a photo management application.  Highlighted code is the test code written by developers.  Names in bold denote the LPT-specific API added to the standard Python unit test framework.}
+  \label{fig:test-lpt}
+\end{figure}
+
+\looseness=-1 LPTs are defined by developers using a platform-provided API in the implementation language of the application (e.g., Python).  The testing API builds on the popular xUnit testing paradigm~\cite{xunit} and extends it with constructs to specify the structure of families of application inputs.  The API is easily integrated with existing testing fixtures and frameworks that developers use today.
+
+We illustrate the structure of an LPT and how it is used by the test runner using the example LPT \codebit{TestUpload} shown in Figure~\ref{fig:test-lpt}, which tests the upload functionality of a photo management application.  Under the \codebit{/upload} URL, the application accepts POST requests containing a JSON-encoded dictionary describing photo information.  Figure~\ref{fig:http-packet} shows an example HTTP request for the application.
+
+We assume that the app follows the structure given in Figure~\ref{fig:running-example}, that it is written in Python using a popular web framework like Django~\cite{py-django} or WebApp~\cite{webapp2}, and that it is deployed on a PaaS infrastructure like Google App Engine~\cite{google-gae} or Heroku~\cite{heroku}.  The web framework takes care of dispatching any POST request to the \codebit{/upload} application URL to the \codebit{post} method of the \codebit{UploadHandler} class (lines 21--27).
+%
+The \codebit{TestUpload} LPT checks that, for arbitrary upload requests, the server never returns an internal error (HTTP 500) in its response.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3in]{figures/paas/http-packet}
+  \caption{An example HTTP request for the upload feature of the photo
+    management application.  The text in bold denotes input processed
+    by the application at various layers.}
+  \label{fig:http-packet}
+\end{figure}
+
+The test runner uses the LPT to automatically generate application
+input according to the following procedure:
+
+\begin{enumerate}
+% Step 1
+\item The test runner invokes the \codebit{setUp} method (line~7),
+  which declares the application inputs and their structure as
+  \emph{onion objects} (described below) using the
+  \codebit{defineInput} call at line~13.
+% Step 2
+\item Based on the onion objects, the test runner generates a default
+  input for the application.
+% Step 3
+\item The test runner invokes \codebit{runTest}, which retrieves the
+  concrete input generated by the test runner with a call to
+  \codebit{getInput} (line~16).  In our example, the input is a web
+  request, which is then sent to the application (line~18).  Behind
+  the scenes, the web framework dispatches the request to the
+  \codebit{post} method of \codebit{UploadHandler} (line~22).  When
+  the handler finishes handling the request, a response object with a
+  status code and body is returned.  In our example, the LPT checks
+  that no internal error (HTTP 500) occurred during request handling
+  (line~19).
+% Step 4
+\item Based on the information collected during the execution of
+  \codebit{runTest} (described below), the test runner uses the onion
+  objects to generate a new application input (available to the LPT
+  through the \codebit{getInput} call) and goes back to step 3 for a
+  new iteration.  
+%
+  Any assertion failures triggered by the generated inputs are
+  reported to the developers.
+\end{enumerate}
+%
+Note that the generation and execution of multiple inputs is well
+suited for parallelization across multiple nodes in the cloud. This
+allows to leverage the availability of additional nodes to reduce the
+total testing time.
+
+The test runner uses symbolic execution to generate new inputs (described in more detail in Section~\ref{sec:paas:layeredsymbex}). To generate inputs that exercise the application at specific layers, the test runner needs:
 \begin{itemize}
-\item ``Throw hardware at the problem''.
-\item No linear scalability demonstrated with previous approaches. Main cause: imbalanced tree shape, unknown a priori.
-\item Foundation for a software testing service.
+\item the unwrapped application inputs for the current execution at the different application layers, provided by developers through annotations in the application source code; and
+\item information about the input structure, provided by the LPT's onion objects.
 \end{itemize}
 
-Testing a program consists of exercising many different paths through it and checking whether they ``do the right thing.''  In other words, testing is a way to produce partial evidence of correctness, and thus increase confidence in the tested software.  Yet, due to the typically poor coverage one can get today, testing often turns into a mere hunt for bugs.
+\paragraph{Annotating Application Layers}
 
-In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{codeComplete}.  Such suites tend to be tedious to write and maintain but, once in place, they can be reused and extended.  In practice, the state of the art consists mostly of fuzzing, i.e., trying various inputs in the hope of finding bugs and improving test coverage.
+A web request traverses several processing layers in an application.  First, it is received as an HTTP packet string; second, it is decoded into a URL, a set of headers, and request a body; third, the body contents is decoded and processed. Depending on the application framework, processing can involve additional layers, e.g., for converting JSON representations to language objects.
 
-In research, the state of the art consists of model checkers and automated test generators based on symbolic execution~\cite{dart,klee}.  Instead of running a program with regular concrete inputs (e.g., $x\!=\!5$), symbolic execution consists of running a program with ``symbolic'' inputs that can take on all values allowed by the type (e.g., $x\!=\!\lambda$, where $\lambda \in \mathbb{N}$).  Whenever a conditional branch is encountered that involves a predicate $\pi$ that depends (directly or indirectly) on $x$, state and execution are forked into two alternatives: one following the then-branch ($\pi$) and another following the else-branch ($\neg \pi$). The two executions can now be pursued independently.  When a bug is found, test generators can compute concrete values for program inputs that take the program to the bug location.  This approach is efficient because it analyzes code for entire classes of inputs at a time, thus avoiding the redundancy inherent in fuzzing.
+The application layers process data at corresponding layers of the input data (the bold parts of the HTTP request in Figure~\ref{fig:http-packet}). For instance, the application typically maps the URL to a request handler, checks the headers for authentication information, and processes the body contents in the request handler code.
 
-The {\em first challenge} for such tools is path explosion, as mentioned earlier.  One way to cope is to memoize the symbolic execution of sub-paths into test summaries that can be subsequently reused when the same sub-path is encountered again, as done in compositional test generation~\cite{godefroid:compdyntest}.  Alternatively, it is possible to use various heuristics to prioritize the most interesting paths first, as done in \klee~\cite{klee}.  Another approach is to execute symbolically only paths that are of interest to the test, as done in selective symbolic execution~\cite{s2e}.
+To expose the application input to the LPT as it is being processed at each layer, developers annotate the variables holding the input data structures in the application source code.  Three layers have been declared in Figure~\ref{fig:test-lpt}: the HTTP request at line~17, the request body at line~23, and the JSON payload extracted from the body at line~25.  The \codebit{instrumentLayer} call attaches a layer name to a variable. Similar to assertion statements, the call is active when executed as part of a test invocation, but disabled in production, where the LPTs are not used.  For a typical web stack, only about three layers have to be annotated for each request handler, keeping the required effort on the developer side low.
 
-We pursue a complementary approach---{\em parallel symbolic execution}---in which we symbolically execute a program in parallel on a cluster, thus harnessing the machines into a ``distributed computer'' whose aggregate CPU and memory surpass that of an individual machine.  An alternative to a cluster-based approach would be to run a classic single-node symbolic execution engine on a Blue Gene-like supercomputer with vast shared memory and CPUs communicating over MPI.  Supercomputers, however, are expensive, so we favor instead clusters of cheap commodity hardware.  
 
-One way to parallelize symbolic execution is by statically dividing up the task among nodes and having them run independently.   However, when running on large programs, this approach leads to high workload imbalance among nodes, making the entire cluster proceed at the pace of the slowest node~\cite{parallelSymbex}.  If this node gets stuck, for instance, while symbolically executing a loop, the testing process may never terminate.  Parallelizing symbolic execution on shared-nothing clusters in a way that scales well is difficult.
+%---------------------------------------------------------------------------
+\paragraph{Onion Objects}
 
-The {\em second challenge} is mediating between a program and its environment, i.e., symbolically executing a program that calls into libraries and the OS, or communicates with other systems, neither of which execute symbolically.  One possible approach is to simply allow the call to go through into the ``concrete'' environment (e.g., to write a file)~\cite{dart,exe}; unfortunately, this causes the environment to be altered for \emph{all} forked executions being explored in parallel, thus introducing inconsistency.  Another approach is to replace the real environment with a symbolic model, i.e., a piece of code linked with the target program that provides the illusion of interacting with a symbolically executing environment.  For instance, \klee uses a symbolic model of the file system~\cite{klee}. Of course, real-world programs typically interact in richer ways than just file I/O: they fork processes, synchronize threads, etc.  
+An \emph{onion object} is a data structure that describes the representations of the application input as it traverses multiple processing layers.  The onion object (i) enables more convenient assertion-writing by directly exposing the data layers, and (ii) enables automated test generation to focus on specific layers of the application. Onion objects are needed to specify the application inputs for onion tests, but they can also be used to store output as the cloud application constructs a response in layers.
 
-We originally viewed the building of a complete environment model as an engineering task, but our ``mere engineering'' attempt failed: for any functionality that, in a normal execution, requires hardware support (such as enforcing isolation between address spaces), the core symbolic execution engine had to be modified.  The research challenge therefore is to find the minimal set of engine primitives required to support a rich model of a program's environment. 
+The framed area in Figure~\ref{fig:test-lpt} shows the onion object for our running example.  The structure consists of a set of \emph{onion nodes} (the identifiers ending in an underscore) connected in a nested structure.  There is one onion node for each layer and one for each input structure or value that is supposed to be generated automatically by the test engine.  The abstraction level is declared using the \codebit{layer} parameter passed to the node constructor and matches one of the layers annotated in the code.  Structures and values can be nested within the same layer.  For example, the dictionary structure on lines~8--10 has constant keys and wildcard values of type \codebit{str\_} and \codebit{int\_}, which mimic the standard string and integer types.
 
-The {\em third challenge} is using an automated test generator in the context of a development organization's quality assurance processes.  To take full advantage of the automated exploration of paths, a testing tool must provide ways to control all aspects of the environment.  For example, there needs to be a clean API for injecting failures at the boundary between programs and their environment, there must be a way to control thread schedules, and so on.  There should be a way to programmatically orchestrate all environment-related events, but doing so should not require deep expertise in the technology behind the testing tools themselves.
+\paragraph{Checking Properties}
 
-The work presented here aims to address these three challenges.  Cluster-based parallel symbolic execution (Section~\ref{ch:parsymbex}) provides the illusion of running a classic symbolic execution engine on top of a large, powerful computer.  Without changing the exponential nature of the problem, parallel symbolic execution harnesses cluster resources to make it feasible to run automated testing on larger systems than what was possible until now. Our work complements and benefits all tools and approaches based on symbolic execution.  We describe a way to accurately model the environment (Section~\ref{ch:cloud9}) with sufficient completeness to test complex, real software, like the Apache web server and the Python interpreter.  We present the APIs and primitives that we found necessary in developing a true testing platform (Section~\ref{sec:platform}).  We show how using these APIs enables, for instance, finding errors in bug patches by reproducing environment conditions which otherwise would have been hard or impossible to set up with regular test cases.
+LPTs express application properties through standard xUnit assertion statements (line~19 in the example).  Through the dynamic test generation mechanism explained in Section~\ref{sec:paas:layeredsymbex}, the test runner actively attempts to generate inputs that cause an assertion to be violated. Each generated test input not failing the assertion serves as a witness for an entire equivalence class of inputs that cannot violate the assertion.
+%
+When an assertion does fail, the input that caused the failure is reported back to the developer.
 
-In this section we present the design of the \cnine engine, focusing on the algorithmic aspects: after a conceptual overview (Section~\ref{sec:concept}), we describe how \cnine operates at the worker level (Section~\ref{sec:workerView}) and then at the cluster level (Section~\ref{sec:loadBalancing}).
+To allow input variables at each layer to be used in assertions, each onion node offers a \codebit{value} property that refers to the value matched in the current test execution (not shown in the example).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Overview}
-\label{sec:concept}
+
+\section{Layered Symbolic Execution}
+\label{sec:paas:layeredsymbex}
+
+In this section, we introduce \emph{layered symbolic execution} (LSE), an LPT execution technique that focuses on covering a particular application layer.  LSE uses symbolic execution---a test case generation technique that observes the program structure---to generate inputs in the representation of the layer of interest (e.g., HTTP headers or a JSON payload).  Each generated layer-level input is then assembled back into application-level input based on the structure encoded in the onion object, in order to form an integration test case.
+
+Na\"ive application of dynamic test generation to execute the LPT for a cloud app is of little use: First, the path exploration can end up exploring many different paths within the framework code, but might test only a single path within the application layer over and over again. Second, the path conditions will encode many branches due to the multiple layers of parsing logic, making symbolic execution of cloud apps prohibitively expensive. Third, if the exploration is unaware of the connections between abstraction layers, blindly negating just single branch conditions will produce many infeasible paths before finding a new valid test input.
+
+\paragraph{LSE and Onion Objects}
+
+LSE relies on onion objects to mark input variables as symbolic and generate new values based on the alternate path conditions.  To this end, each onion object exposes a number of operations:
 
 \begin{itemize}
-\item Introduce workers + load balancer.
-\item Goal: disjoint and complete tree exploration.
-\item Each worker explores tree independently, with minimal synchronization overhead.
+\item \codebit{instrument(var)} instruments the variable \codebit{var}
+  for symbolic execution, i.e., injects a fresh symbolic input value
+  in dynamic test generation.  The variable is expected to match the
+  structure described by the onion object.
+%
+\item \codebit{reconstruct(var, val)} applies an assignment of value \codebit{val} to variable \codebit{var} that is demanded by the satisfying assignment representing a new path. In doing the assignment, the function performs the necessary modifications to other variables to respect the cross-layer invariants.
+%
+\item \codebit{getDefault()} returns a default value for the object node. It is used for generating the initial test case or any padding values required by invariants (e.g., changing the content length field of an HTTP request requires to extend the actual contents).
 \end{itemize}
 
-%--------------------------------------------------
-\paragraph{Classic Symbolic Execution}
+For example, applying the \codebit{instrument} method of a string onion object on a string variable in Python marks as symbolic the string length and the contents of the character buffer.  Then, during symbolic execution, the alternate path constraint yields new values for the length and for the buffer.  The \codebit{reconstruct} method takes both values and creates a new Python string object.
 
-\cnine employs symbolic execution, an automated testing technique that has recently shown a lot of
-promise~\cite{dart,klee}. 
+The reconstruction method is essential for enforcing the object and cross-layer invariants of the input structure.  For instance, the length of the reconstructed string would always match the size of its buffer (and avoid spurious overflows); the Content-length HTTP header would always match the size of the new request body, and so on.
 
-A symbolic execution engine (SEE) executes a program with unconstrained symbolic inputs.  When a branch involves symbolic values, execution forks into two parallel executions (see Section~\ref{sec:overview}), each with a corresponding clone of the program state.  Symbolic values in the clones are {\em constrained} to make the branch condition evaluate to false (e.g., $\lambda\!\ge${\small MAX}) respectively true (e.g., $\lambda\!<${\small MAX}). Execution recursively splits into sub-executions at each subsequent branch, turning an otherwise linear execution into an {\em execution tree} (Fig.~\ref{fig:exectree}). 
+\paragraph{LSE Algorithm}
 
-\begin{figure}[h!]
+LSE allows the test runner to focus on exploring paths inside inner application layers. Conceptually, LSE decouples the input layers to give the test runner the flexibility to freely explore an individual layer. When constructing a new application input, LSE reconnects the layers, taking care to respect cross-layer invariants (e.g., the value of a JSON field has to be present also in the HTTP packet).
+%
+The LSE algorithm proceeds along the following steps:
+\begin{enumerate}
+\item Generate an initial valid input (i.e., a web request) using the
+  \codebit{getDefault} call on the root node.  The LPT can read this
+  input by calling \codebit{getInput}.
+%
+\item Symbolically execute the program through the test (the
+  \codebit{runTest} method), using symbolic inputs created by calling
+  the \codebit{instrument} method on the onion object nodes
+  corresponding to the layer of interest.  
+%
+  Any existing symbolic expressions for these variables (which
+  implicitly encode the parsing logic) are overwritten in this step,
+  effectively decoupling the input at the current layer from the
+  previous ones.  This permits the symbolic execution engine to negate
+  constraints inside the current layer without being constrained
+  by the previous layers.
+%
+\item When the execution completes, negate a constraint in the path
+  condition to obtain new values for the onion nodes.
+%
+\item Using the $\codebit{reconstruct}$ function of the onion object
+  node, assemble the new values back into a new complete program input
+  (e.g., the HTTP request) for the next iteration.
+\end{enumerate}
+
+\begin{figure}
   \centering
-  \epsfig{file=figures/parsymbex/execTree.eps, width=2.7in}
-  \vspace{-10mm}
-  \caption{Symbolic execution produces an execution tree.}
-  \label{fig:exectree}
-  \vspace{-2mm}
+  \includegraphics[width=2.4in]{figures/paas/layered-tree}
+  \caption{Exploring an execution tree using layered symbolic
+    execution.}
+  \label{fig:layered-tree}
 \end{figure}
 
-In this way, all execution paths in the program are explored.  To ensure that only feasible paths are explored, the SEE uses a constraint solver to check the satisfiability of each branch's predicate, and it only follows satisfiable branches.  If a bug is encountered (e.g., a crash or a hang) along one of the paths, the solution to the constraints accumulated along that path yields the inputs that take the tested program to the bug---these inputs constitute a {\em test case}.
+Figure~\ref{fig:layered-tree} illustrates an execution tree explored in an iteration of LSE. Consider an initial input for the example in Figure~\ref{fig:test-lpt}, where the value of the $\codebit{size}$ field in the JSON request payload is $8$ (Path $A$ in the figure).
+%
+At step 2 of the algorithm, a symbolic value is injected for $\codebit{size}$, together with the rest of the onion object wildcard fields (the highlighted segment of Path $A$).  Now, if the tested path contains the conditional statement \codebit{if payload.size < 16}, the \codebit{then} branch of the statement is taken and the $\mathit{size} < 16$ constraint is recorded.  At the end of the execution (step 3), if this constraint is negated to $\mathit{size} \geq 16$, a new value for $\codebit{size}$ is generated, say $20$ (the alternate potential Path $A'$).  Then, at step 4, the \codebit{reconstruct} functions assembles the new values of all leaves into a new HTTP packet to be sent to the app, which will cause the \codebit{else} branch of the \codebit{if} statement to be taken in the next execution (Path $B$).  Note that Path $A'$ is not globally feasible and never explored, but only transiently used to produce the feasible Path $B$.
 
-%--------------------------------------------------
-\paragraph{Parallel Symbolic Execution}
+Compared to a solution that only marks the variables at the layers of interest as symbolic, LSE is superior in two ways: (1)~By obtaining the root input, it is able to run integration tests for a fully deployed application; (2)~LSE supports data structures of variable sizes, e.g., arrays whose lengths are symbolic values, by regenerating the input structure at each new iteration.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{A Testing Platform for the Cloud}
+\label{sec:paas:fedsymbex}
+
+We deploy LSE inside a symbolic execution-aware virtual machine (the symbolic VM) that encapsulates the ``entire universe'' of the application, including the framework and even the language interpreter and operating system, enabling integration testing of the entire application stack.
+%
+The test-mode deployment then requires just the push of a button for the system to execute the layered parameterized tests, generate coverage statistics, and highlight any failing test cases.
+
+This deployment model leverages the properties of PaaS in several
+ways:
+%
+(1)~By hiding the testing VMs behind a service interface, the PaaS system can faithfully reproduce the exact environment of production VMs inside the testing VMs without exposing its internals.
+%
+(2)~The testing task can be transparently scaled across multiple VMs
+by using parallel symbolic execution~\cite{cloud9}.
+%
+(3)~Since the application uses standard interfaces for accessing the PaaS components (storage, networking, etc.), the provider is able to substitute production-optimized implementations with testing-optimized stubs that offer a simplified behavior that is better suited to automated program analysis.
+
+From the perspective of the PaaS provider, the test runner service consists of a set of symbolic VMs, operated separately from the production infrastructure.  When an application is deployed in test mode, one of the symbolic VMs is allocated for testing: the application code and tests are copied to the guest, and the LSE algorithm is invoked.
+
+\paragraph{Architecture}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3.1in]{figures/paas/symbolic-vm}
+  \caption{The PaaS test runner service.}
+  \label{fig:fse}
+\end{figure}
+
+Figure~\ref{fig:fse} illustrates the architecture of the symbolic VM
+environment.  Inside the VM~\cI, all application components are
+symbolically executed in the same low-level representation (e.g., x86
+machine code or LLVM~\cite{llvm}).  The components execute inside
+their own vanilla interpreters~\cII.  
+%
+The test framework~\cIII plays two roles: it implements (1) the APIs for LPTs and onion objects that developers use to write the testing code, and (2) the LSE algorithm that guides the test case generation.
+
+\paragraph{Prototype}
+
+We implemented a prototype of the symbolic VM that tests Python-based Google App Engine PaaS applications and is built on top of the S2E symbolic virtual machine.
+
+In our implementation, the symbolic execution engine and the LSE logic live at different levels in the symbolic VM stack.
+%
+The symbolic execution engine operates with low-level abstractions such as memory bytes. It resides on the host level, as an S2E plugin that exposes the core symbolic execution primitives to the guest as S2E system calls, e.g., to allow marking memory buffers as symbolic.
+%
+The LSE algorithm operates on web application state (e.g., by accessing the onion objects), and is implemented in the guest as a native Python extension module.  We implemented LSE on top of WebTest~\cite{py-webtest}, a popular fixture library for testing Python web applications.
+%
+The resulting system is extensible to other languages with limited engineering effort: since the symbolic execution logic is provided at the host level, only the test framework component needs to be implemented in the cloud app language.
+
+Early experiences with the prototype are encouraging: for the full application stack of a simple cloud app, our prototype generates a test case every few seconds.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Parallel Symbolic Execution in Cloud9}
 
 Since the size of the execution tree is exponential in the number of branches, and the complexity of constraints increases as the tree deepens, state-of-the-art SEEs can quickly bottleneck on CPU and memory even for programs with just a couple \kloc.  We therefore build a parallel SEE that runs on a commodity cluster and enables ``throwing hardware at the problem.''
 
@@ -74,14 +310,8 @@ The goal is to dynamically partition the execution tree such that the parts are 
 
 \cnine operates roughly as follows: The first component to come up is the load balancer.  When the first worker node $W_1$ joins the \cnine cluster, it connects to the LB and receives a ``seed'' job to explore the entire execution tree.  When the second worker $W_2$ joins and contacts the LB, it is instructed to balance $W_1$'s load, which causes $W_1$ to break off some of its unexplored subtrees and send them to $W_2$ in the form of {\em jobs}.  As new workers join, the LB has them balance the load of existing workers.  The workers regularly send to the LB status updates on their load in terms of exploration jobs, along with current progress in terms of code coverage, encoded as a bit vector.  Based on workers' load, the LB can issue job transfer requests to pairs of workers in the form $\langle$~source worker, destination worker, \# of jobs~$\rangle$.  The source node decides which particular jobs to transfer.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Worker-level Operation}
+\subsection{Worker-level Operation}
 \label{sec:workerView}
-
-\begin{itemize}
-\item Introduce dead, fence, and candidate nodes.
-\end{itemize}
 
 A worker's visibility is limited to the subtree it is exploring locally.  As $W_i$ explores and reveals the content of its local subtree, it has no knowledge of what $W_j$'s ($i\ne j$) subtree looks like.  No element in the system---not even the load balancer---maintains a global execution tree.  Disjointness and completeness 
 of the exploration (see Fig.~\ref{fig:architecture}) are ensured by the load balancing algorithm.
@@ -102,8 +332,6 @@ of the exploration (see Fig.~\ref{fig:architecture}) are ensured by the load bal
 As will be explained later, each worker has the root of the global execution tree.  The tree portion explored thus far on a worker consists of three kinds of nodes: (1) internal nodes that have already been explored and are thus no longer of interest---we call them {\em \dead} nodes; (2) {\em \fence} nodes that demarcate the portion being explored, separating the domains of different workers; and (3) {\em \candidate} nodes, which are nodes ready to be explored.  A worker exclusively explores \candidate nodes; it never expands \fence or \dead nodes.
 
 Candidate nodes are leaves of the local tree, and they form the \emph{exploration frontier}.  The work transfer algorithm ensures that frontiers are disjoint between workers, thus ensuring that no worker duplicates the exploration done by another worker.  At the same time, the union of all frontiers in the system corresponds to the frontier of the global execution tree. The goal of a worker  $W_i$ at every step is to choose the next \candidate node to explore and, when a bug is encountered, to compute the inputs, thread schedule, and system call returns that would take the program to that bug.
-
- The implementation of this conceptual model lends itself to many optimizations, some of which we cover in Section~\ref{sec:implementation}.  Broadly speaking, judicious use of copy-on-write and a novel state-encoding technique ensure that actual program state is only maintained for \candidate and \fence nodes.
 
 %--------------------------------------------------
 \paragraph{Worker-to-Worker Job Transfer}
@@ -150,12 +378,8 @@ As suggested in Fig.~\ref{fig:transitions}, once a tree node is \dead, it has re
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Cluster-level Operation}
+\subsection{Cluster-level Operation}
 \label{sec:loadBalancing}
-
-\begin{itemize}
-\item Describe the load balancer operation.
-\end{itemize}
 
 \paragraph{Load Balancing}
 
@@ -172,13 +396,7 @@ Global strategies are implemented in \cnine using its interface for building {\e
 
 A coverage-optimized strategy drives exploration so as to maximize coverage~\cite{klee}.  In \cnine, coverage is represented as a bit vector, with one bit for every line of code; a set bit indicates that a line is covered.  Every time a worker explores a program state, it sets the corresponding bits locally. The current version of the bit vector is piggybacked on the status updates sent to the load balancer.  The LB maintains the current global coverage vector and, when it receives an updated coverage bit vector, {\small OR}s it into the current global coverage.  The result is then sent back to the worker, which in turn {\small OR}s this global bit vector into its own, in order to enable its local exploration strategy to make choices consistent with the global goal.  The coverage bit vector is an example of a \cnine overlay data structure.
 
-
-\section{Automated Testing-as-a-Service (TaaS)}
-
-
-\section{Layered Symbolic Execution}
-
-\subsection{Scaling on Commodity Shared-Nothing Clusters}
+\subsection{Scalability Evaluation}
 \label{sec:scalability}
 
 We evaluate \cnine\ using two metrics:
@@ -188,15 +406,11 @@ We evaluate \cnine\ using two metrics:
 %Useful instructions also mean that the shared prefixes of any two paths in the program are considered only once, according by this metric. 
 \end{enumerate}
 
-% In other words, from a scalability perspective, useful CPU hours are the ones performed by a single-node symbolic execution engine, when no communication or synchronization overhead is involved. This includes instruction execution and constraint solving. In this case, ineffective CPU hours are the ones used for bookkeeping, including replay work, and also idle CPU time. 
-
-%\item The \emph{capacity}---how many paths the symbolic engine can accomodate at once. The unit of measure is the amount of memory, out of the total available, used for accomodating execution paths. Ideally, this should be proportionally to the total available RAM in the cluster, but in practice the memory is used for other purposes, as well. For instance, due to the way the job model is designed, \cnine\ maintains inactive states on each worker, which do not count towards the aggregated state frontier. The inactive states are used to speed up the replay process, therefore it's a "trade CPU for memory" case. 
-
 A cluster-based symbolic execution engine \emph{scales} with the number of workers if these two metrics improve proportionally with the number of workers in the cluster.
 
 \paragraph{Time Scalability} We show that \cnine\ scales linearly by achieving the same testing goal proportionally faster as the number of workers increases. We consider two scenarios.
 
-First, we measure how fast \cnine\ can exhaustively explore a fixed number of paths in the symbolic execution tree.  For this, we use a symbolic test case that generates all the possible paths involved in receiving and processing two symbolic messages in the memcached server (Section~\ref{sec:effectiveness} gives more details about the setup). Fig.~\ref{fig:scalab-time-vs-workers} shows the time required to finish the test case with a variable number of workers: every doubling in the number of workers roughly halves the time to completion.  With 48 workers, the time to complete is about 10 minutes; for 1 worker,  exploration time exceeds our 10-hour limit on the experiment.  
+First, we measure how fast \cnine\ can exhaustively explore a fixed number of paths in the symbolic execution tree.  For this, we use a symbolic test case that generates all the possible paths involved in receiving and processing two symbolic messages in the memcached server.  Fig.~\ref{fig:scalab-time-vs-workers} shows the time required to finish the test case with a variable number of workers: every doubling in the number of workers roughly halves the time to completion.  With 48 workers, the time to complete is about 10 minutes; for 1 worker,  exploration time exceeds our 10-hour limit on the experiment.  
 
 %The results of the experiment show an important aspect: while the path explosion problem cannot simply be solved by thowing more hardware at it, the size of the problems for which symbolic execution can be useful today are within the range in which a parallel symbolic execution engine can make a significant difference.
 
@@ -226,12 +440,6 @@ Second, we measure the time it takes \cnine\ to reach a fixed coverage level for
   \label{fig:scalab-memcached}
 \end{figure}
 
-% However, we noticed a different effect even on the \codebit{printf} utility (Fig.~\ref{fig:scalab}). Contrary to intuition, the total useful work effort scales super-linearly.  In other words, the average efficiency of a worker \emph{grows} with the number of total workers in the cluster.
-
-% This is because parallel exploration favors a quicker exploration of the parts of the symbolic execution tree with low constraint solving overhead, and thus yields higher instruction throughput.  Even if each worker node runs the same strategy, at a global level the "distributed" strategy of selecting the nodes in the global frontier depends on how the frontier is partitioned among workers.  Many small partitions give more chances to each segment of the frontier to be selected, and thus reduce the probability of bottlenecking in parts of the tree with high instruction execution times caused by complex constraint solving.
-
-% The effect is barely noticeable in the case of memcached because in that case, the exploration is exhaustive and the same instructions are eventually executed regardless of the selection strategy.
-
 In Fig.~\ref{fig:scalab} we show the results for \codebit{printf} and \codebit{test}, UNIX utilities that are an order of magnitude smaller than memcached. We find that the useful work done scales in a similar way to memcached, even though the three programs are quite different from each other (e.g., \codebit{printf} does mostly parsing and formatting, while memcached does mostly data structure manipulations and network I/O).
 
 
@@ -245,6 +453,8 @@ In Fig.~\ref{fig:scalab} we show the results for \codebit{printf} and \codebit{t
 
 In conclusion, \cnine scales linearly with the number of workers, both in terms of the time to complete a symbolic testing task and in terms of reaching a target coverage level.  % As far as the performed work is concerned, we observe that worker efficiency increases as the total number of workers in the system increases.
 
+
+\iffalse
 \subsection{Utility of Load Balancing}
 \label{sec:profiling}
  
@@ -258,10 +468,6 @@ In this section we explore the utility of dynamic load balancing.  Consider the 
 \end{figure} 
 
 To illustrate the benefits of load balancing, we disable it at various moments in time and then analyze the evolution of total useful work done. Fig.~\ref{fig:scalab-static-balancing} shows that the elimination of load balancing at any moment during the execution significantly affects the subsequent performance of exploration due to the ensuing imbalance.  This demonstrates the necessity of taking a dynamic approach to parallel symbolic execution, instead of doing mere static partitioning of the execution tree.
-
-%Scaling symbolic execution is a hard problem. A naive approach to parallelization, e.g. static splitting of the search space, does not give good performance in general. Figure~\ref{fig:scalab-static-split} shows side by side \cnine with N nodes and the Klee symbolic execution engine with a statically split search space.
-
-%The load balancer is indeed a necessary component. Figure~\ref{fig:scalab-load-balancing} shows the distribution of the load balancing decisions during \cnine\ execution (\stefan{Experiment done with 24 workers, on memcached with 2 sequential symbolic binary commands.}).
 
 \begin{figure}[h!]
   \centering
@@ -289,6 +495,7 @@ The way we compute coverage is different from~\cite{klee}---whereas \klee was co
   \caption{\cnine coverage improvements on the 96 Coreutils (1-worker \cnine vs. 12-worker \cnine).}
   \label{fig:coreutils-cov}
 \end{figure}
+\fi
 
 
 %%% Local Variables: 
