@@ -57,26 +57,45 @@ Symbolic execution is the most successful automated whitebox testing technique t
 
 \subsection{Systematic Path Exploration Using Symbolic Execution}
 
-Symbolic execution works by marking program inputs as symbolic, which means they can take up any value.  The program execution manipulates symbolic data and maintains a symbolic execution state.
+%% Symbolic execution works by marking program inputs as symbolic, which means they can take up any value.  The program execution manipulates symbolic data and maintains a symbolic execution state.
 
-When a branch is encountered during execution, the current state forks for each possible branch outcome, and the execution of the two states proceeds independently.  This process repeats for each subsequent branch, creating a symbolic execution tree.
+Symbolic execution works by executing a program with \emph{symbolic} instead of concrete input values, to cover the entire input space and thus all possible program execution paths.  For instance, a function \codebit{foo(int x)} is executed with a symbolic variable $\lambda$ assigned to \codebit{x}.
+%
+Statements using \codebit{x} manipulate it symbolically: \codebit{x := x * 3} updates the value of \codebit{x} to $3 \cdot \lambda$.  During execution, the assignment of variables to expressions is kept in a \emph{symbolic store} of the program execution state.
 
-For each path, the conjunction of the branch decisions taken forms the path condition, which is a formula whose solution, if there is one (i.e., it is satisfiable), is a concrete input---a test case---that takes the program along the exact execution path.
+%% When a branch is encountered during execution, the current state forks for each possible branch outcome, and the execution of the two states proceeds independently.  This process repeats for each subsequent branch, turning an otherwise linear execution into a symbolic execution tree.
 
-Symbolic execution is used for generating high-coverage test suites, bug finding, or even debugging.
+Whenever symbolic execution encounters a conditional branch, the execution state forks into two states, whose executions proceed independently.  For each state, this process repeats for subsequent branches, turning an otherwise linear execution into a symbolic execution tree.
+
+%% For each path, the conjunction of the branch decisions taken forms the path condition, which is a formula whose solution, if there is one (i.e., it is satisfiable), is a concrete input---a test case---that takes the program along the exact execution path.
 
 % The path conditions are checked for satisfiability by a constraint solver, which employs a decision procedure optimized for the type of formulas that arise in program analysis, e.g., bit-vectors and arrays.
 
+Each program state keeps the conjunction of the branch conditions taken on its path as a \emph{path condition}.
+%
+The path condition can be sent to a constraint solver to obtain a concrete assignment for the symbolic input (e.g., $\lambda = 42$), which takes the program along the exact execution path.  This input constitutes a \emph{test case} for the program.
+
+The \emph{completeness}---systematic enumeration of all paths---and \emph{soundness}---each path is a real execution---of symbolic execution makes it highly effective at automatically generating high-coverage test suites, finding bugs, and even debugging.
+
+
 % The satisfiability problem is NP-complete, which means there is no efficient (polynomial) algorithm available.  In practice, modern solvers can handle most formulas efficiently by using heuristics.  However, symbolic execution time is still dominated by constraint solving, as formulas can quickly become complex for non-trivial software.
 
-The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops making the problem even worse.  As any non-trivial software can have at least thousands of branches, the size of the tree quickly becomes too large to be exhaustively covered in a reasonable amount of time.  This is called the ``path explosion'' problem.
 
-In practice, symbolic execution engines resort to prioritizing paths within a given time budget.
+%% The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops making the problem even worse.  As any non-trivial software can have at least thousands of branches, the size of the tree quickly becomes too large to be exhaustively covered in a reasonable amount of time.  This is called the ``path explosion'' problem.
+
+Alas, symbolic execution is challenging to apply for non-trivial software.  The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops further amplifying the problem.  Even for moderately-sized programs with hundreds of branches, the size of the execution tree becomes too large to be completely covered in a reasonable amount of time.
+%
+This is commonly known as the ``path explosion'' problem and, in practice, symbolic execution engines resort to \emph{prioritizing} paths within a given time budget.
 
 
 \subsection{The Environment Problem in Symbolic Execution}
 
-Given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.  For example, say we want to test a system utility.  Even the smallest utility calls into the operating system for opening files, using the network, or printing on the screen.  Symbolically executing all these steps means traversing millions of lines of code, even if we're only interested in covering the utility.
+%% Given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.  For example, say we want to test a system utility.  Even the smallest utility calls into the operating system for opening files, using the network, or printing on the screen.  Symbolically executing all these steps means traversing millions of lines of code, even if we're only interested in covering the utility.
+
+For real-world software with thousands and even millions of lines of code, given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.
+%
+
+
 
 Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
 
