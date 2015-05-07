@@ -1,3 +1,5 @@
+In this chapter, we evaluate the \cnine and \chef symbolic execution platforms by answering the following questions: (1) What real-world software can the two platforms target? (2) Are the test cases generated effective for bug finding or achieving high coverage? (3) How efficient are the two platforms with respect to the resources used?
+
 \section{Prototypes}
 
 \subsection{Cloud9}
@@ -41,7 +43,7 @@ Developer time (person-days) & 5 & 3 \\
 
 \paragraph{Interpreter Instrumentation}
 
-We instrumented the CPython interpreter 2.7.3 for use with \chef, according to the guidelines presented in Section~\ref{sec:recipe}.
+We instrumented the CPython interpreter 2.7.3 for use with \chef, according to the guidelines presented in Section~\ref{sec:chef:recipe}.
 
 Python programs are composed of modules, corresponding to Python source files.  Each source file is compiled into an interpreter-specific bytecode format, i.e., each source statement is translated into one or more lower-level primitive instructions.  The instructions are grouped into blocks, corresponding to a single loop nesting, function, method, class, or global module definition.
 %
@@ -94,7 +96,7 @@ We optimized the Lua interpreter for symbolic execution by eliminating string in
 
 \subsection{Running Low-level Systems with Cloud9}
 
-For all our experiments, we used a heterogeneous cluster environment, with worker CPU frequencies between 2.3--2.6 GHz and with 4--6 GB of RAM available per core.
+For all our \cnine experiments, we ran \cnine in parallel symbolic execution mode in a heterogeneous cluster environment, with worker CPU frequencies between 2.3--2.6 GHz and with 4--6 GB of RAM available per core.
 
 On each worker, the underlying \klee engine used the best searchers from \cite{klee}, namely an interleaving of random-path and coverage-optimized strategies. At each step, the engine alternately selects one of these heuristics to pick the next state to explore. Random-path traverses the execution tree starting from the root and randomly picks the next descendant node, until a candidate state is reached. The coverage-optimized strategy weighs the states according to an estimated distance to an uncovered line of code, and then randomly selects the next state according to these weights.
 
@@ -126,7 +128,7 @@ Bandicoot 1.0           &                   6 & 4 & Lightweight DBMS \\ \hline
 \label{table:tested}
 \end{table}
 
-Due to its comprehensive POSIX model, \cnine can test many kinds of servers.  One example is lighttpd, a web server used by numerous high-profile web sites, such as YouTube, Wikimedia, Meebo, and SourceForge.  For lighttpd, \cnine proved that a certain bug fix was incorrect, and the bug could still manifest even after applying the patch (Section~\ref{sec:lighttpd}). \cnine also found a bug in curl, an Internet transfer application that is part of most Linux distributions and other operating systems (Section~\ref{sec:curl}).  \cnine also found a hang bug in the UDP handling code of memcached, a distributed memory object cache system used by many Internet services, such as Flickr, Craigslist, Twitter, and Livejournal (Section~\ref{sec:memcached}).
+Due to its comprehensive POSIX model, \cnine can test many kinds of servers.  One example is lighttpd, a web server used by numerous high-profile web sites, such as YouTube, Wikimedia, Meebo, and SourceForge.  For lighttpd, \cnine proved that a certain bug fix was incorrect, and the bug could still manifest even after applying the patch (Section~\ref{sec:eval:lighttpd}). \cnine also found a bug in curl, an Internet transfer application that is part of most Linux distributions and other operating systems (Section~\ref{sec:curl}).  \cnine also found a hang bug in the UDP handling code of memcached, a distributed memory object cache system used by many Internet services, such as Flickr, Craigslist, Twitter, and Livejournal (Section~\ref{sec:memcached}).
 
 In addition to the testing targets mentioned above, we also tested a benchmark consisting of a multi-threaded and multi-process producer-consumer simulation. The benchmark exercises the entire functionality of the POSIX model: threads, synchronization, processes, and networking. 
 
@@ -188,7 +190,7 @@ To thoroughly test these parsers, it is important to also symbolically execute t
 
 For each package, we wrote a symbolic test that invokes the package's entry points with one or more symbolic strings.  
 %The symbolic tests invoke the code under test in a generic manner without specific checks.  
-Figure~\ref{fig:sample-test} in Section~\ref{sec:symbolictests} is an example of such a symbolic test.
+Figure~\ref{fig:sample-test} in Section~\ref{sec:python} is an example of such a symbolic test.
 
 Each symbolic test ran for 30 minutes within \chef, after which we replayed the collected high-level tests on the host machine, in a vanilla Python/Lua environment, to confirm test results and measure line coverage.  To compensate for the randomness in the state selection strategies, we repeated each experiment 15 times.  In each graph we present average values and error margins as +/- one standard deviation.
 
@@ -205,25 +207,19 @@ Since our prototype only supports strings and integers as symbolic program input
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Test Suite Generation Effectiveness}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Bug Finding Effectiveness}
-
-\subsection{Cloud9 Effectiveness as a Testing Platform}
+\section{Cloud9's Effectiveness as a Testing Platform}
 
 In this section we present several case studies that illustrate how \cnine can explore and find new bugs, confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
 
 %--------------------------------------------------
-\subsubsection{Case Study \#1: Curl}
+\subsection{Case Study \#1: Curl}
 \label{sec:curl}
 
 Curl is a popular data transfer tool for multiple network protocols, including HTTP and FTP.  When testing it, \cnine\ found a new bug which causes Curl to crash when given a URL regular expression of the form ``\codebit{http://site.\{one,\linebreak two,three\}.com\{}''. \cnine exposed a general problem in Curl's handling of the case when braces used for regular expression globbing are not matched properly.  The bug was confirmed and fixed within 24 hours by the developers. 
 
 This problem had not been noticed before because the globbing functionality in Curl was shadowed by the same functionality in command-line interpreters (e.g., Bash).  This case study illustrates a situation that occurs often in practice: when a piece of software is used in a way that has not been tried before, it is likely to fail due to latent bugs.
 
-\subsubsection{Case Study \#2: Memcached}
+\subsection{Case Study \#2: Memcached}
 \label{sec:memcached}
 
 Memcached is a distributed memory object cache system, mainly used to speed up web application access to persistent
@@ -275,13 +271,13 @@ when a sequence of packet fragments of a certain size arrive at the server, memc
 We discovered the bug by limiting the maximum number of instructions executed per path to $5 \times 10^6$.  The paths without the bug terminated after executing $\approximately 3\times 10^5$ instructions; the other paths that hit the maximum pointed us to the bug.
 
 %--------------------------------------------------
-\subsubsection{Case Study \#3: Lighttpd}
+\subsection{Case Study \#3: Lighttpd}
 \label{sec:eval:lighttpd}
 
 
 The lighttpd web server is specifically engineered for high request throughput, and it is quite sensitive to the rate at which new data is read from a socket.  Alas, the POSIX specification offers no guarantee on the number of bytes that can be read from a file descriptor at a time.  lighttpd 1.4.12 has a bug in the command-processing code that causes the server to crash (and connected clients to hang indefinitely) depending on how the incoming stream of requests is fragmented. 
 
-We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in Section~\ref{sec:platform}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
+We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in Section~\ref{sec:cloud9:platform}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
 
 This case study shows that \cnine can find bugs caused by specific interactions with the environment which are hard to test with a concrete test suite. It also shows how \cnine can be used to write effective regression test suites---had a stream-fragmentation symbolic test been run after the fix, the lighttpd developers would have promptly discovered the incompleteness of their fix.
 
@@ -304,18 +300,19 @@ $2+5+1+5+2 \times 1 + 3 \times 2 + 5 + 2 \times 1 $	& crash + hang 	& crash + ha
 \label{table:lighttpd}
 \end{table}
 
-\subsubsection{Case Study \#4: Bandicoot DBMS}
+\subsection{Case Study \#4: Bandicoot DBMS}
 \label{sec:bandicoot}
 
 Bandicoot is a lightweight DBMS that can be accessed over an HTTP interface.  We exhaustively explored all paths handling the GET commands and found a bug in which Bandicoot reads from outside its allocated memory.  The particular test we ran fortuitously did not result in a crash, as Bandicoot ended up reading from the libc memory allocator's metadata preceding the allocated block of memory. However, besides the read data being wrong, this bug could cause a crash depending on where the memory block was allocated.
 
 To discover and diagnose this bug without \cnine is difficult. First, a concrete test case has little chance of triggering the bug.  Second, searching for the bug with a sequential symbolic execution tool seems impractical: the exhaustive exploration took 9 hours with a 4-worker \cnine (and less than 1 hour with a 24-worker cluster). 
 
-\subsubsection{Discussion}
+\subsection{Discussion}
 
 \cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions. We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).  Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model allows \cnine to reach more paths and explore deeper portions of the tested program's code---this exposes additional potentially buggy situations. \cnine also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
 
-\subsection{Chef's Effectiveness for Automated Testing}
+\section{Chef's Effectiveness for Automated Testing}
+\label{sec:eval:chef-atcg}
 
 We evaluate the effectiveness of the generated symbolic execution engines for bug detection and exception exploration.
 
@@ -341,16 +338,16 @@ We looked at all the Python exceptions triggered by the test cases generated usi
 
 The sixth column in Table~\ref{tab:targets} summarizes our findings.  We found four undocumented exceptions in \codebit{xlrd}, the largest package.  These exceptions occur when parsing a Microsoft Excel file, and they are \codebit{BadZipfile}, \codebit{IndexError}, \codebit{error}, and \codebit{AssertionError}.  These errors occur inside the inner components of the Excel parser, and should have either been documented or, preferably, been caught by the parser and re-raised as the user-facing \codebit{XLRDError}.
 
-\subsection{Impact of \cupa Heuristics and Interpreter Optimizations}
+\section{Impact of \cupa Heuristics and Interpreter Optimizations}
 \label{sec:sub:perf-cupa}
 
-We now analyze the impact of the \cupa heuristics (described in Section~\ref{sec:cupa}) and the interpreter optimizations (described in Section~\ref{sec:optimzeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
+We now analyze the impact of the \cupa heuristics (described in Section~\ref{sec:chef:cupa}) and the interpreter optimizations (described in Section~\ref{sec:chef:optimzeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
 
 We compare the results obtained in 4 different configurations: (1) the baseline, consisting of performing random state selection while executing the unmodified interpreter, and then either use (2) the path- or coverage-optimized CUPA only, (3) the optimized interpreter only, or (4) both CUPA and the optimized interpreter.  This way we measure the individual contribution of each technique, as well as their aggregate behavior.
 
 \paragraph{Test Case Generation}
 
-Figure~\ref{fig:tc-improv} compares the number of test cases generated with each of the 4 \chef configurations, using the path-optimized CUPA~(Section~\ref{sec:cupa-paths}).  We only count the \textit{relevant} high-level test cases, that is, each test case exercises a unique high-level path in the target Python program.
+Figure~\ref{fig:tc-improv} compares the number of test cases generated with each of the 4 \chef configurations, using the path-optimized CUPA~(Section~\ref{sec:chef:cupa-paths}).  We only count the \textit{relevant} high-level test cases, that is, each test case exercises a unique high-level path in the target Python program.
 
 \begin{figure}[t]
   \centering
@@ -366,11 +363,11 @@ For all but one of the 11 packages (6 Python plus 5 Lua), the aggregate CUPA + i
 
 The CUPA strategy and the interpreter optimizations may interact non-linearly.  In two cases (Python's \codebit{xlrd} and \codebit{simplejson}), the aggregate significantly outperforms either individual technique. These are cases where the result is better than the sum of its parts.  In the other cases, the result is roughly the sum of each part, although the contribution of each part differs among targets.  This is visually depicted on the log-scale graph: for each cluster, the heights of the middle bars measured from level $1 \times$ roughly add up to the height of the aggregate (left) bar.
 
-In one case (Lua's \codebit{JSON}), the aggregate performs worse on average than using the interpreter optimizations alone.  Moreover, the performance of each configuration is less predictable, as shown by the large error bars.  This behavior is due to the generated tests that cause the interpreter to hang, as explained in Section~\ref{sec:sub:effectiveness}.  To detect hangs, the test runs for 60 seconds before switching to another test case.  This acts as a ``penalty'' for the configurations that find more paths leading to the hang and also skews the distribution of path execution times, since the hanging paths take significantly longer than the normal (terminating) paths.
+In one case (Lua's \codebit{JSON}), the aggregate performs worse on average than using the interpreter optimizations alone.  Moreover, the performance of each configuration is less predictable, as shown by the large error bars.  This behavior is due to the generated tests that cause the interpreter to hang, as explained in Section~\ref{sec:eval:chef-atcg}.  To detect hangs, the test runs for 60 seconds before switching to another test case.  This acts as a ``penalty'' for the configurations that find more paths leading to the hang and also skews the distribution of path execution times, since the hanging paths take significantly longer than the normal (terminating) paths.
 
 \paragraph{Line Coverage}
 
-Figure~\ref{fig:coverage-improv} shows the line coverage achieved by each configuration, using CUPA optimized for line coverage (Section~\ref{sec:cupa-coverage}).  In 6 out of 11 packages, the coverage improvement is noticeable, and for Python's \codebit{simplejson} and \codebit{xlrd}, the improvements are significant ($80\%$ and $40\%$).
+Figure~\ref{fig:coverage-improv} shows the line coverage achieved by each configuration, using CUPA optimized for line coverage (Section~\ref{sec:chef:cupa-coverage}).  In 6 out of 11 packages, the coverage improvement is noticeable, and for Python's \codebit{simplejson} and \codebit{xlrd}, the improvements are significant ($80\%$ and $40\%$).
 
 Note that these coverage improvements are obtained using basic symbolic tests that do not make assumptions about the input format.  We believe that tailoring the symbolic tests to the specifics of each package could improve these results significantly.
 
@@ -382,10 +379,10 @@ Note that these coverage improvements are obtained using basic symbolic tests th
   \label{fig:coverage-improv}
 \end{figure}
 
-\subsection{Breaking Down Interpreter Optimizations}
+\section{Breaking Down Chef's Interpreter Optimizations}
 \label{sec:sub:optimizations}
 
-We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in Section~\ref{sec:optimzeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
+We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in Section~\ref{sec:chef:optimzeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
 
 Figure~\ref{fig:optimizations} shows the results for Python.  The data is normalized such that the number of high-level paths for each target reaches $100\%$.  For 3 out of 6 packages (\codebit{simplejson}, \codebit{argparse}, and \codebit{HTMLParser}), \chef's performance monotonically increases as more optimizations are introduced.  For \codebit{unicodecsv} and \codebit{ConfigParser}, the optimizations do not bring any benefits or even hurt slightly.  
 
@@ -401,7 +398,7 @@ This result suggests that, for large packages, a \emph{portfolio} of interpreter
 \end{figure}
 
 
-\subsection{Comparison Against Hand-Made Engines}
+\section{Comparing Chef Against Hand-Made Engines}
 \label{sec:sub:comparison}
 
 We now evaluate the trade-offs in using a symbolic execution engine generated with \chef over building one ``by hand''.

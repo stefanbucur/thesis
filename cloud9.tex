@@ -138,6 +138,7 @@ In this section, we describe the key design decisions involved in building the \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Symbolic Test Suites}
+\label{sec:cloud9:platform}
 
 Software products and systems typically have large ``hand-made'' test suites; writing and maintaining these suites requires substantial human effort.  \cnine aims to reduce this burden while improving the quality of testing, by offering an easy way to write ``symbolic test suites.'' First, a symbolic test case encompasses many similar concrete test cases into a single symbolic one---each symbolic test a developer writes is equivalent to many concrete ones.  Second, a symbolic test case explores conditions that are hard to produce reliably in a concrete test case, such as the occurrence of faults, concurrency side effects, or network packet reordering, dropping and delay.  Furthermore, symbolic test suites can easily cover unknown corner cases, as well as new, untested functionality.  In this section, we present the API for symbolic tests and illustrate it with a use case.
 
