@@ -176,17 +176,27 @@ By using these models as substitutes for the complex kernel implementations, \cn
 
 \subsection{Using Interpreters as Specifications for Fast-changing Languages}
 
-The second problem lends itself to a different approach.  As the interface is volatile, porous, and complex, modeling it is an expensive ongoing engineering effort.
+%% The second problem lends itself to a different approach.  As the interface is volatile, porous, and complex, modeling it is an expensive ongoing engineering effort.
 
-Instead, this thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine while executing the target program.  The aggregate system acts as a high-level symbolic execution engine for the target program.
+%% Instead, this thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine while executing the target program.  The aggregate system acts as a high-level symbolic execution engine for the target program.
 
-Mapping low-level interpreter paths to high-level program paths is done by segmenting the low-level paths into chunks corresponding to each high-level instruction executed.  Low-level paths with the same sequence of high-level instructions map to the same high-level path.
+For incomplete and unstable dynamic language semantics, the environment problem lends itself to a different approach.
+%
+This thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it executes the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
 
-To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis, a family of path prioritization heuristics for maximizing a given coverage metric.
+%% Mapping low-level interpreter paths to high-level program paths is done by segmenting the low-level paths into chunks corresponding to each high-level instruction executed.  Low-level paths with the same sequence of high-level instructions map to the same high-level path.
 
-Additionally, we provide a set of fast recipes for eliminating common sources of path explosion in the interpreter.
+To map the low-level interpreter paths to high-level program paths, we partition the interpreter paths into chunks, one for each high-level instruction executed on the path. The low-level paths with the same sequence of high-level instructions map to the same high-level path.
 
-We prototyped the Chef symbolic execution platform for interpreted languages and used it to obtain engines for Python, Lua, and JavaScript.
+To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
+%
+CUPA works by grouping paths into equivalence classes, according to a coverage goal.  The prioritization is done by uniformly choosing groups instead of paths.  As a result, any path selection bias introduced by program locations with higher path explosion is contained within one equivalence class.
+
+%% Additionally, we provide a set of fast recipes for eliminating common sources of path explosion in the interpreter.
+
+%% We prototyped the Chef symbolic execution platform for interpreted languages and used it to obtain engines for Python, Lua, and JavaScript.
+
+We prototyped these ideas in the \chef symbolic execution platfom for interpreted languages.  With \chef, we obtained engines for Python and Lua, which generated test suites and found bugs in popular library packages.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -208,6 +218,14 @@ Chapter 7 wraps up the thesis with conclusions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
 
 \iffalse
 \section{Problem Definition}
@@ -323,13 +341,6 @@ Parallel symbolic execution.
 \subsection{Symbolic Tests for Encapsulating the Symbolic Execution Task}
 
 The {\em third challenge} is using an automated test generator in the context of a development organization's quality assurance processes.  To take full advantage of the automated exploration of paths, a testing tool must provide ways to control all aspects of the environment.  For example, there needs to be a clean API for injecting failures at the boundary between programs and their environment, there must be a way to control thread schedules, and so on.  There should be a way to programmatically orchestrate all environment-related events, but doing so should not require deep expertise in the technology behind the testing tools themselves.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Thesis Roadmap}
-
-The rest of the thesis is structured as follows: ...
-\fi
 
 
 %%% Local Variables: 
