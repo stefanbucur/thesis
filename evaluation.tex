@@ -276,7 +276,7 @@ We discovered the bug by limiting the maximum number of instructions executed pe
 
 %--------------------------------------------------
 \subsubsection{Case Study \#3: Lighttpd}
-\label{sec:lighttpd}
+\label{sec:eval:lighttpd}
 
 
 The lighttpd web server is specifically engineered for high request throughput, and it is quite sensitive to the rate at which new data is read from a socket.  Alas, the POSIX specification offers no guarantee on the number of bytes that can be read from a file descriptor at a time.  lighttpd 1.4.12 has a bug in the command-processing code that causes the server to crash (and connected clients to hang indefinitely) depending on how the incoming stream of requests is fragmented. 
