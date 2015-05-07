@@ -220,23 +220,56 @@ The hangs and unexpected exceptions discovered by the Chef-generated engines for
 \section{Approaches to the Environment Problem}
 \label{sec:relwork:envproblem}
 
-We now discuss in more detail the environment problem in symbolic execution and how existing work approaches it.
+In this section, we focus on how existing symbolic execution engines approach the environment problem, and how our contributions build upon it.
 
 In order to efficiently achieve the testing goals for the target program, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
 %
-The existing approaches fall into three categories: concretizing the calls into the environment, bundling the environment with the rest of the program, and abstracting (modeling) the environment.
+The existing approaches fall into three categories: concretizing the calls into the environment, abstracting away the environment complexity through models, and ``inlining'' the environment with the program.
 
 \subsection{Over-approximation (Concretization)}
 
-Concretizing calls into the environment can be easily done in concolic mode, by simply dropping the symbolic operations while the execution carries outside the program [cite CUTE, DART, SAGE].  In pure symbolic mode, an alternative is to call the environment of the host [cite KLEE].  The disadvantage is that different execution paths can interfere for stateful calls (e.g., resource operations).
+%% Concretizing calls into the environment can be easily done in concolic mode, by simply dropping the symbolic operations while the execution carries outside the program [cite CUTE, DART, SAGE].  In pure symbolic mode, an alternative is to call the environment of the host [cite KLEE].  The disadvantage is that different execution paths can interfere for stateful calls (e.g., resource operations).
+
+A simple approach to simplifying the environment execution is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee}.
+%
+For instance, when a symbolic value $\mu$ is passed as a parameter to an external function, the symbolic execution engine replaces the symbolic expression with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
+
+However, concretization may cause inconsistencies in the execution and missing feasible paths.
+%
+First, the value returned from the environment is concrete, which may lead the symbolic execution engine to miss value-dependant paths in the program, such as error handling.
+
+Second, in order to maintain soundness, the concretization introduces in the path condition of the execution state the fact that the symbolic value was constrained to one of its concrete examples ($pc_{new} := pc_{old} \wedge (\mu = m)$).  This also restricts the possible executions of the paths following the external call.  Removing the step might increase the coverage of the target program, at the expense of introducing false positives.
+
+Finally, concretization may introduce additional inconsistencies when the environment state is shared among all execution paths, as it is the case with non-concolic (``pure-symbolic'') execution.  In that case, calls into the external environment end up operating on the same environment, causing cross-talking between different execution paths~\cite{klee}.
 
 \subsection{Abstraction (Modeling)}
 
-The last approach is to replace a concrete interface implementation with a simplified one, as either part of the symbolic execution engine (e.g., symbolic hardware in S2E), or as guest code running at the same level as the target program (e.g., uClibc models in KLEE).  The simpler the model, the less path explosion, but may introduce unsoundness or missed bugs.
+%% The last approach is to replace a concrete interface implementation with a simplified one, as either part of the symbolic execution engine (e.g., symbolic hardware in S2E), or as guest code running at the same level as the target program (e.g., uClibc models in KLEE).  The simpler the model, the less path explosion, but may introduce unsoundness or missed bugs.
+
+An alternative approach to simplifying the environment is to replace its concrete implementation with a simpler one---a model---that captures its essential behavior.
+%
+This often results in the model being significantly smaller than the original, as it drops non-functional requirements, such as performance or fault-tolerance.  For example, when testing a web application, its key-value store database could be replaced with a model consisting of a plain local dictionary data structure.
+
+Symbolic execution engines implement models either by building them into the engine implementation (e.g., symbolic hardware models in S2E~\cite{s2eSystem}), or as guest code running together with the target program (e.g., the file system models in KLEE~\cite{klee}).
+
+Although they are effective at reducing path explosion, models are expensive to write correctly and completely.  As a result, they tend to be employed only for environment interfaces with simple semantics, or when the model accuracy is less important (e.g., security testing~\cite{aeg}).
+
+Cloud9 takes the modeling approach to the environment problem, when symbolically executing programs interacting with the operating system.  Cloud9 is the first to provide an accurate and efficient model for an operating system interface as complex as POSIX.  Compared to previous approaches, Cloud9 divides the model code into built-in core primitives and guest code, which helps keep the implementation simple, while covering much of the most common operating system abstractions.
 
 \subsection{Inlining (Whole-system Analysis)}
 
-The opposite approach is to treat the program + environment as one large target.  Full-VM symbolic execution engines take this approach.  The problem is that path explosion in the entire system reduces the focus on the target program.  S2E introduced consistency models as a principled path pruning outside the module of interest.
+%% The opposite approach is to treat the program + environment as one large target.  Full-VM symbolic execution engines take this approach.  The problem is that path explosion in the entire system reduces the focus on the target program.  S2E introduced consistency models as a principled path pruning outside the module of interest.
+
+Finally, the approach that preserves full correctness and completeness is to bundle the environment with the program and execute it symbolically as one target.
+%
+Full-VM symbolic execution engines provide this approach~\cite{s2e,bitBlaze}.
+%
+However, this approach reduces the effectiveness of symbolic execution on the original target program, due to the path explosion in the entire system, which may be orders of magnitude larger than the program.
+%
+To mitigate the path explosion, S2E introduces execution consistency models, which are principles of converting between symbolic and concrete values when crossing the program boundaries, in order to control the path explosion in the environment.
+
+Chef takes the inlining approach to the environment problem, when symbolically executing programs written in interpreted languages.  Chef is the first system to use a language interpreter as a semantics provider for symbolic execution.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
