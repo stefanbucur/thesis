@@ -168,7 +168,17 @@ To circumvent the complexity of symbolically executing the entire interpreter, t
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-To be determined.
+This thesis addressed two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
+
+To address the environment problem for stable operating system interfaces, this thesis introduced \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
+%
+\cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
+
+For incomplete and unstable dynamic language semantics, this thesis introduced \emph{\chef}, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In \chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
+%
+%% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
+%
+To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduced Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
 
 \bibliographystyle{plain}
 \bibliography{header-standard,biblio}
