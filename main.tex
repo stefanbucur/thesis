@@ -15,6 +15,7 @@
 \usepackage{geo}
 \usletter
 
+\usepackage[utf8]{inputenc}        % UTF code sequences in the input
 \usepackage{times}                 % Times New font
 \usepackage{pifont}                % Ding symbols (for Cloud9)
 \usepackage{wasysym}               % For the bullets in the interpreter comparison (Chef)
@@ -60,7 +61,7 @@
             \setlength{\unitlength}{1pt}%
             \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
         \makebox(0,0){\textcolor[gray]{0.75}%
-        {\fontsize{8mm}{8mm}\selectfont{DRAFT -- PLEASE DO NOT DISTRIBUTE}}}}%
+        {\fontsize{8mm}{8mm}\selectfont{DRAFT}}}}%
 }
 \AddToShipoutPicture{%
             \setlength{\@tempdimb}{.50\paperwidth}%
@@ -68,7 +69,7 @@
             \setlength{\unitlength}{1pt}%
             \put(\strip@pt\@tempdimb,\strip@pt\@tempdimc){%
         \makebox(0,0){\textcolor[gray]{0.75}%
-        {\fontsize{8mm}{8mm}\selectfont{DRAFT -- PLEASE DO NOT DISTRIBUTE}}}}%
+        {\fontsize{8mm}{8mm}\selectfont{DRAFT}}}}%
 }
 \makeatother
 
@@ -95,7 +96,15 @@
 
 \chapter*{Abstract (German)}
 
-To be determined.
+Testen von Software ist aufwändig, zeitintensiv, und fehleranfällig. Symbolische Softwareausführung ist eine vielversprechende Technik zum automatischen Erstellen von Testfällen. In der Praxis limitiert jedoch das Umgebungsproblem die Skalierbarkeit von symbolischer Ausführung: Software ist auf komplexe Schnittstellen zu ihrer externen Umgebung angewiesen, und die symbolische Ausführungsplattform sollte diese Schnittstellen bereitstellen. Es ist schwierig, das Umgebungsproblem ein für alle mal zu lösen, denn seine Natur hängt von der gegebenen Schnittstelle und ihrer Implementierung ab.
+
+Diese Doktorarbeit behandelt zwei Fälle des Umgebungsproblems, welche zusammen ein breites Spektrum von praxisrelevanter Software abdecken: (1) Systemprogramme, welche mit dem Betriebssystem interagieren, und (2) Programme, welche in höheren, dynamischen Sprachen wie Python, Ruby und JavaScript geschrieben sind. Diese beiden Fälle haben entgegengesetzte Eigenschaften: Betriebssystemschnittstellen sind typischerweise stabil und gut dokumentiert (z.B. POSIX); demgegenüber sind die Spezifikationen von dynamischen Sprachen unvollständig und instabil.
+
+Um das Umweltproblem im Fall von stabilen Betriebssystemschnittstellen zu lösen, stellt diese Doktorarbeit Cloud9 vor: eine Plattform zur symbolischen Ausführung mit einem genauen und effizienten Modell der POSIX Schnittstellen, wie sie von Systemprogrammen, Webservern und verteilten Systemen benutzt werden. Cloud9 beruht auf der Erkenntnis, dass die Betriebssystemschnittstelle zu Testzwecken durch ein Modell ersetzt werden kann, welches innerhalb der Testumgebung läuft und auf wenigen grundlegenden Abstraktionen aufbaut: Threads und Prozesse, Synchronisation, und Addressräume mit gemeinsam genutzten Speicher. Dieses Abstraktionen müssen als primitive Operationen von der symbolischen Ausführungsplattform bereitgestellt werden, während die restlichen Teile des Modells innerhalb der Testumgebung emuliert werden können.
+
+Für den Fall der unvollständigen und instabilen Semantik von dynamischen Sprachen stellt diese Arbeit Chef vor. Chef erstellt symbolische Ausführungsplattformen für dynamische Sprachen, indem es deren Interpreter als ausführbare Spezifikation verwendet. Chef führt das zu testende Programm gemeinsam mit dem Interpreter auf maschinennaher Ebene (z.B. x86) symbolisch aus, so dass das Gesamtsystem zu einer symbolischen Ausführungsplattform auf höherer Ebene wird. Chef reduziert die Komplexität dieses Ansatzes mittels klassen-uniformer Pfadanalyse (class-uniform path analysis, CUPA), einer Heuristik zur Priorisierung von Pfaden. CUPA gruppiert Pfade in Äquivalenzklassen basierend auf Zielvorgaben der Analyse. 
+
+\noindent \textbf{Keywords:} Symbolische Ausführung, Programmumgebungen, Systemsoftware, interpretierte Programmiersprachen.
 
 \chapter*{Abstract}
 
@@ -120,7 +129,7 @@ To circumvent the complexity of symbolically executing the entire interpreter, t
 
 \chapter*{Acknowledgments}
 
-TBD
+---
 
 \tableofcontents
 \listoffigures
