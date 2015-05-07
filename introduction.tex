@@ -94,14 +94,28 @@ This is commonly known as the ``path explosion'' problem and, in practice, symbo
 
 For real-world software with thousands and even millions of lines of code, given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.
 %
+For instance, consider a small system utility that prints at the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen.
+%
+Symbolically executing this program potentially involves traversing millions of lines of kernel and library code, even if we're only interested in covering the code of the utility.
 
+%% Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
 
+%% This is called the ``environment problem'' in symbolic execution and it is the distinctive scalability problem of symbolic execution for real-world software.  This is the topic of the thesis.
 
-Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
+Instead, the symbolic execution engine should focus the exploration on the system utility, and reduce the time spent in its environment.
+%
+At the same time, the symbolic execution engine should provide to the program consistent data from the environment, in order to keep the execution sound and avoid missing feasible paths through the program.
+%
+This is called the ``environment problem'' in symbolic execution and it is the main scalability issue when applying symbolic execution on real-world software.
 
-For example, one simple approach is to convert all the environment calls to concrete values.  This causes a single path per call through the environment, but this risks missing feasible paths in the utility itself.  For example, if opening a file with a symbolic name is both successful and failing, concretizing the file name will cause the program to experience only one behavior, say the successful one, and miss the error handling paths.
+%% For example, one simple approach is to convert all the environment calls to concrete values.  This causes a single path per call through the environment, but this risks missing feasible paths in the utility itself.  For example, if opening a file with a symbolic name is both successful and failing, concretizing the file name will cause the program to experience only one behavior, say the successful one, and miss the error handling paths.
 
-This is called the ``environment problem'' in symbolic execution and it is the distinctive scalability problem of symbolic execution for real-world software.  This is the topic of the thesis.
+One possible approach for dealing with the environment problem is to simply let the calls into the environment go through concretely.  For instance, the symbolic parameters of a system call could be forcefully assigned concrete values before executing the system call.
+%
+However, this approach risks introducing inconsistencies in the execution and miss feasible paths in the target program itself.
+%
+For example, if opening a file with a symbolic name would either succeed or fail depending on the file name, concretizing to a valid file name would cause the symbolic execution to miss the error handling path in the program.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
