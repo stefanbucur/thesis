@@ -1,9 +1,12 @@
-\section{Motivation}
-\label{sec:supportingintlangs}
+The previous chapter showed that symbolic models can address the environment problem when the environment interface is stable and well-documented, as it is the case with operating system interfaces.
+%
+For interfaces with incomplete and unstable specifications, such as those of popular dynamic languages such as Python and Ruby, the environment problem lends itself to a different approach.
+%
+In this chapter, we cover the approach of using the interpreter as an ``executable language specification'', which we used to build the \chef symbolic execution platform for interpreted languages.
 
-\begin{itemize}
-  \item Building a symbex engine for high-level languages is hard engineering.
-\end{itemize}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Symbolically Executing the Interpreter}
 
 Building a correct and complete symbolic execution engine for an interpreted language is generally harder than building one for a low-level language. 
 %
@@ -12,15 +15,6 @@ Statements of interpreted languages can wrap complex operations that, in lower-l
 Other language features that allow to inspect or even modify the code itself, i.e., runtime reflection, are even more tedious to implement and very hard to get right.
 
 Finally, besides requiring an enormous initial effort to build a symbolic execution engine that fully supports them, dynamic languages also evolve fast. This implies constant, labor-intensive maintenance and co-evolution of the symbolic execution engine, if it is to keep up with the newest versions of the language.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Symbolically Executing the Interpreter}
-
-\begin{itemize}
-\item We can use the interpreter as ``executable language specs'' by plugging it into a low-level (e.g., binary) symbolic execution engine.
-\item However, this won't work out of the box.
-\end{itemize}
 
 Considering the difficulty of directly supporting interpreted languages, we resort to symbolically executing the interpreter itself, since it completely defines the semantics of the target language as a function of the semantics of the language the interpreter is implemented in.
 %
@@ -72,12 +66,12 @@ In Figure~\ref{fig:hl-symbex}, three low-level paths fork within the single \hlp
 %
 The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
 
+\section{The \chef System}
 
-
-We now present the architecture of \chef (Section~\ref{sec:architecture}) and introduce \cupa, our state selection mechanism (Section~\ref{sec:cupa}). We then describe \cupa optimized for exploring distinct high-level paths (Section~\ref{sec:cupa-paths}) and optimized for high line coverage~(Section~\ref{sec:cupa-coverage}).
+We now present the architecture of \chef (Section~\ref{sec:chef:architecture}) and introduce \cupa, our state selection mechanism (Section~\ref{sec:chef:cupa}). We then describe \cupa optimized for exploring distinct high-level paths (Section~\ref{sec:chef:cupa-paths}) and optimized for high line coverage~(Section~\ref{sec:chef:cupa-coverage}).
 
 \subsection{System Overview}
-\label{sec:architecture}
+\label{sec:chef:architecture}
 
 \chef is a platform for language-specific symbolic execution. Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:system-arch}).
 %
@@ -92,11 +86,12 @@ The resulting engine can be used like a hand-written one, in particular for test
 
 \chef is built on top of the S2E analysis platform~\cite{s2eSystem}. S2E symbolically executes a virtual machine containing the interpreter and a testing library at the level of machine code,  including the OS kernel, drivers, and user programs.  S2E provides an API that guest code can use to declare memory buffers as symbolic. Comparisons on symbolic values cause S2E to fork new paths, which are enqueued and explored following a search strategy.
 %
-\chef extends the S2E guest API with a high-level instruction instrumentation call (Section~\ref{sec:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths (Section~\ref{sec:cupa}).
+\chef extends the S2E guest API with a high-level instruction instrumentation call (Section~\ref{sec:chef:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths (Section~\ref{sec:chef:cupa}).
 
 The resulting engine is a correct symbolic execution engine for the target language \textit{as defined by the interpreter}. It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths. The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impossible in finite time.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Class-uniform Path Analysis (CUPA)}
+\label{sec:chef:cupa}
 
 Consider using symbolic execution for achieving statement coverage on a program containing a function with an input-dependent loop.  At each iteration, the loop forks one additional state (or exponentially many, if there are branches in the loop). A strategy that selects states to explore uniformly is therefore biased toward selecting more states from this function, at the expense of states in other functions that fork less but contribute equally to the statement coverage goal.
 
@@ -115,12 +110,10 @@ In general, \cupa organizes the state queue into a hierarchy of state subsets ro
 %
 \cupa selects a new state for exploration by performing a random descent in the classification tree, starting from the root.  When reaching a leaf, the strategy takes out a random state from the state set and returns it to the symbolic execution engine for exploration.  By default, all sibling classes on each level have equal probability of being picked, but they can be assigned weights if required.
 
-A \cupa strategy is parameterized by the number $N$ of levels in the tree and a classification function $h_i$ for each level $i=1 \ldots N$.  \chef uses two instantiations of \cupa: one optimized for covering high-level paths (Section~\ref{sec:cupa-paths}) and one for covering the high-level CFG, i.e., statements (Section~\ref{sec:cupa-coverage}).
+A \cupa strategy is parameterized by the number $N$ of levels in the tree and a classification function $h_i$ for each level $i=1 \ldots N$.  \chef uses two instantiations of \cupa: one optimized for covering high-level paths (Section~\ref{sec:chef:cupa-paths}) and one for covering the high-level CFG, i.e., statements (Section~\ref{sec:chef:cupa-coverage}).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Chef Case Study: Path-optimized CUPA}
-\label{sec:cupa-paths}
+\subsection{Path-optimized CUPA}
+\label{sec:chef:cupa-paths}
 
 A low-level strategy unaware of the high-level program would be implicitly biased towards picking high-level instructions that fork more low-level states than others, such as string operations or native calls.
 %
@@ -130,11 +123,8 @@ To mitigate this, we instantiate a two-level \cupa strategy using the following 
 \item The low-level x86 program counter of the state.  This classification reduces the selection bias of ``hot spots'' of path explosion within a single complex instruction, such as a native function call.
 \end{enumerate}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Chef Case Study: Coverage-optimized CUPA}
-\label{sec:cupa-coverage}
+\subsection{Coverage-optimized CUPA}
+\label{sec:chef:cupa-coverage}
 
 Based on a coverage-optimized strategy introduced by the \klee symbolic execution engine~\cite{klee}, we developed a \cupa instance that partitions states according to their minimum distance to branches leading to uncovered code.
 %
@@ -154,24 +144,20 @@ Having computed this information, we instantiate a two-level \cupa strategy with
 
 Fork weight is computed by counting the number of consecutive forks at the same low-level program counter (i.e., at an input-dependent loop in machine code).  States $1, \ldots, n$ forking from the same path at the same location get weights $p^n, p^{n-1}, \ldots, 1$, where $p < 1$ de-emphasizes states forked earlier ($p = 0.75$ in our implementation).  The last state to fork at a certain location thus gets maximum weight, because alternating the last decision in a loop is often the quickest way to reach different program behavior (e.g., to satisfy a string equality check).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{High-level Symbolic Execution}
-\begin{itemize}
-\item Define the concept of high-level path.
-\item Define the notion of high-level state.  Introduce the notion of completeness model, and discuss the tradeoffs between each.
-\end{itemize}
+%% \section{High-level Symbolic Execution}
+%% \begin{itemize}
+%% \item Define the concept of high-level path.
+%% \item Define the notion of high-level state.  Introduce the notion of completeness model, and discuss the tradeoffs between each.
+%% \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{High-level Control Flow Reconstruction}
-\begin{itemize}
-\item We need to bridge the gap between the stream of x86 instructions and stream of high-level instructions.
-\item Manual approach: interpreter loop annotation.
-\item Automated approach: use calibration program + look for memory access patterns inside the interpreter.
-\end{itemize}
+\section{Preparing the Interpreter for Symbolic Execution}
 
-We now explain how to prepare an interpreter for \chef: the first and mandatory step is to instrument the main interpreter loop to report \hlpcs (Section~\ref{sec:exposehlpc}); the second and optional step is to optimize the interpreter for efficient symbolic execution (Section~\ref{sec:optimzeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.  Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:testingAPI}).
+We now explain how to prepare an interpreter for \chef: the first and mandatory step is to instrument the main interpreter loop to report \hlpcs (Section~\ref{sec:chef:exposehlpc}); the second and optional step is to optimize the interpreter for efficient symbolic execution (Section~\ref{sec:chef:optimzeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.  Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:chef:testingAPI}).
+
+\subsection{Exposing the High-level Program Location}
+\label{sec:chef:exposehlpc}
 
 \begin{table}
 \centering
@@ -207,16 +193,8 @@ The granularity of \codebit{log\_pc} calls depends on the language structure.  \
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Interpreter Optimizations}
-\label{sec:optimzeforsymbex}
-
-\begin{itemize}
-\item Goal: reduce path explosion in the interpreter.
-\item Approach: ``anti-optimizations'' that slow down linear execution, but boost multi-path execution.
-\item Hash neutralization.
-\item String interning.
-\item Handling memory allocations.
-\end{itemize}
+\subsection{Interpreter Optimizations}
+\label{sec:chef:optimzeforsymbex}
 
 In order to maximize performance, interpreters make heavy use of special cases and sophisticated data structures.  Unfortunately, these features hurt the performance of symbolic execution by amplifying path explosion and increasing the complexity of symbolic formulas~\cite{overify}.
 
@@ -259,7 +237,7 @@ Fast paths may hurt symbolic execution because they cause symbolic branches in t
 
 
 \subsection{Testing API}
-\label{sec:testingAPI}
+\label{sec:chef:testingAPI}
 
 Programs to be tested can be fed symbolic inputs by marking input buffers with \codebit{make\_symbolic} and defining conditions over the input with the \codebit{assume} call, in accordance to the test specification.  Note that the buffer is a memory region of concrete bounds.  It is the job of the symbolic test library in the interpreter VM to convert from the language data structures (e.g., strings, integers) to the memory locations used to store the data in the interpreter implementation.
 
