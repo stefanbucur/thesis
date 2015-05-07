@@ -153,15 +153,26 @@ Moreover, these languages rely heavily on built-in functions, i.e., functions th
 
 \subsection{Symbolic Models for a Stable Operating System Interface}
 
-To address the first problem, we model much of the POSIX interface that we encountered when running widely used and complex real-world software, such as the Apache webserver, memcached, or the Python interpreter.
+%% To address the first problem, we model much of the POSIX interface that we encountered when running widely used and complex real-world software, such as the Apache webserver, memcached, or the Python interpreter.
 
-Our insight is that, for the purpose of automated testing, the POSIX interface can be modeled efficiently on top of a few core abstractions: threads and processes, synchronization, and address spaces with shared memory.
+To address the environment problem for stable operating system interfaces, this thesis introduces \cnine, a symbolic execution platform with an accurate and efficient operating system model, as used by systems such as system utilities, web servers, or distributed systems.
 
-On top of these abstractions, much of the POSIX interface can be implemented as guest code that substitutes the C standard library used by the target programs.
+%% Our insight is that, for the purpose of automated testing, the POSIX interface can be modeled efficiently on top of a few core abstractions: threads and processes, synchronization, and address spaces with shared memory.
 
-We built the Cloud9 symbolic execution platform, which provides accurate and efficient models of POSIX abstractions such as files, network sockets, threads, processes, thread synchronization, IPC, signals, and other miscellaneous calls.
+%% On top of these abstractions, much of the POSIX interface can be implemented as guest code that substitutes the C standard library used by the target programs.
 
-By using these symbolic models, Cloud9 is the first to efficiently target complex system utilities (e.g., curl), web servers, or distributed systems.
+\cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory.
+%
+These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code, by substituting the standard C library used by the target programs.
+
+%% We built the Cloud9 symbolic execution platform, which provides accurate and efficient models of POSIX abstractions such as files, network sockets, threads, processes, thread synchronization, IPC, signals, and other miscellaneous calls.
+
+%% By using these symbolic models, Cloud9 is the first to efficiently target complex system utilities (e.g., curl), web servers, or distributed systems.
+
+We prototyped \cnine for system code that use the standard POSIX interface.  \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other miscellaneous functions.
+%
+By using these models as substitutes for the complex kernel implementations, \cnine is the first to efficiently target complex system utilities such as \textsf{curl}, web servers such as Apache and lighttpd, or other networked services, such as memcached.
+
 
 \subsection{Using Interpreters as Specifications for Fast-changing Languages}
 
