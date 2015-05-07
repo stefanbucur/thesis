@@ -121,15 +121,35 @@ For example, if opening a file with a symbolic name would either succeed or fail
 
 \section{Solution Overview: A Tailored Approach to The Environment Problem}
 
-Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the program/environment interface.  For instance, are they components on the same abstraction level, or nested at different layers?  Is the interface well-defined and properly encapsulates the environment or is it porous?  Is the interface small, or does it extend across thousands of environment calls?  Is the interface stable or does it change frequently?
+%% Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the program/environment interface.  For instance, are they components on the same abstraction level, or nested at different layers?  Is the interface well-defined and properly encapsulates the environment or is it porous?  Is the interface small, or does it extend across thousands of environment calls?  Is the interface stable or does it change frequently?
 
-This thesis addresses this problem by focusing on two points in the design space of the program/environment interface that collectively cover a wide range of real-world software: (1) low-level system software interacting with the operating system through the POSIX interface, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  These two points exhibit opposite characteristics.
+Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the environment interface and its implementation.  This situation is best illustrated with examples.
 
-On the one hand, the POSIX interface is properly encapsulated, well-documented, and stable.  Moreover, while the POSIX API consists of hundreds (or thousands?) of calls, its usage follows a power-law distribution [cite Radu's work], such that about 10s of them are commonly used in most software.
+For instance, a C program using a numerical library lies at the same abstraction level as the library, while a program performing the same operations, but written in a numerical computing language, e.g., Julia, is at a higher abstraction level than the language implementation.
+%
+A Linux file system implemented as a kernel module can interact with the entire kernel state, while the same file system code running in user-space through FUSE has a well-defined, encapsulated interface to the kernel.
+%
+Finally, the behavior of a web application using the fast-changing native API of its web server (e.g., Apache) would be more sensitive to the web server implementation changes than an equivalent application that uses a standard web interface, such as CGI.
+%
+In each of the three examples, a symbolic execution engine has one program to explore, yet it needs to approach the two alternative environments in fundamentally different ways.
 
-On the other hand, the specifications of most popular dynamic languages are incomplete, vague, and change rapidly from one version of the language to another.
+%% This thesis addresses this problem by focusing on two points in the design space of the program/environment interface that collectively cover a wide range of real-world software: (1) low-level system software interacting with the operating system through the POSIX interface, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  These two points exhibit opposite characteristics.
 
-Moreover, these languages rely heavily on built-in methods, i.e. functions that are not implemented in the language itself, but execute as native C code in the interpreter.  This makes the program/environment interface highly porous, as the native calls can have arbitrary side effects on the program state.
+This thesis addresses two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.
+%
+The two instances exhibit opposite characteristics.
+
+%% On the one hand, the POSIX interface is properly encapsulated, well-documented, and stable.  Moreover, while the POSIX API consists of hundreds (or thousands?) of calls, its usage follows a power-law distribution [cite Radu's work], such that about 10s of them are commonly used in most software.
+
+On the one hand, the operating system interfaces are typically stable and well-documented (e.g., POSIX).  Moreover, while they consist of hundreds of system calls, their usage follow a power-law distribution, such that most software only uses a small fraction of them.
+
+%% On the other hand, the specifications of most popular dynamic languages are incomplete, vague, and change rapidly from one version of the language to another.
+
+%% Moreover, these languages rely heavily on built-in methods, i.e. functions that are not implemented in the language itself, but execute as native C code in the interpreter.  This makes the program/environment interface highly porous, as the native calls can have arbitrary side effects on the program state.
+
+On the other hand, the specifications of dynamic languages are incomplete and unstable.
+%
+Moreover, these languages rely heavily on built-in functions, i.e., functions that are not implemented in the language itself, but are C code part of the interpreter.  This makes the program/environment interface highly porous, as the built-in calls may have arbitrary side effects on the program state.
 
 \subsection{Symbolic Models for a Stable Operating System Interface}
 
