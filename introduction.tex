@@ -32,13 +32,28 @@ While switching back to a formal approach is unfeasible for most of the software
 
 \subsection{Automated Testing: Black-box Versus White-box}
 
-The simplest (and most common) approach to test automation is the so called ``black-box fuzzing'': randomly generate program inputs and observe whether the program crashes or not.  The inputs can also be generated based on a known grammar, or start with a real input (e.g., an Office document) and randomly tweak bytes in it.
+%% The simplest (and most common) approach to test automation is the so called ``black-box fuzzing'': randomly generate program inputs and observe whether the program crashes or not.  The inputs can also be generated based on a known grammar, or start with a real input (e.g., an Office document) and randomly tweak bytes in it.
 
-In either case, however, the procedure is oblivious to the structure of the program.  A vast majority of generated inputs end up being redundant, i.e., taking the same execution paths through the program.
+The simplest (and most popular) form of automated testing consists of randomly generating program inputs and observing whether the program crashes~\cite{xxx}.  The inputs are typically obtained by fuzzing, i.e., randomly mutating a known valid input, such as an image file or a productivity suite document.
+%
+This form of testing is called ``blackbox'', because the input generation does not take into account the structure of the program under test.
+%
+Despite their conceptual simplicity, fuzzers are effective at discovering bugs and are currently the state of practice in automated testing~\cite{xxx}.
 
-A better approach is called ``white-box testing'', where the input generation takes into account the execution paths that the program takes, such that each input generated aims to discover a new path.
+%% In either case, however, the procedure is oblivious to the structure of the program.  A vast majority of generated inputs end up being redundant, i.e., taking the same execution paths through the program.
 
-Symbolic execution is the most successful whitebox testing technique to be applied on commodity software.
+However, fuzzers are ineffective at discovering corner-case bugs---bugs that manifest only under particular inputs in the program.
+%
+For example, if a program checks whether its 32-bit integer input has value 42, and only then performs a null-pointer access, a random fuzzer has \emph{less than one in a billion} chance of hitting the bug with each input generated.
+%
+The vast majority of the generated inputs are therefore redundant.
+
+%% A better approach is called ``white-box testing'', where the input generation takes into account the execution paths that the program takes, such that each input generated aims to discover a new path.
+
+
+This example suggests that a better approach is to take the program structure into account when generating inputs.  This form of testing is called ``whitebox'', and its goal is to ensure that each new input generated takes the program along a previously unexplored execution path.
+%
+Symbolic execution is the most successful automated whitebox testing technique to be applied on commodity software, which we discuss next in more detail.
 
 \subsection{Systematic Path Exploration Using Symbolic Execution}
 
