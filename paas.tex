@@ -421,16 +421,12 @@ First, we measure how fast \cnine\ can exhaustively explore a fixed number of pa
   \label{fig:scalab-time-vs-workers}
 \end{figure}
 
-Second, we measure the time it takes \cnine\ to reach a fixed coverage level for the \codebit{printf} UNIX utility.  \codebit{printf} performs a lot of parsing of its input (format specifiers), which produces complex constraints when executed symbolically.   Fig.~\ref{fig:scalab-time-vs-workers-cov} shows that the time to achieve a coverage target decreases proportionally with the number of added workers.  The low 50\% coverage level can be easily achieved even with a sequential SEE (1-worker \cnine). However, higher coverage levels require more workers, if they are to be achieved in a reasonable amount of time; e.g., only a 48-worker \cnine is able to achieve  $90\%$ coverage.  The anomaly at 4 workers for 50\% coverage is due to high variance; when the number of workers is low, the average (5$\pm$4.7 minutes over 10 experiments) can be erratic due to the random choices in the random-path search strategy.
-
 \begin{figure}[h!]
   \centering
   \epsfig{file=figures/evaluation/scalab-time-vs-workers-cov-printf-edited.eps, width=2.9in}
   \caption{\cnine\ scalability in terms of the time it takes to obtain a target coverage level when testing \codebit{printf}.}
   \label{fig:scalab-time-vs-workers-cov}
 \end{figure}
-
-\paragraph{Work Scalability} We now consider the same scalability experiments from the perspective of useful work done by \cnine: we measure both the total number of instructions (from the target program) executed during the exploration process, as well as normalize this value per worker. This measurement indicates whether the overheads associated with parallel symbolic execution impact the efficiency of exploration, or are negligible. Fig.~\ref{fig:scalab-memcached} shows the results for memcached, confirming that \cnine scales linearly in terms of useful work done (top graph).  The average useful work done by a worker (bottom graph) is relatively independent of the total number of workers in the cluster, so adding more workers improves proportionally \cnine's results.
 
 \begin{figure}[t!]
   \centering
@@ -440,9 +436,6 @@ Second, we measure the time it takes \cnine\ to reach a fixed coverage level for
   \label{fig:scalab-memcached}
 \end{figure}
 
-In Fig.~\ref{fig:scalab} we show the results for \codebit{printf} and \codebit{test}, UNIX utilities that are an order of magnitude smaller than memcached. We find that the useful work done scales in a similar way to memcached, even though the three programs are quite different from each other (e.g., \codebit{printf} does mostly parsing and formatting, while memcached does mostly data structure manipulations and network I/O).
-
-
 \begin{figure}[h!]
   \centering
   \epsfig{file=figures/evaluation/scalab-thr-cpu-vs-workers-edited.eps, width=2.9in} \\
@@ -450,6 +443,13 @@ In Fig.~\ref{fig:scalab} we show the results for \codebit{printf} and \codebit{t
   \caption{\cnine's useful work on \codebit{printf} (top) and \codebit{test} (bottom) increases roughly linearly in the size of the cluster.}  
   \label{fig:scalab}
 \end{figure}
+
+Second, we measure the time it takes \cnine\ to reach a fixed coverage level for the \codebit{printf} UNIX utility.  \codebit{printf} performs a lot of parsing of its input (format specifiers), which produces complex constraints when executed symbolically.   Fig.~\ref{fig:scalab-time-vs-workers-cov} shows that the time to achieve a coverage target decreases proportionally with the number of added workers.  The low 50\% coverage level can be easily achieved even with a sequential SEE (1-worker \cnine). However, higher coverage levels require more workers, if they are to be achieved in a reasonable amount of time; e.g., only a 48-worker \cnine is able to achieve  $90\%$ coverage.  The anomaly at 4 workers for 50\% coverage is due to high variance; when the number of workers is low, the average (5$\pm$4.7 minutes over 10 experiments) can be erratic due to the random choices in the random-path search strategy.
+
+\paragraph{Work Scalability} We now consider the same scalability experiments from the perspective of useful work done by \cnine: we measure both the total number of instructions (from the target program) executed during the exploration process, as well as normalize this value per worker. This measurement indicates whether the overheads associated with parallel symbolic execution impact the efficiency of exploration, or are negligible. Fig.~\ref{fig:scalab-memcached} shows the results for memcached, confirming that \cnine scales linearly in terms of useful work done (top graph).  The average useful work done by a worker (bottom graph) is relatively independent of the total number of workers in the cluster, so adding more workers improves proportionally \cnine's results.
+
+In Fig.~\ref{fig:scalab} we show the results for \codebit{printf} and \codebit{test}, UNIX utilities that are an order of magnitude smaller than memcached. We find that the useful work done scales in a similar way to memcached, even though the three programs are quite different from each other (e.g., \codebit{printf} does mostly parsing and formatting, while memcached does mostly data structure manipulations and network I/O).
+
 
 In conclusion, \cnine scales linearly with the number of workers, both in terms of the time to complete a symbolic testing task and in terms of reaching a target coverage level.  % As far as the performed work is concerned, we observe that worker efficiency increases as the total number of workers in the system increases.
 
