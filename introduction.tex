@@ -20,9 +20,9 @@ Testing a program consists of exercising multiple different paths through it and
 
 %% Today, testing is done mostly manually.  This is takes up lots of resources, yet the process is imperfect and bugs still make it into production.  The security implications of having most of the businesses online amplify the problem, with bugs now causing major disruptions, loss of sensitive data, and a lot of bad PR in the press.
 
-In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{xxx}.
+In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{codeComplete}.
 %
-Such suites tend to be tedious to write and maintain.  Statistics show that, on average, developers spend as much as half of their time doing testing~\cite{xxx}, and companies allocate up to a quarter of their IT budget for software testing~\cite{xxx}.
+Such suites tend to be tedious to write and maintain.  Statistics show that, on average, developers spend as much as half of their time doing testing~\cite{codeComplete}, and companies allocate up to a quarter of their IT budget for software testing~\cite{capgemini-world-quality}.
 
 However, manual testing is prone to human error, and bugs eventually escape quality assurance and make it into production.  The problem is amplified by the security implications of having most of the businesses today online.  Bugs can be exploited to cause major disruptions, leaks of sensitive data, and a lot of the cases make headlines.
 
@@ -34,11 +34,11 @@ While switching back to a formal approach is unfeasible for most of the software
 
 %% The simplest (and most common) approach to test automation is the so called ``black-box fuzzing'': randomly generate program inputs and observe whether the program crashes or not.  The inputs can also be generated based on a known grammar, or start with a real input (e.g., an Office document) and randomly tweak bytes in it.
 
-The simplest (and most popular) form of automated testing consists of randomly generating program inputs and observing whether the program crashes~\cite{xxx}.  The inputs are typically obtained by fuzzing, i.e., randomly mutating a known valid input, such as an image file or a productivity suite document.
+The simplest (and most popular) form of automated testing consists of randomly generating program inputs and observing whether the program crashes.  The inputs are typically obtained by fuzzing, i.e., randomly mutating a known valid input, such as an image file or a productivity suite document.
 %
 This form of testing is called ``blackbox'', because the input generation does not take into account the structure of the program under test.
 %
-Despite their conceptual simplicity, fuzzers are effective at discovering bugs and are currently the state of practice in automated testing~\cite{xxx}.
+Despite their conceptual simplicity, fuzzers are effective at discovering bugs and are currently the state of practice in automated testing.
 
 %% In either case, however, the procedure is oblivious to the structure of the program.  A vast majority of generated inputs end up being redundant, i.e., taking the same execution paths through the program.
 
@@ -196,7 +196,7 @@ CUPA works by grouping paths into equivalence classes, according to a coverage g
 
 %% We prototyped the Chef symbolic execution platform for interpreted languages and used it to obtain engines for Python, Lua, and JavaScript.
 
-We prototyped these ideas in the \chef symbolic execution platfom for interpreted languages.  With \chef, we obtained engines for Python and Lua, which generated test suites and found bugs in popular library packages.
+We prototyped these ideas in the \chef symbolic execution platform for interpreted languages.  With \chef, we obtained engines for Python and Lua, which generated test suites and found bugs in popular library packages.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -240,7 +240,7 @@ The security implications driven by today's connected world amplify the problem,
 
 At the same time, resources invested in testing are peaking. In 2014, about a quarter of the entire IT budget in enterprises was allocated to software testing, which was the highest figure to that date.  On average, developer teams spend as much as half of their time doing testing and fixing bugs.
 
-Facing this situation, organizations recognize that software testing is cumbersome.  In a recent survely, more than two thirds of the organizations questioned admitted they have difficulties determining relevant tests for their software and pointed at the lack of adequate tools to support that.
+Facing this situation, organizations recognize that software testing is cumbersome.  In a recent survey, more than two thirds of the organizations questioned admitted they have difficulties determining relevant tests for their software and pointed at the lack of adequate tools to support that.
 
 \subsection{The Promise of Automated Test Case Generation}
 

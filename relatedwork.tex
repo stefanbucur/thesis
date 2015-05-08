@@ -43,7 +43,7 @@ The major challenges of symbolically executing real-world targets are supporting
 %
 A first solution introduced by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, is to instrument the source code of the program, using tools such as CIL~\cite{cil}, with additional statements that maintain the symbolic state as the program executes.  This approach resulted in the \emph{concolic} (\emph{conc}rete + symb\emph{olic}) execution model, where the program executes from a concrete input, while collecting symbolic constraints for each branch taken.  By negating the condition at each branching point, the engine obtains new concrete inputs used in subsequent program executions.
 %
-When the symbolic semantics are not avaiable, such as inside external library calls, the program execution can still proceed concrete-only.
+When the symbolic semantics are not available, such as inside external library calls, the program execution can still proceed concrete-only.
 %
 By using this approach, DART and CUTE found crashes in C programs, such as protocol implementations and data structure libraries.
 
@@ -105,7 +105,7 @@ SAGE found thousands of Windows vulnerabilities at development time.
 %% %
 %% This resulted in KLEE uncovering crashes and generating test suites with over 90\% coverage on average in the popular Coreutils utilities (e.g., \codebit{ls}, \codebit{echo}), testing Busybox and an OS kernel.
 %% %
-%% Our Cloud9 system builds on top of KLEE, providing symbolic primtives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
+%% Our Cloud9 system builds on top of KLEE, providing symbolic primitives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
 
 KLEE~\cite{klee} is arguably the most popular symbolic execution engine today, having served as a foundation for a wide range of other tools.
 %
@@ -184,7 +184,7 @@ Similarly, Pex~\cite{tillmann-pex} is a symbolic execution engine for .NET that 
 
 The high-level environments pose additional challenges for symbolic execution related to the complexity of their data and execution model.  For example, symbolic program inputs can be both scalar and object-based.
 %
-Java PathFinder handles symbolic object inputs using a technique called generalized symbolic execution~\cite{generalized-symbex}, where symbolic objects are lazily initialized in response to the member accessess encountered during program execution.  Pex takes a similar approach for handling symbolic inputs in the .NET runtime.
+Java PathFinder handles symbolic object inputs using a technique called generalized symbolic execution~\cite{generalized-symbex}, where symbolic objects are lazily initialized in response to the member accesses encountered during program execution.  Pex takes a similar approach for handling symbolic inputs in the .NET runtime.
 
 \subsection{Dynamic Interpreted Languages}
 
@@ -236,7 +236,7 @@ For instance, when a symbolic value $\mu$ is passed as a parameter to an externa
 
 However, concretization may cause inconsistencies in the execution and missing feasible paths.
 %
-First, the value returned from the environment is concrete, which may lead the symbolic execution engine to miss value-dependant paths in the program, such as error handling.
+First, the value returned from the environment is concrete, which may lead the symbolic execution engine to miss value-dependent paths in the program, such as error handling.
 
 Second, in order to maintain soundness, the concretization introduces in the path condition of the execution state the fact that the symbolic value was constrained to one of its concrete examples ($pc_{new} := pc_{old} \wedge (\mu = m)$).  This also restricts the possible executions of the paths following the external call.  Removing the step might increase the coverage of the target program, at the expense of introducing false positives.
 
