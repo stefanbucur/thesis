@@ -4,7 +4,7 @@
 
 %% Ensuring that software does the right thing is a critical aspect of the development process, especially as we are increasingly reliant on it in our activities.
 
-A crucial aspect of software development is ensuring that the code written behaves as intended.  This aspect becomes the more important, the more we depend on software in our lives.
+A crucial aspect of software development is ensuring that the written code behaves as intended.  This aspect becomes increasingly important, as we depend more and more on software in our lives.
 
 %% The ideal case is when this is done formally, using proofs.  This is also needed in critical operations, such as avionics, or space missions.  However, this is not the case with consumer software.  While there is ongoing work in producing formally verified core components (e.g., the seL4 kernel), most of the software industry relies on testing.  As it turns out, the software complexity (MLOC) and pace of development precludes a formal, rigorous approach.
 
@@ -96,7 +96,7 @@ For real-world software with thousands and even millions of lines of code, given
 %
 For instance, consider a small system utility that prints at the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen.
 %
-Symbolically executing this program potentially involves traversing millions of lines of kernel and library code, even if we're only interested in covering the code of the utility.
+Symbolically executing this program potentially involves traversing tens of thousands of lines of kernel and library code, even if we're only interested in covering the code of the utility.
 
 %% Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
 
@@ -169,7 +169,7 @@ These abstractions need to be provided as primitives by the symbolic execution e
 
 %% By using these symbolic models, Cloud9 is the first to efficiently target complex system utilities (e.g., curl), web servers, or distributed systems.
 
-We prototyped \cnine for system code that use the standard POSIX interface.  \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other miscellaneous functions.
+We prototyped \cnine for system code that uses the standard POSIX interface.  \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other miscellaneous functions.
 %
 By using these models as substitutes for the complex kernel implementations, \cnine is the first to efficiently target complex system utilities such as \textsf{curl}, web servers such as Apache and lighttpd, or other networked services, such as memcached.
 
@@ -186,7 +186,7 @@ This thesis introduces the idea of using the interpreter as an ``executable lang
 
 %% Mapping low-level interpreter paths to high-level program paths is done by segmenting the low-level paths into chunks corresponding to each high-level instruction executed.  Low-level paths with the same sequence of high-level instructions map to the same high-level path.
 
-To map the low-level interpreter paths to high-level program paths, we partition the interpreter paths into chunks, one for each high-level instruction executed on the path. The low-level paths with the same sequence of high-level instructions map to the same high-level path.
+To map the low-level interpreter paths to high-level program paths, we partition the interpreter paths into chunks, one for each high-level instruction executed on the path. Then, the low-level paths with the same sequence of high-level instructions map to the same high-level path.
 
 To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
 %
@@ -214,7 +214,7 @@ Chapter~\ref{ch:evaluation} provides the experimental evaluation of the two syst
 
 Chapter~\ref{ch:paas} presents the ongoing work and longer-term vision of building a cloud-based testing service for cloud applications based on the techniques introduced in this thesis.
 
-Chapter~\ref{ch:conclusion} wraps up the thesis with conclusions.
+Chapter~\ref{ch:conclusion} ends the thesis with conclusions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
