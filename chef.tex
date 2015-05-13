@@ -1,11 +1,124 @@
-The previous chapter showed that symbolic models can address the environment problem when the environment interface is stable and well-documented, as it is the case with operating system interfaces.
+We showed in the previous chapter that symbolic models are effective for environments with a stable interface, such as operating systems.
 %
 For interfaces with incomplete and unstable specifications, such as those of popular dynamic languages such as Python and Ruby, the environment problem lends itself to a different approach.
 %
 In this chapter, we cover the approach of using the interpreter as an ``executable language specification'', which we used to build the \chef symbolic execution platform for interpreted languages.
 
+\section{System Overview}
+
+% The idea is to plug the interpreter environment, acting as an executable specification.
+
+% The resulting system behaves as a symbolic execution engine for the language.
+
+% The target program is executed in the interpreter environment, while everything runs on top of a low-level engine.
+
+% Chef is built on top of S2E, a full-VM symbolic execution engine at x86 level.
+
+% Naively executing the interpreter will not work, for two reasons:
+
+% First, the low-level engine operates at a different abstraction level than the one a hand-written engine for a language would offer.
+
+% For instance, a Python engine is expected to give test cases taking the Python program across different paths.  In contrast, symbexing the Python interpreter would give test cases exercising different paths through the implemenation details of the language.
+
+% Symbolic inputs: A low-level engine marks bytes in program memory as symbolic.  Symbolic inputs in dynamic languages are numbers, strings, and potentially arbitrary objects.
+
+% Execution states: The path condition of a LL state is a BV formula.  The PC of a HL state is a formula of language-specific operations.
+
+% Second: Exploring paths through the interpreter may not lead to progress for the target program.
+
+% So we need to both map the low-level paths to high-level abstractions, and control the low-level execution in a way that is meaningful at the high-level.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{High-level Symbolic Execution}
+
+% When executing the interpreter, Chef provides the illusion of a symbolic execution engine for the target program.
+
+\subsection{Mapping from Low-level to High-level Paths}
+
+% The core task is mapping the low-level symbolic execution tree to a high-level tree.
+
+% Chef achieves that by making the following assumption: each high-level path is described by a sequence of statements, each of them uniquely indentified by a ``high-level program counter'' (HLPC).  This assumption holds for most popular interpreters of dynamic imperative languages.
+
+% The sequences of HLPCs for all interpreter executions form a high-level execution tree. Any two paths in the execution tree mapping to the same HLPC sequence maps to the same high-level path.
+
+% The HLPC segment a low-level execution path, with each boundary marked by an HLPC update.  The segments represent the low-level operations the interpreter performs to implement the semantics of the high-level statement.
+
+% Updating the HLPC value for each path depends on the nature of the language.  Section~\cite{xxx} shows an automated method available for most popular interpreters, such as Pyhon, JavaScript, or Lua.
+
+
+\subsection{Defining High-level Abstract States}
+
+% The high-level paths indicate the possible execution space of the program.  But where does the execution reside at a particular point in time?  A symbolic execution engine provides a couple of core abstractions: the state, the path condition, and the notion of branch feasibility check that, in turn, works hand in hand with execution strategies.  The high-level state is defined by its location (HLPC) in the high-level execution tree.
+
+% The role of Chef is to map the low-level symbex abstractions to high-level ones.
+
+% Chef defines two mappings, rooted at the way a high-level state is defined: either partially or completely.
+
+% The two modes relate to the way the location of the high-level state is defined with respect to that of the LL states: either by following the leading state, or trailing all states on a high-level path.
+
+% In either case, the states are abstract, defined at least by their HLPC, up to including the path condition.  Chef does not provide a data model for the high-level state. It is implicitly encoded by the interpreter execution.  One could access it by writing high-level code that executes as an interrupt within the scope of the interpreter (but this is beyond the scope of the thesis, left as future work).
+
+\subsubsection{Partial High-level States}
+
+% In this mode, the location of the high-level execution state is given by the HLPC of the leading low-level state in the high-level path.
+
+% The execution progresses at the speed of the low-level state.
+
+% However, the high-level state lacks a complete path condition.  The state cannot determine the feasibility of a branching point, because it lacks the complete knowledge of all paths.  For example, the find statement in figure XXX, ....
+
+% This means that the high-level execution cannot be directly controlled: there is no unexplored path information available, but only the paths already explored.
+
+\subsubsection{Complete High-level States}
+
+% In complete mode, the location of the high-level execution state trails the last low-level  state.  The HL state advances an HLPC after all the LL states on the path have left it.
+
+% Since all LL paths have been explored, the path outcome is completely known.  In particular, any branching point can be completely decided.  The path condition of the state is the disjunction of all path conditions of the states at the moment they crossed the HLPC boundary.
+
+% The paths discovered in this model take more time to execute, as all LL paths need to be explored.
+
+% Unlike partial states, the location of a HL state is not tied to a LL state.  The only requirement is that all LL states are ahead.  The LL strategy is independent of the HL strategy.
+
+\subsubsection{Comparing the Two State Models}
+
+% Table~\ref{tab:xxx} summarizes the differences between the two models.  While partial states are faster to explore, they lack predictability and control.
+
+% This is similar to fuzzing: concrete inputs may discover new paths, but from them alone you cannot tell in advance which path is going to be discovered next (if at all).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Path Prioritization in The Interpreter}
+
+% Executing the interpreter naively won't be efficient.  A lot of the interpreter paths redundantly explore the same program paths.
+
+% Path prioritization is done depending on the state completeness model used.
+
+% Partial states don't have a high-level branch view, so a strategy can only resort to low-level information and information already available in the explored paths.  Such strategies are less flexible, as they cannot directly optimize for a high-level goal.
+
+% Complete states have a high-level strategy.  This one can influence a lower-level strategy (tactic) optimized for reaching the goal of the high-level strategy.
+
+\subsection{Class-Uniform Path Analysis}
+
+
+\subsection{Decoupling High-level From Low-Level Strategies}
+
+% 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Interpreter Preparation}
+
+\subsection{Automated High-level Control Flow Detection in Interpreters}
+
+% Doing this automatically in general is undecidable, as the high-level semantics are language-specific. Not clear what distinguishes a path from another in the program.  Is it statement numbers?  What about complex statements, like list comprehensions?
+
+\subsection{Interpreter Optimizations}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\iffalse
 \section{Symbolically Executing the Interpreter}
 
 Building a correct and complete symbolic execution engine for an interpreted language is generally harder than building one for a low-level language. 
@@ -241,6 +354,7 @@ Fast paths may hurt symbolic execution because they cause symbolic branches in t
 \label{sec:chef:testingAPI}
 
 Programs to be tested can be fed symbolic inputs by marking input buffers with \codebit{make\_symbolic} and defining conditions over the input with the \codebit{assume} call, in accordance to the test specification.  Note that the buffer is a memory region of concrete bounds.  It is the job of the symbolic test library in the interpreter VM to convert from the language data structures (e.g., strings, integers) to the memory locations used to store the data in the interpreter implementation.
+\fi
 
 %%% Local Variables: 
 %%% mode: latex
