@@ -7,14 +7,23 @@ In this chapter, we cover the approach of using the interpreter as an ``executab
 \section{System Overview}
 
 % The idea is to plug the interpreter environment, acting as an executable specification.
-
 % The resulting system behaves as a symbolic execution engine for the language.
 
 % The target program is executed in the interpreter environment, while everything runs on top of a low-level engine.
 
+\chef is a platform for language-specific symbolic execution.  Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:xxx}).
+%
+The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:xxx}.
+
 % Chef is built on top of S2E, a full-VM symbolic execution engine at x86 level.
 
+\chef is built on top of the S2E analysis platform~\cite{s2eSystem}.  S2E symbolically executes the interpreter environment \emph{at binary level}, consisting of a virtual machine that bundles the interpreter, a testing library, the operating system, and other user programs.
+
+The resulting engine is a correct symbolic execution engine for the target language \emph{as defined by the interpreter}.  It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
+
 % Naively executing the interpreter will not work, for two reasons:
+
+Naively executing a language interpreter in a low-level engine such as S2E would not yield a symbolic execution engine for the language, for two reasons.
 
 % First, the low-level engine operates at a different abstraction level than the one a hand-written engine for a language would offer.
 
@@ -24,13 +33,31 @@ In this chapter, we cover the approach of using the interpreter as an ``executab
 
 % Execution states: The path condition of a LL state is a BV formula.  The PC of a HL state is a formula of language-specific operations.
 
+First, the low-level engine operates at a different abstraction level than a symbolic execution engine for the target language, which we call \emph{high-level}.
+%
+For instance, the inputs of programs in the low-level engine are memory bytes, while high-level programs operate with types such as numbers, strings, or arbitrary objects.
+%
+In addition, the low-level execution paths are sequences of x86 instructions in the interpreter binary, while the high-level execution paths are sequences of target program statements.
+%
+The symbolic expressions consist of binary arithmetic and memory operations at the low-level, and of language-specific operations and functions at the high-level.
+%
+Therefore, the role of \chef is to adapt the low-level abstractions to a set of high-level abstractions, similar as much as possible to those of a hand-written engine.
+
 % Second: Exploring paths through the interpreter may not lead to progress for the target program.
 
 % So we need to both map the low-level paths to high-level abstractions, and control the low-level execution in a way that is meaningful at the high-level.
 
+Second, the path prioritization strategy in the interpreter may not lead to progress in the target program.
+%
+This is because a single high-level path can map to multiple low-level paths, corresponding to implementation details in the interpreter, such as object caches, reference counting, or garbage collection.
+%
+Therefore, \chef must prioritize the low-level interpreter paths in a way that is meaningful for the high-level program execution.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{High-level Symbolic Execution}
+
+
 
 % When executing the interpreter, Chef provides the illusion of a symbolic execution engine for the target program.
 
