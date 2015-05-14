@@ -296,11 +296,55 @@ Fork weight is computed by counting the number of consecutive forks at the same 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Interpreter Preparation}
+\label{sec:chef:recipe}
+
+To run an interpreter, \chef must be able to obtain the stream of high-level program counters (HLPCs) for each execution path.  For most interpreters of popular languages, \chef can perform this task fully automatically (Section~\ref{sec:chef:hlcf}), while providing a guest API for manual interpreter instrumentation as a fallback.
+
+An optional step is to optimize the interpreter for symbolic execution (Section~\ref{sec:chef:optimizeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.
+
+Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:chef:testingAPI}).
 
 
 \subsection{Automated High-level Control Flow Detection in Interpreters}
+\label{sec:chef:hlcf}
+
+\begin{table}
+\centering
+\small
+\begin{tabular}{| l | l | }
+\hline
+\textbf{API Call} & \textbf{Description} \\
+\hline
+\codebit{log\_pc(pc, opcode)} & Log the interpreter PC and opcode \\
+\hline
+\codebit{start\_symbolic()} & Start the symbolic execution \\
+\codebit{end\_symbolic()} & Terminate the symbolic state \\
+\hline
+\codebit{make\_symbolic(buf)} & Make buffer symbolic \\
+\codebit{concretize(buf)} & Concretize buffer of bytes \\
+\codebit{upper\_bound(value)} & Get maximum value for expression\\
+                              & on current path \\
+\codebit{is\_symbolic(buf)} & Check if buffer is symbolic \\
+\codebit{assume(expr)} & Assume constraint \\
+\hline
+\end{tabular}
+\caption{The \chef API used by the interpreters running inside the S2E VM.}
+\label{tab:api}
+\end{table}
 
 % Doing this automatically in general is undecidable, as the high-level semantics are language-specific. Not clear what distinguishes a path from another in the program.  Is it statement numbers?  What about complex statements, like list comprehensions?
+
+In Section~\ref{sec:xxx}, we defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
+
+In general, determining HLPCs fully automatically is undecidable: the boundaries of the program statements are language-specific.  The situation is unclear even for imperative languages, that include lambda functions, comprehensions, and data declarations mixed with control flow.
+
+However, \chef relies on the insight that most popular interpreters for languages such as JavaScript, Python, Ruby, PHP, and Lua, compile the target programs to an intermediate bytecode representation, which is executed in an interpretation loop.
+%
+These interpreters break the programs into chunks (typically functions), and each chuck is compiled once to a buffer of bytecode instructions.
+
+This provides a natural way of defining HLPCs, as the addresses in memory of each compiled bytecode instruction.
+
+\paragraph{Manually Annotating the High-level Program Counter}
 
 \subsection{Interpreter Optimizations}
 \label{sec:chef:optimzeforsymbex}
@@ -440,37 +484,8 @@ The resulting engine is a correct symbolic execution engine for the target langu
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Preparing the Interpreter for Symbolic Execution}
-\label{sec:chef:recipe}
-
-We now explain how to prepare an interpreter for \chef: the first and mandatory step is to instrument the main interpreter loop to report \hlpcs (Section~\ref{sec:chef:exposehlpc}); the second and optional step is to optimize the interpreter for efficient symbolic execution (Section~\ref{sec:chef:optimzeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.  Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:chef:testingAPI}).
-
 \subsection{Exposing the High-level Program Location}
 \label{sec:chef:exposehlpc}
-
-\begin{table}
-\centering
-\small
-\begin{tabular}{| l | l | }
-\hline
-\textbf{API Call} & \textbf{Description} \\
-\hline
-\codebit{log\_pc(pc, opcode)} & Log the interpreter PC and opcode \\
-\hline
-\codebit{start\_symbolic()} & Start the symbolic execution \\
-\codebit{end\_symbolic()} & Terminate the symbolic state \\
-\hline
-\codebit{make\_symbolic(buf)} & Make buffer symbolic \\
-\codebit{concretize(buf)} & Concretize buffer of bytes \\
-\codebit{upper\_bound(value)} & Get maximum value for expression\\
-                              & on current path \\
-\codebit{is\_symbolic(buf)} & Check if buffer is symbolic \\
-\codebit{assume(expr)} & Assume constraint \\
-\hline
-\end{tabular}
-\caption{The \chef API used by the interpreters running inside the S2E VM.}
-\label{tab:api}
-\end{table}
 
 To reconstruct the high-level program paths and CFG, \chef needs to identify the high-level instructions executed on each low-level path.  \chef provides the \codebit{log\_pc(pc, opcode)} API call to the interpreter, which declares the current high-level program location and the type (opcode) of the next instruction.  A high-level instruction is executed in between two consecutive \codebit{log\_pc} calls.
 %
