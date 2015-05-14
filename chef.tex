@@ -102,9 +102,23 @@ The issue of pre-determining branches is present also when exploring regular cod
 \subsection{Defining High-level Abstract States}
 \label{sec:chef:hlstates}
 
+By executing a program symbolically, a symbolic execution engine reveals an execution tree.  All the active execution states reside at leaves in this tree.
+%
+In the previous section, we defined the high-level symbolic execution tree.  In this section, we define the high-level states that reveal it.
+
 % The high-level paths indicate the possible execution space of the program.  But where does the execution reside at a particular point in time?  A symbolic execution engine provides a couple of core abstractions: the state, the path condition, and the notion of branch feasibility check that, in turn, works hand in hand with execution strategies.  The high-level state is defined by its location (HLPC) in the high-level execution tree.
 
 % The role of Chef is to map the low-level symbex abstractions to high-level ones.
+
+Normally, a symbolic execution state is defined by its current location in the program (PC), the current path condition, and the memory contents.
+%
+In \chef, a high-level state is abstractly defined only by the HLPC and, in certain modes of operations, by the path condition.
+%
+A \chef high-level state does not expose the high-level program state.  This would be challenging to provide generally, as the high-level program state depends on the language semantics, which are implictly encoded in the language interpreter.
+%
+This limitation makes it more difficult to build analyses that read the program state, including search selection strategies, such as the coverage-optimized strategy in \klee~\cite{klee}.
+%
+However, the high-level state remains implicitly encoded in the low-level interpreter state and can be accessed by executing code in the target language, by the interpreter runtime.  Therefore, a possible workaround is to split the analysis in a language-independent part, running as part of Chef, and a language-dependent part, written in the target language and running as an interrupt in the interpreter context, whenever it is needed.
 
 % Chef defines two mappings, rooted at the way a high-level state is defined: either partially or completely.
 
@@ -112,31 +126,101 @@ The issue of pre-determining branches is present also when exploring regular cod
 
 % In either case, the states are abstract, defined at least by their HLPC, up to including the path condition.  Chef does not provide a data model for the high-level state. It is implicitly encoded by the interpreter execution.  One could access it by writing high-level code that executes as an interrupt within the scope of the interpreter (but this is beyond the scope of the thesis, left as future work).
 
+\chef operates in one of two modes, depending on how a high-level state is defined: partial and complete.
+%
+The partial state mode allows \chef to explore high-level paths faster, by using only one low-level path for supporting the execution, at the expense of missing the information needed to precisely determine high-level branches and hence discover new high-level paths.
+%
+In contrast, in complete state mode, \chef can precisely reason about high-level branches and therefore provides the means to implement high-level state selection strategies.  However, this comes at the expense of a slower path exploration rate.
+%
+We next describe in more detail the two \chef operating modes.
+
+The two operating modes are defined by where the high-level states are placed on their high-level execution path.  At any point in time, a high-level execution path is divided into three major segments:
+\begin{itemize}
+\item The completed segment, where all the low-level execution paths have been explored.
+\item The partial segment, where at least one low-level execution path has been explored.
+\item The undiscovered segment, where no low-level execution path has yet been explored.
+\end{itemize}
+
+The partial segment is bounded upstream by the leading low-level state, and downstream by the trailing low-level state.
+
 \subsubsection{Partial High-level States}
 
 % In this mode, the location of the high-level execution state is given by the HLPC of the leading low-level state in the high-level path.
 
+In partial high-level state mode (or ``partial state'', for short), the high-level state of a branch in the high-level tree is located at the HLPC of the leading low-level state on the high-level path (Figure~\ref{fig:xxx}).
+
 % The execution progresses at the speed of the low-level state.
+
+A new high-level state is created for each new high-level path discovered, and the state progresses together with the leading low-level state.
+%
+This makes the execution efficient, once the path is discovered.
 
 % However, the high-level state lacks a complete path condition.  The state cannot determine the feasibility of a branching point, because it lacks the complete knowledge of all paths.  For example, the find statement in figure XXX, ....
 
+However, a partial state lacks a complete path condition (hence its name), as the entire set of low-level states are necessary to describe all possible executions on the path.
+%
+In particular, from a partial state, \chef cannot tell the feasibility of a branch.  More generally, it cannot tell whether a statement is branching at all (e.g., due to exceptions).
+
 % This means that the high-level execution cannot be directly controlled: there is no unexplored path information available, but only the paths already explored.
+
+The consequence of this model is that the program execution at the high-level cannot be directly controlled.  \chef can only resort to picking a new low-level path and expecting that it will lead to a newly discovered high-level path.
+%
+In other words, the goal of the system becomes that of maximizing the high-level path yield for the set of low-level paths explored.
+%
+However, as executing low-level paths is efficient, in practice, a judicious state selection strategy can effectively discover significantly more high-level paths compared to naively choosing paths at random (Section~\ref{sec:xxx}).
+
 
 \subsubsection{Complete High-level States}
 
 % In complete mode, the location of the high-level execution state trails the last low-level  state.  The HL state advances an HLPC after all the LL states on the path have left it.
 
+In complete high-level state mode, a high-level state may be located anywhere on the completed segment of its path.
+%
+Since all low-level paths are explored, the interpreter behavior on the high-level path is completely known.  In particular, the feasibility of any branching point is completely decided.
+
 % Since all LL paths have been explored, the path outcome is completely known.  In particular, any branching point can be completely decided.  The path condition of the state is the disjunction of all path conditions of the states at the moment they crossed the HLPC boundary.
 
+A complete state has a well-defined path condition: it is the disjunction of all path conditions of the low-level states at the moment they entered the HLPC of the state.
+
 % The paths discovered in this model take more time to execute, as all LL paths need to be explored.
+
+The cost of advancing a complete high-level state is higher than that of a partial state.  To advance by one high-level statement, \emph{all} low-level states on the path need to explore the statement.
+%
+In contrast, a partial state can be avanced as long at one low-level state (the leading one) makes progress on the path.
+
+In complete state mode, the high-level state prioritization is decoupled from the low-level state prioritization, as long as the high-level states stay within the completed segments.
+%
+This allows \chef to provide a pluggable \emph{high-level strategy} interface, which provides guidelines to the underlying low-level strategy to advance the low-level state execution only on the paths of interest.
 
 % Unlike partial states, the location of a HL state is not tied to a LL state.  The only requirement is that all LL states are ahead.  The LL strategy is independent of the HL strategy.
 
 \subsubsection{Comparing the Two State Models}
 
+\begin{table}
+  \centering
+  \small
+  \begin{tabular}{r l l}
+    High-level State Model & \textbf{Partial} & \textbf{Complete} \\
+    \hline
+    Location (HLPC) & \cmark (leading LL state) & \cmark (complete segment) \\
+    Path Condition  & \xmark (incomplete)       & \cmark \\
+    Strategies      & \xmark (only LL)          & \cmark (both HL and LL) \\
+    \hline
+    Efficiency      & \cmark (one LL state)     & \xmark (all LL states) \\
+    Precision       & \xmark (no branch info)   & \cmark (full branch info) \\
+  \end{tabular}
+  \caption{Comparison of partial and complete high-level state modes in \chef.}
+  \label{tab:chef:hl-states}
+\end{table}
+
 % Table~\ref{tab:xxx} summarizes the differences between the two models.  While partial states are faster to explore, they lack predictability and control.
 
 % This is similar to fuzzing: concrete inputs may discover new paths, but from them alone you cannot tell in advance which path is going to be discovered next (if at all).
+
+Partial mode is useful for exploratory testing.
+
+Complete mode is useful when a precise goal must be attained (in particular, when the goal is expressed with respect to high-level path properties).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
