@@ -14,9 +14,13 @@ The resulting engine can be used like a hand-written one, in particular for test
 
 The resulting engine is a correct symbolic execution engine for the target language \emph{as defined by the interpreter}.  It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
 
-From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces: that of the \emph{low-level} binary engine, and the outer \emph{high-level} engine interface, which is similar to what a hand-written engine would offer.
-%
-This chapter describes the techniques \chef employs to fullfill the adapter role, which is roughly divided in two parts: (1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to interpreter path prioritization (Section~\ref{sec:chef:strategies}).
+From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces: that of the \emph{low-level} binary engine, and the outer \emph{high-level} engine interface, which is what a hand-written engine would offer.
+
+This chapter describes the techniques \chef employs to fullfill the adapter role, which is roughly divided in two parts: (1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
+
+\stefan{Mention here the interpreter preparation steps.}
+
+\stefan{Define the interface of a symbolic execution engine.}
 
 %% First, the abstractions offered by a binary-level---or, more generally, any \emph{low-level}---symbolic execution engine are inadequate for interpreted languages.  For example, the low-level engine inputs are memory bytes, while high-level programs work with types such as numbers, strings, and arbitrary objects.  The low-level execution paths are sequences of machine instructions, while high-level paths consist of target program statements.
 
@@ -43,46 +47,60 @@ This chapter describes the techniques \chef employs to fullfill the adapter role
 \section{High-level Symbolic Execution}
 \label{sec:chef:hlsymbex}
 
-% When executing the interpreter, Chef provides the illusion of a symbolic execution engine for the target program.
+%% When executing the interpreter, \chef provides the abstraction of a symbolic execution engine that executes the target high-level program.
+%% %
+%% In this section, we present how \chef constructs the symbolic execution tree of the program from that of the interpreter (Section~\ref{sec:chef:ll2hl}) and how high-level symbolic execution states progress along this tree (Section~\ref{sec:chef:hlstates}).
 
-When executing the interpreter, \chef provides the abstraction of a symbolic execution engine that executes the target high-level program.
+\subsection{High-level States and Paths}
+
+Recall that, in general, a symbolic execution state contains the current program counter, the path condition (the set of all branch conditions taken by the state), and the symbolic memory contents of the program.
 %
-In this section, we present how \chef constructs the symbolic execution tree of the program from that of the interpreter (Section~\ref{sec:chef:ll2hl}) and how high-level symbolic execution states progress along this tree (Section~\ref{sec:chef:hlstates}).
+The sequence of program counters of the state determines one path in the symbolic execution tree.
 
-\subsection{Mapping from Low-level to High-level Paths}
+\chef's symbolic execution engine interface provides \emph{abstract} high-level states and paths, which encapsulate the low-level execution of the interpreter.
+%
+The states contain an abstract \emph{high-level program counter} (HLPC) and optionally, the path condition.
+%
+The high-level state memory is undefined in \chef, as it is implicitly encoded in the low-level interpreter state and its semantics can be arbitrary.
+
+The concrete semantics of the HLPC depend on the language and the interpreter.  \chef treats HLPC values opaquely, with the only assumption that each statement in the program maps to exactly one HLPC.  The sequence of all HLPCs taken by a high-level state forms a path in the high-level symbolic execution tree.
+%
+Section~\ref{sec:xxx} presents concrete HLPC semantics for the most popular interpreters in use today.
+
+\subsection{From Low-level to High-level Paths}
 \label{sec:chef:ll2hl}
 
-% The core task is mapping the low-level symbolic execution tree to a high-level tree.
+%% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
+%% %
+%% The low-level program path is the sequence of machine instructions from the interpreter binary, including the code for internal bookkeeping (e.g., details of reference counting and garbage collection).
 
-An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
+%% Defining the high-level program path depends on the nature and semantics of the language.  In this thesis, we focus on imperative dynamic languages, such as Python and JavaScript.  An execution path in these languages consists of a sequence of statements in the program.  We uniquely identify each statement in the program by its ``high-level program counter'' (HLPC), which, for now, we refer to it as an abstract value.
+%% %
+%% We present in Section~\ref{sec:xxx} a concrete definition of HLPCs and methods from obtaining them during interpreter execution.
+
+%% For each low-level path in the interpreter, \chef maintains a current HLPC value that is updated when a new program statement starts executing.
+%% %
+%% The sequences of HLPCs from all execution paths form a \emph{high-level symbolic execution tree}, which envelops the low-level execution tree (Figure~\ref{fig:xxx}).
+
+\chef constructs the high-level tree of execution paths by grouping the low-level paths generated by executing the interpreter in the low-level symbolic execution engine, as follows.
 %
-The low-level program path is the sequence of machine instructions from the interpreter binary, including the code for internal bookkeeping (e.g., details of reference counting and garbage collection).
-
-% Chef achieves that by making the following assumption: each high-level path is described by a sequence of statements, each of them uniquely indentified by a ``high-level program counter'' (HLPC).  This assumption holds for most popular interpreters of dynamic imperative languages.
-
-% Updating the HLPC value for each path depends on the nature of the language.  Section~\cite{xxx} shows an automated method available for most popular interpreters, such as Pyhon, JavaScript, or Lua.
-
-Defining the high-level program path depends on the nature and semantics of the language.  In this thesis, we focus on imperative dynamic languages, such as Python and JavaScript.  An execution path in these languages consists of a sequence of statements in the program.  We uniquely identify each statement in the program by its ``high-level program counter'' (HLPC), which, for now, we refer to it as an abstract value.
+For each low-level path in the interpreter, \chef reconstructs the sequence of HLPCs it executes by observing the statements fetched and executed in the interpretation loop (Section~\ref{sec:xxx}).
 %
-We present in Section~\ref{sec:xxx} a concrete definition of HLPCs and methods from obtaining them during interpreter execution.
+The low-level paths executing the same sequence of HLPCs map to the same high-level path.  Figure~\ref{fig:xxx} illustrates the relationship between the low- and high-level paths as the high-level tree enveloping the low-level one.
 
-% The sequences of HLPCs for all interpreter executions form a high-level execution tree. Any two paths in the execution tree mapping to the same HLPC sequence maps to the same high-level path.
-
-For each low-level path in the interpreter, \chef maintains a current HLPC value that is updated when a new program statement starts executing.
+In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting.
 %
-The sequences of HLPCs from all execution paths form a \emph{high-level symbolic execution tree}, which envelops the low-level execution tree (Figure~\ref{fig:xxx}).
+To mitigate the path explosion along high-level paths, \chef employs path prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
 
-The high-level execution tree has several properties.  First, each low-level path belongs to one and only one high-level path.  This obviously results from the way we construct the high-level tree.
+%% The high-level execution tree has several properties.  First, each low-level path belongs to one and only one high-level path.  This obviously results from the way we construct the high-level tree.
 
-Second, two low-level paths with the same HLPC sequence map to the same high-level path.  In practice, due to the interpreter implementation, a high-level path may consist of many low-level paths, in a number that may increase exponentially with the number of interpreter branches encountered on the high-level path.
+%% Second, two low-level paths with the same HLPC sequence map to the same high-level path.  In practice, due to the interpreter implementation, a high-level path may consist of many low-level paths, in a number that may increase exponentially with the number of interpreter branches encountered on the high-level path.
 
-Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
-%
-For example, the interpreter may implement a branching statement in two distinct steps: a comparison and a conditional jump.  In Figure~\ref{fig:xxx}, three low-level paths fork within the single HLPC location for \codebit{email.find}.  The low-level paths remain on the same high-level path until reaching the branching HLPC, where they diverge into two distinct high-level paths.  The relevant alternate low-level states for covering the distinct high-level paths thus were located away from the location of the code interpreting the high-level control flow statement.
-%
-The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
-
-% The HLPC segment a low-level execution path, with each boundary marked by an HLPC update.  The segments represent the low-level operations the interpreter performs to implement the semantics of the high-level statement.
+%% Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
+%% %
+%% For example, the interpreter may implement a branching statement in two distinct steps: a comparison and a conditional jump.  In Figure~\ref{fig:xxx}, three low-level paths fork within the single HLPC location for \codebit{email.find}.  The low-level paths remain on the same high-level path until reaching the branching HLPC, where they diverge into two distinct high-level paths.  The relevant alternate low-level states for covering the distinct high-level paths thus were located away from the location of the code interpreting the high-level control flow statement.
+%% %
+%% The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
 
 
 \subsection{Defining High-level Abstract States}
