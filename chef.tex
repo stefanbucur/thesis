@@ -344,7 +344,29 @@ These interpreters break the programs into chunks (typically functions), and eac
 
 This provides a natural way of defining HLPCs, as the addresses in memory of each compiled bytecode instruction.
 
+These addresses are used in the interpreter loop.  Figure~\ref{fig:xxx} shows the main parts of the interpretation loop:  the interpretation function, which is invoked for each function call.
+
+In each HL frame, there is a HLPC variable.  This variable is updated when the instruction is decoded, or when a control flow change occurs (e.g., a jump, or new loop iteration).
+
+To reconstruct the high-level control flow, we need to know two interpreter parameters: the address of the interpretation function, and the address of the instruction that initializes the HLPC variable.  Chef can then monitor the execution encountering these two addresses.  When ....
+
+\chef must determine when the HLPC is updated.
+
+To achieve that, we resort to a calibration program written for each language.
+
+The role of the calibration program is to force a pattern of HLPC updates that can be recognized by observing only memory operations.
+
+We assume a linear program generates a linear sequence of bytecode instructions.
+
+The calibration function consists of a sequence of statements (e.g., arithmetic operations).
+
+We run the calibration program once for each interpreter binary.  During calibration, we record all memory writes (program location, address, value).  We group the writes by their address, and keep only the groups with increasing values written.  We also enforce the increments to be less than a certain threshold (1KB, in our experiments, is a good threshold).
+
+This narrows down the filtering to one group, which contains all updates to the HLPC.  We then look at the first update and record its program location (this is the initialization statement), and the address of the function it occurs in.
+
 \paragraph{Manually Annotating the High-level Program Counter}
+
+When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information (Figure~\ref{fig:xxx}).
 
 \subsection{Interpreter Optimizations}
 \label{sec:chef:optimzeforsymbex}
