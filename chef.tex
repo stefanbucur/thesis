@@ -61,7 +61,7 @@ The sequence of program counters of the state determines one path in the symboli
 %
 The states contain an abstract \emph{high-level program counter} (HLPC) and optionally, the path condition.
 %
-The high-level state memory is undefined in \chef, as it is implicitly encoded in the low-level interpreter state and its semantics can be arbitrary.
+The high-level state memory is undefined in \chef, as its semantics are language-dependant.  However, the symbolic memory is implicitly encoded in the low-level interpreter state.
 
 The concrete semantics of the HLPC depend on the language and the interpreter.  \chef treats HLPC values opaquely, with the only assumption that each statement in the program maps to exactly one HLPC.  The sequence of all HLPCs taken by a high-level state forms a path in the high-level symbolic execution tree.
 %
@@ -82,11 +82,11 @@ Section~\ref{sec:xxx} presents concrete HLPC semantics for the most popular inte
 %
 For each low-level path in the interpreter, \chef reconstructs the sequence of HLPCs it executes by observing the statements fetched and executed in the interpretation loop (Section~\ref{sec:xxx}).
 %
-The low-level paths executing the same sequence of HLPCs map to the same high-level path.  Figure~\ref{fig:xxx} illustrates the relationship between the low- and high-level paths as the high-level tree enveloping the low-level one.
+The low-level paths that execute the same sequence of HLPCs map to the same high-level path.  Figure~\ref{fig:xxx} illustrates the relationship between the low- and high-level paths as the high-level tree enveloping the low-level one.
 
 In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting. \stefan{Maybe remove the reference to exponential growth, and give instead an example.}
 %
-To mitigate the path explosion along high-level paths, \chef employs path prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
+To mitigate the path explosion along high-level paths, \chef employs state prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
 
 %% Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
 %% %
@@ -98,36 +98,30 @@ To mitigate the path explosion along high-level paths, \chef employs path priori
 \subsection{Defining High-level Abstract States}
 \label{sec:chef:hlstates}
 
-By executing a program symbolically, a symbolic execution engine reveals an execution tree.  All the active execution states reside at leaves in this tree.
-%
-In the previous section, we defined the high-level symbolic execution tree.  In this section, we define the high-level states that reveal it.
+%% This limitation makes it more difficult to build analyses that read the program state, including search selection strategies, such as the coverage-optimized strategy in \klee~\cite{klee}.
+%% %
+%% However, the high-level state remains implicitly encoded in the low-level interpreter state and can be accessed by executing code in the target language, by the interpreter runtime.  Therefore, a possible workaround is to split the analysis in a language-independent part, running as part of Chef, and a language-dependent part, written in the target language and running as an interrupt in the interpreter context, whenever it is needed.
 
-Normally, a symbolic execution state is defined by its current location in the program (PC), the current path condition, and the memory contents.
+Determining the positions of a high-level state on its high-level path is not as clear-cut.
 %
-In \chef, a high-level state is abstractly defined only by the HLPC and, in certain modes of operations, by the path condition.
+The low-level states on the high-level path may reside at different points on the path, so there is no straightforward mapping from them to the high-level state.
 %
-A \chef high-level state does not expose the high-level program state.  This would be challenging to provide generally, as the high-level program state depends on the language semantics, which are implictly encoded in the language interpreter.
-%
-This limitation makes it more difficult to build analyses that read the program state, including search selection strategies, such as the coverage-optimized strategy in \klee~\cite{klee}.
-%
-However, the high-level state remains implicitly encoded in the low-level interpreter state and can be accessed by executing code in the target language, by the interpreter runtime.  Therefore, a possible workaround is to split the analysis in a language-independent part, running as part of Chef, and a language-dependent part, written in the target language and running as an interrupt in the interpreter context, whenever it is needed.
+Instead, \chef provides two modes of operation---\emph{partial-state} and \emph{complete-state}---corresponding to where the high-level states are allowed to be on their path.
 
-\chef operates in one of two modes, depending on how a high-level state is defined: partial and complete.
-%
-The partial state mode allows \chef to explore high-level paths faster, by using only one low-level path for supporting the execution, at the expense of missing the information needed to precisely determine high-level branches and hence discover new high-level paths.
-%
-In contrast, in complete state mode, \chef can precisely reason about high-level branches and therefore provides the means to implement high-level state selection strategies.  However, this comes at the expense of a slower path exploration rate.
-%
-We next describe in more detail the two \chef operating modes.
+%% The partial state mode allows \chef to explore high-level paths faster, by using only one low-level path for supporting the execution, at the expense of missing the information needed to precisely determine high-level branches and hence discover new high-level paths.
+%% %
+%% In contrast, in complete state mode, \chef can precisely reason about high-level branches and therefore provides the means to implement high-level state selection strategies.  However, this comes at the expense of a slower path exploration rate.
+%% %
+%% We next describe in more detail the two \chef operating modes.
 
-The two operating modes are defined by where the high-level states are placed on their high-level execution path.  At any point in time, a high-level execution path is divided into three major segments:
+Before defining the two modes, it is useful to divide each high-level path in three segments (Figure~\ref{fig:xxx}):
 \begin{itemize}
-\item The completed segment, where all the low-level execution paths have been explored.
-\item The partial segment, where at least one low-level execution path has been explored.
-\item The undiscovered segment, where no low-level execution path has yet been explored.
+\item \emph{completed}, where all the low-level execution paths have been traversed by their states,
+\item \emph{partial}, where at least one low-level execution path has been traversed, and
+\item \emph{undiscovered}, where no low-level path has yet been explored.
 \end{itemize}
 
-The partial segment is bounded upstream by the leading low-level state, and downstream by the trailing low-level state.
+The leading low-level state of the high-level path defines the boundary between the partial and undiscovered segment, while the trailing state on the path defines the boundary between the completed and partial segment.
 
 \subsubsection{Partial High-level States}
 
