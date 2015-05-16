@@ -70,34 +70,28 @@ The \emph{completeness}---systematic enumeration of all paths---and \emph{soundn
 
 Alas, symbolic execution is challenging to apply for non-trivial software.  The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops further amplifying the problem.  Even for moderately-sized programs with hundreds of branches, the size of the execution tree becomes too large to be completely covered in a reasonable amount of time.
 %
-This is commonly known as the ``path explosion'' problem and, in practice, symbolic execution engines resort to \emph{prioritizing} paths within a given time budget.
+This is commonly known as the ``path explosion'' problem and, in practice, symbolic execution engines resort to prioritizing paths within a given time budget, guided by a pluggable component in the engine called a \emph{search strategy}.
 
 
 \subsection{The Environment Problem in Symbolic Execution}
 
-For real-world software with thousands and even millions of lines of code, given the sheer size of the symbolic execution tree, mitigating path explosion alone is not sufficient.
+For the software commonly encountered in the real world, with thousands and even millions of lines of code, mitigating path explosion alone is not sufficient, given the sheer size of the symbolic execution tree.
 %
 For instance, consider a small system utility that prints at the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen.
 %
-Symbolically executing this program potentially involves traversing tens of thousands of lines of kernel and library code, even if we're only interested in covering the code of the utility.
+Even if we're only interested in testing solely the code of the utility, executing it involves traversing tens of thousands of lines of kernel and library code.
 
-%% Instead, the symbolic execution engine should focus the execution on the system utility, and reduce the time spent in the environment, while keeping the behavior of the system at the program/environment interface as accurate as possible.
-
-%% This is called the ``environment problem'' in symbolic execution and it is the distinctive scalability problem of symbolic execution for real-world software.  This is the topic of the thesis.
-
-Instead, the symbolic execution engine should focus the exploration on the system utility, and reduce the time spent in its environment.
+Instead, the symbolic execution engine should focus the exploration on the system utility.  At the same time, the techniques used to reduce the time spent in its environment should still provide to the program consistent data from the environment, in order to keep the execution sound and avoid missing feasible paths through the program.
 %
-At the same time, the symbolic execution engine should provide to the program consistent data from the environment, in order to keep the execution sound and avoid missing feasible paths through the program.
-%
-This is called the ``environment problem'' in symbolic execution and it is the main scalability issue when applying symbolic execution on real-world software.
+This is called the ``environment problem'' in symbolic execution and it is the main scalability issue of applying symbolic execution on real-world software.
 
-%% For example, one simple approach is to convert all the environment calls to concrete values.  This causes a single path per call through the environment, but this risks missing feasible paths in the utility itself.  For example, if opening a file with a symbolic name is both successful and failing, concretizing the file name will cause the program to experience only one behavior, say the successful one, and miss the error handling paths.
-
-One possible approach for dealing with the environment problem is to simply let the calls into the environment go through concretely.  For instance, the symbolic parameters of a system call could be forcefully assigned concrete values before executing the system call.
+One simple approach for dealing with the environment problem is to let the calls into the environment go through concretely.  For instance, the symbolic parameters of a system call could be forcefully assigned concrete values before executing the system call.
 %
 However, this approach risks introducing inconsistencies in the execution and miss feasible paths in the target program itself.
 %
 For example, if opening a file with a symbolic name would either succeed or fail depending on the file name, concretizing to a valid file name would cause the symbolic execution to miss the error handling path in the program.
+%
+For this example, a possible approach to simplifying the environment, while maintaining program coverage, is to inject the system call failure at the operating system interface, and hence exercise both successful and failing paths in the program.
 
 \newcommand{\cnineccolor}{\cellcolor{GreenYellow}}
 \newcommand{\chefccolor}{\cellcolor{SkyBlue}}
@@ -106,7 +100,8 @@ For example, if opening a file with a symbolic name would either succeed or fail
   \centering
   \small
   \begin{tabular}{r p{5cm} p{5cm}}
-    \rule{0pt}{14pt} \textbf{Abstraction} & \cnineccolor Same-level & \chefccolor Nested \\
+    
+    \textbf{Abstraction} & \cnineccolor Same-level & \chefccolor Nested \\
     \hline
     \bigskip Examples      & C program using a numerical library.    & Program written in a numerical computing language (e.g., Julia). \\
     
@@ -119,40 +114,34 @@ For example, if opening a file with a symbolic name would either succeed or fail
         Examples          & A web application that uses a standard web interface, such as CGI.    & A web application that uses the fast-changing native API of its web server (e.g., Apache). \\
   \end{tabular}
   \caption{Examples of environment interfaces, classified along main design principles---abstraction and encapsulation---and stability in time.  Color overlays indicate design space coverage by \colorbox{GreenYellow}{\cnine} and \colorbox{SkyBlue}{\chef}.}
+  \label{tab:intro:env}
 \end{table}
 
+In general, systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the environment interface and its implementation.
+
+To roughly structure the problem space, we classify in Table~\ref{tab:intro:env} the instances of the environment problem along three main attributes of the environment interface: abstraction, encapsulation, and interface stability in time.
+%
+Abstraction and encapsulation are two essential principles in system design.  In particular, for program environments, abstraction refers to hiding the complexity of data representation and handling behind simpler concepts exposed to the program.  Encapsulation refers to restricting access to the environment state through narrow, well-defined interfaces.
+%
+Finally, interface stability refers to the degree of churn in the interface specification.  For instance, well-documented and standardized interfaces tend to change less often.
+
+Table~\ref{tab:intro:env} illustrates with examples the different levels of abstraction, encapsulation, and stability occurring in real-world situations.  For each example, a symbolic execution engine would need to approach the environment in fundamentally different ways.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Solution Overview: A Tailored Approach to The Environment Problem}
 
-Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the environment interface and its implementation.  This situation is best illustrated with examples.
-
-For instance, a C program using a numerical library lies at the same abstraction level as the library, while a program performing the same operations, but written in a numerical computing language, e.g., Julia, is at a higher abstraction level than the language implementation.
-%
-A Linux file system implemented as a kernel module can interact with the entire kernel state, while the same file system code running in user-space through FUSE has a well-defined, encapsulated interface to the kernel.
-%
-Finally, the behavior of a web application using the fast-changing native API of its web server (e.g., Apache) would be more sensitive to the web server implementation changes than an equivalent application that uses a standard web interface, such as CGI.
-%
-In each of the three examples, a symbolic execution engine has one program to explore, yet it needs to approach the two alternative environments in fundamentally different ways.
-
-%% This thesis addresses this problem by focusing on two points in the design space of the program/environment interface that collectively cover a wide range of real-world software: (1) low-level system software interacting with the operating system through the POSIX interface, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  These two points exhibit opposite characteristics.
-
 This thesis addresses two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.
 %
 The two instances exhibit opposite characteristics.
 
-%% On the one hand, the POSIX interface is properly encapsulated, well-documented, and stable.  Moreover, while the POSIX API consists of hundreds (or thousands?) of calls, its usage follows a power-law distribution [cite Radu's work], such that about 10s of them are commonly used in most software.
-
 On the one hand, the operating system interfaces are typically stable and well-documented (e.g., POSIX).  Moreover, while they consist of hundreds of system calls, their usage follow a power-law distribution, such that most software only uses a small fraction of them.
-
-%% On the other hand, the specifications of most popular dynamic languages are incomplete, vague, and change rapidly from one version of the language to another.
-
-%% Moreover, these languages rely heavily on built-in methods, i.e. functions that are not implemented in the language itself, but execute as native C code in the interpreter.  This makes the program/environment interface highly porous, as the native calls can have arbitrary side effects on the program state.
 
 On the other hand, the specifications of dynamic languages are incomplete and unstable.
 %
-Moreover, these languages rely heavily on built-in functions, i.e., functions that are not implemented in the language itself, but are C code part of the interpreter.  This makes the program/environment interface highly porous, as the built-in calls may have arbitrary side effects on the program state.
+Moreover, these languages rely heavily on built-in functions, i.e., functions that are not implemented in the language itself, but are C code part of the interpreter.  This makes the program/environment interface highly ``porous'', as the built-in calls may have arbitrary side effects on the program state.
+
+Both problem instances cover both levels of abstraction, encapsulation, and stability, as the color overlays show in Table~\ref{tab:intro:env}.
 
 \subsection{Symbolic Models for a Stable Operating System Interface}
 
