@@ -109,7 +109,7 @@ For this example, a possible approach to simplifying the environment, while main
     \hline
     \bigskip Examples      & Linux file system implemented as a kernel module.   & Linux file system implemented using the FUSE user-space interface. \\
     
-    \textbf{Stability}   & \cnineccolor Stable    & \chefccolor Fast-changing \\
+    \textbf{Stability}   & \cnineccolor Stable    & \chefccolor Frequently-changing \\
     \hline
         Examples          & A web application that uses a standard web interface, such as CGI.    & A web application that uses the fast-changing native API of its web server (e.g., Apache). \\
   \end{tabular}
@@ -145,48 +145,32 @@ Both problem instances cover both levels of abstraction, encapsulation, and stab
 
 \subsection{Symbolic Models for a Stable Operating System Interface}
 
-%% To address the first problem, we model much of the POSIX interface that we encountered when running widely used and complex real-world software, such as the Apache webserver, memcached, or the Python interpreter.
-
 To address the environment problem for stable operating system interfaces, this thesis introduces \cnine, a symbolic execution platform with an accurate and efficient operating system model, as used by systems such as system utilities, web servers, or distributed systems.
-
-%% Our insight is that, for the purpose of automated testing, the POSIX interface can be modeled efficiently on top of a few core abstractions: threads and processes, synchronization, and address spaces with shared memory.
-
-%% On top of these abstractions, much of the POSIX interface can be implemented as guest code that substitutes the C standard library used by the target programs.
 
 \cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory.
 %
 These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code, by substituting the standard C library used by the target programs.
 
-%% We built the Cloud9 symbolic execution platform, which provides accurate and efficient models of POSIX abstractions such as files, network sockets, threads, processes, thread synchronization, IPC, signals, and other miscellaneous calls.
-
-%% By using these symbolic models, Cloud9 is the first to efficiently target complex system utilities (e.g., curl), web servers, or distributed systems.
-
 We prototyped \cnine for system code that uses the standard POSIX interface.  \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other miscellaneous functions.
 %
 By using these models as substitutes for the complex kernel implementations, \cnine is the first to efficiently target complex system utilities such as \textsf{curl}, web servers such as Apache and lighttpd, or other networked services, such as memcached.
+%
+As a result, \cnine uncovered new bugs, including a security vulnerability in memcached, and generated high-coverage test suites.
 
 
 \subsection{Using Interpreters as Specifications for Fast-changing Languages}
 
-%% The second problem lends itself to a different approach.  As the interface is volatile, porous, and complex, modeling it is an expensive ongoing engineering effort.
-
-%% Instead, this thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine while executing the target program.  The aggregate system acts as a high-level symbolic execution engine for the target program.
-
-For incomplete and unstable dynamic language semantics, the environment problem lends itself to a different approach.
+For programs written in high-level dynamic languages, such as Python, Ruby, or JavaScript, the environment problem lends itself to a different approach.
 %
-This thesis introduces the idea of using the interpreter as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it executes the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
+Building a symbolic execution engine by hand for these languages is a significant engineering undertaking.  The language semantics are complex, loosely specified, and change frequently.  Moreover, they rely heavily on built-in functionality that ought to be modeled in the symbolic execution engine.
 
-%% Mapping low-level interpreter paths to high-level program paths is done by segmenting the low-level paths into chunks corresponding to each high-level instruction executed.  Low-level paths with the same sequence of high-level instructions map to the same high-level path.
+This thesis introduces the idea of using the language interpreter---the de facto standard of the language semantics---as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it executes the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
 
 To map the low-level interpreter paths to high-level program paths, we partition the interpreter paths into chunks, one for each high-level instruction executed on the path. Then, the low-level paths with the same sequence of high-level instructions map to the same high-level path.
 
 To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
 %
 CUPA works by grouping paths into equivalence classes, according to a coverage goal.  The prioritization is done by uniformly choosing groups instead of paths.  As a result, any path selection bias introduced by program locations with higher path explosion is contained within one equivalence class.
-
-%% Additionally, we provide a set of fast recipes for eliminating common sources of path explosion in the interpreter.
-
-%% We prototyped the Chef symbolic execution platform for interpreted languages and used it to obtain engines for Python, Lua, and JavaScript.
 
 We prototyped these ideas in the \chef symbolic execution platform for interpreted languages.  With \chef, we obtained engines for Python and Lua, which generated test suites and found bugs in popular library packages.
 
