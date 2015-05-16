@@ -99,12 +99,32 @@ However, this approach risks introducing inconsistencies in the execution and mi
 %
 For example, if opening a file with a symbolic name would either succeed or fail depending on the file name, concretizing to a valid file name would cause the symbolic execution to miss the error handling path in the program.
 
+\newcommand{\cnineccolor}{\cellcolor{GreenYellow}}
+\newcommand{\chefccolor}{\cellcolor{SkyBlue}}
+
+\begin{table}
+  \centering
+  \small
+  \begin{tabular}{r p{5cm} p{5cm}}
+    \rule{0pt}{14pt} \textbf{Abstraction} & \cnineccolor Same-level & \chefccolor Nested \\
+    \hline
+    \bigskip Examples      & C program using a numerical library.    & Program written in a numerical computing language (e.g., Julia). \\
+    
+    \textbf{Encapsulation} & \chefccolor Loose & \cnineccolor Strong \\
+    \hline
+    \bigskip Examples      & Linux file system implemented as a kernel module.   & Linux file system implemented using the FUSE user-space interface. \\
+    
+    \textbf{Stability}   & \cnineccolor Stable    & \chefccolor Fast-changing \\
+    \hline
+        Examples          & A web application that uses a standard web interface, such as CGI.    & A web application that uses the fast-changing native API of its web server (e.g., Apache). \\
+  \end{tabular}
+  \caption{Examples of environment interfaces, classified along main design principles---abstraction and encapsulation---and stability in time.  Color overlays indicate design space coverage by \colorbox{GreenYellow}{\cnine} and \colorbox{SkyBlue}{\chef}.}
+\end{table}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Solution Overview: A Tailored Approach to The Environment Problem}
-
-%% Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the program/environment interface.  For instance, are they components on the same abstraction level, or nested at different layers?  Is the interface well-defined and properly encapsulates the environment or is it porous?  Is the interface small, or does it extend across thousands of environment calls?  Is the interface stable or does it change frequently?
 
 Systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the environment interface and its implementation.  This situation is best illustrated with examples.
 
