@@ -29,13 +29,18 @@ In this section, we highlight the most important tools and discuss the technique
 
 \paragraph{Concrete + Symbolic Execution}
 
-The major challenges of symbolically executing real-world targets are supporting the program interactions with its environment and the language constructs in its implementation.
+To support real-world programs, a symbolic execution engine must be prepared to deal with all language features and calls into the environment.
 %
-A first solution introduced by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, is to instrument the source code of the program, using tools such as CIL~\cite{cil}, with additional statements that maintain the symbolic state as the program executes.  This approach resulted in the \emph{concolic} (\emph{conc}rete + symb\emph{olic}) execution model, where the program executes from a concrete input, while collecting symbolic constraints for each branch taken.  By negating the condition at each branching point, the engine obtains new concrete inputs used in subsequent program executions.
+A first solution introduced by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, is to execute the program normally, using concrete inputs, while maintaining the symbolic execution state in the areas of interest.
 %
-When the symbolic semantics are not available, such as inside external library calls, the program execution can still proceed concrete-only.
+When the symbolic semantics are not available, such as inside external library calls, the program execution would still be able proceed.
 %
-By using this approach, DART and CUTE found crashes in C programs, such as protocol implementations and data structure libraries.
+By using this approach, these tools found crashes in small-to-moderate C programs, such as protocol implementations and data structure libraries.
+
+This form of execution is called concolic (\emph{conc}rete + symb\emph{olic}), or ``whitebox fuzzing''.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
+
+DART and CUTE implemented concolic execution at the C source code level, by using CIL~\cite{cil} to instrument the code with additional statements that maintain the symbolic state as the program executes.
+
 
 \paragraph{Specialized Solver Support}
 
