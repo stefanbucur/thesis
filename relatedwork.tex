@@ -37,16 +37,16 @@ When the symbolic semantics are not available, such as inside external library c
 %
 By using this approach, these tools found crashes in small-to-moderate C programs, such as protocol implementations and data structure libraries.
 
-This form of execution is called concolic (\emph{conc}rete + symb\emph{olic}), or ``whitebox fuzzing''.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
-
-DART and CUTE implemented concolic execution at the C source code level, by using CIL~\cite{cil} to instrument the code with additional statements that maintain the symbolic state as the program executes.
+This form of execution is also called concolic (\emph{conc}rete + symb\emph{olic}), or ``whitebox fuzzing''.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
 
 
 \paragraph{Specialized Solver Support}
 
-In addition, real-world software generates constraints that are hard to reason about, containing expressions such as memory accesses from symbolic addresses, or complex arithmetic operations such as bit-wise multiplication and division.  Without solver support, a symbolic execution engine ends up concretizing the state or abandoning the path, hence losing completeness.
+%% In addition, real-world software generates constraints that are hard to reason about, containing expressions such as memory accesses from symbolic addresses, or complex arithmetic operations such as bit-wise multiplication and division.  Without solver support, a symbolic execution engine ends up concretizing the state or abandoning the path, hence losing completeness.
 
-To address this problem, modern symbolic execution engines employ high-performance specialized constraint solving utilities, such as Z3~\cite{Z3}, STP~\cite{stp}, or CVC~\cite{cvc}.  These solvers can reason efficiently about a large set of operations commonly encountered in program execution, such as bit-wise arithmetic and array manipulation.
+A major limitation of the early symbolic execution engines was the lack of proper support for reasoning about symbolic expressions.  Programs commonly use binary arithmetic and access memory locations at arbitrary offsets.  However, DART and CUTE used a solver for linear integer constraints, which limited the parts of the code that could be reasoned about symbolically.
+
+Subsequent symbolic execution engines addressed this problem by employing high-performance specialized constraint solving utilities, such as Z3~\cite{Z3}, STP~\cite{stp}, or CVC~\cite{cvc}.  These solvers can reason efficiently about a large set of operations commonly encountered in program execution, such as bit-wise arithmetic and array manipulation.
 %
 The EXE~\cite{exe} symbolic execution engine was among the first to employ such a solver (STP), which was co-designed with EXE to accurately express machine operations in low-level languages such as C.
 %
@@ -55,6 +55,8 @@ For example, EXE modeled the program memory as a flat array of bytes, with suppo
 As a result, EXE found bugs in system software such as the \codebit{udhcpd} DHPC server, packet filters, and the \codebit{pcre} Perl regular expression library.
 
 \paragraph{Low-level Symbolic Interpretation}
+
+DART and CUTE implemented concolic execution at the C source code level, by using CIL~\cite{cil} to instrument the code with additional statements that maintain the symbolic state as the program executes.
 
 Implementing symbolic execution semantics through source code instrumentation becomes difficult for large software with multiple units, or for more complex languages, such as C++.
 %
