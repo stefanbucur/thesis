@@ -194,17 +194,21 @@ To mitigate the path explosion, S2E introduces execution consistency models, whi
 Chef takes the inlining approach to the environment problem, when symbolically executing programs written in interpreted languages.  Chef is the first system to use a language interpreter as a semantics provider for symbolic execution.
 
 
-\section{Developer Control of Symbolic Environment}
+\subsection{Developer Control of Symbolic Environments}
 
-The user interface and API of a symbolic execution engine play an important role in limiting path explosion, as they let users define the inputs and sources of nondeterminism that can be symbolic.  This is particularly relevant for system software, whose execution is influenced by many external factors, such as command line arguments, environment variables, system call results, thread schedules, signal dispatches, and so on.
-
-The KLEE~\cite{klee} symbolic execution engine provides an interface for controlling the symbolic environment of the target system.  For example, command-line utilities can be run with symbolic arguments that are defined using a special syntax, in line with the rest of the target arguments.  For instance, \codebit{ls -l --sym-arg 1 3} runs \codebit{ls} with the second argument symbolic, between 1 and 3 characters.  This syntax can be used to define symbolic arguments or symbolic files.
-
-The symbolic test interface of Cloud9 gives extensive control over the behavior of its operating system model, such as per-file descriptor symbolic fault injection or per-socket symbolic control flow.
+The developer interface to a symbolic execution engine plays an important role in controlling its effectiveness and efficiency.
 %
-The closest concept to symbolic tests are the idea of parameterized unit tests~\cite{tillmann-puts}. These extend regular unit tests with parameters marked as symbolic inputs during symbolic execution.
+The best known sources of developer inputs are the search selection strategies and the injection of symbolic data in the system.
 %
-QuickCheck~\cite{quickcheck} allows writing specifications in Haskell, which again share their basic concept with symbolic tests, and tries to falsify them using random testing.  Symbolic execution can offer an alternative to random testing in evaluating QuickCheck test specifications.
+For example, KLEE runs command-line utilities with symbolic arguments defined using a special syntax, in line with the rest of the target arguments.  For instance, \codebit{ls -l --sym-arg 1 3} runs \codebit{ls} with the second argument symbolic, between 1 and 3 characters.  This syntax can be used to define symbolic arguments or symbolic files.
+
+The developer control over the symbolic input was encapsulated in concepts such as parameterized unit tests~\cite{tillmann-puts}, which extend regular unit tests with parameters marked as symbolic inputs during symbolic execution.
+%
+Similarly, QuickCheck~\cite{quickcheck} allows writing input specifications in Haskell, which are used to instantiate inputs during random testing.
+
+However, systems software is influenced by many other external factors, such as environment variables, system call failures, thread schedules, signal dispatch timing, and so on.
+%
+To address this problem, Cloud9's symbolic test interface gives extensive control over the behavior of its operating system model, such as per-file descriptor symbolic fault injection or per-socket symbolic control flow.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
