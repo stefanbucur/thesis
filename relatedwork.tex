@@ -153,21 +153,23 @@ For instance, when a symbolic value $\mu$ is passed as a parameter to an externa
 
 For simple programs with limited interactions with their environment, this approach is sufficient.  However, for programs with stronger connections to the environment---e.g., maintaining open file descriptors---concretization may cause missed feasible paths and inconsistencies.
 
-Consider the example of an environment call with symbolic arguments.  Concretization affects both the return value and the input parameters.
+Consider the example of an environment call with symbolic arguments.  Concretization affects both the return value and the input arguments.
 %
 First, the return value is always concrete, which may lead the symbolic execution engine to miss value-dependent paths in the program, such as error handling.
 %
-Second, in order to maintain soundness, concretization introduces additional constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).  This too restricts the possible executions on the paths following the external call.
+Second, in order to maintain soundness, concretization introduces constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).  This, too, restricts the possible executions on the paths following the external call.
 %
 Avoiding the extra conditions might increase the coverage of the target program, at the expense of potentially introducing false executions.
 
-Finally, concretization may introduce additional inconsistencies when the environment state is shared among all execution paths, as it is the case with non-concolic (``pure-symbolic'') execution.  In that case, calls into the external environment end up operating on the same environment, causing cross-talking between different execution paths~\cite{klee}.
+A concrete environment may also introduce inconsistencies if it is shared among all execution paths~\cite{klee}.
+%
+This is commonly the case with non-concolic (``purely-symbolic'') execution, when the symbolic execution engine maintains all execution states as data structures in its address space.  Calls to the environment would then be passed on to the environment of the engine itself, potentially causing cross-talking between different execution paths.
 
 \subsection{Abstraction (Modeling)}
 
 An alternative approach to simplifying the environment is to replace its concrete implementation with a simpler one---a model---that captures its essential behavior.
 %
-This often results in the model being significantly smaller than the original, as it drops non-functional requirements, such as performance or fault-tolerance.  For example, when testing a web application, its key-value store database could be replaced with a model consisting of a plain local dictionary data structure.
+The model is smaller---often by orders of magnitude---than the original implementation, as it drops non-functional requirements, such as performance or fault-tolerance.  For example a key-value store database dependency of a web application could be replaced with a plain dictionary when symbolically executing it.
 
 Symbolic execution engines implement models either by building them into the engine implementation (e.g., symbolic hardware models in S2E~\cite{s2eSystem}), or as guest code running together with the target program (e.g., the file system models in KLEE~\cite{klee}).
 
