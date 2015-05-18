@@ -94,16 +94,19 @@ Unmodeled system calls were still allowed, by passing them to the host environme
 %
 KLEE found bugs and generated test suites with over 90\% statement coverage on average in the Coreutils suite.  It also found bugs in other systems software, such as Busybox and the HiStar kernel.
 
-S2E~\cite{s2eSystem} expanded the reach of symbolic execution by providing a full virtual machine x86 symbolic execution environment, which includes programs, libraries, the operating system, and the hardware.
+\paragraph{``In-vivo'' Symbolic Execution}
+
+Targeting low-level representations, such as x86, has an additional advantage: it blurs the line between the program and its environment.  A program, its libraries, and the entire operating system, all execute the same CPU instruction set, which would be targeted by the symbolic execution engine.
 %
-This allows S2E to accurately run ``in-vivo'' any part of the software stack, without the need of the source code.
+This approach is particularly convenient when the target program is deeply integrated in the system, such that there is no clear separation between the program and its environment.
+
+Full-VM symbolic execution engines, such as S2E~\cite{s2eSystem} and BitBlaze~\cite{bitBlaze}, leverage this approach in order to run symbolically any part of the software stack ``in-vivo'', without the need of the program source code, nor operating system models.
+%
+The program state effectively is the CPU state (registers, flags, etc.) and the contents of the physical memory.
+%
+I/O would still need to be modeled, as it constitutes the CPU environment; for instance, S2E provides symbolic models for devices, when testing their drivers running in a kernel.
 %
 Most notably, S2E discovered vulnerabilities in several Windows device drivers, some of whom were Microsoft-certified~\cite{ddt}.
-
-%% Modeling the environment is not always feasible.  In some cases, a component is so deeply integrated in the system that there is no clear separation between the component and the rest of the system.  Device drivers running in OS kernels are one notable example.
-%% %
-%% For those cases, an alternative approach to the environment problem is to bundle the program, together with all its dependencies, in one large unit executed symbolically.
-
 
 Symbolic execution also found use in security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs, at the expense of losing completeness.
 %
