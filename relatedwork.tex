@@ -151,11 +151,15 @@ A simple approach to simplifying the environment execution is to concretize the 
 %
 For instance, when a symbolic value $\mu$ is passed as a parameter to an external function, the symbolic execution engine replaces the symbolic expression with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
 
-However, concretization may cause inconsistencies in the execution and missing feasible paths.
-%
-First, the value returned from the environment is concrete, which may lead the symbolic execution engine to miss value-dependent paths in the program, such as error handling.
+For simple programs with limited interactions with their environment, this approach is sufficient.  However, for programs with stronger connections to the environment---e.g., maintaining open file descriptors---concretization may cause missed feasible paths and inconsistencies.
 
-Second, in order to maintain soundness, the concretization introduces in the path condition of the execution state the fact that the symbolic value was constrained to one of its concrete examples ($pc_{new} := pc_{old} \wedge (\mu = m)$).  This also restricts the possible executions of the paths following the external call.  Removing the step might increase the coverage of the target program, at the expense of introducing false positives.
+Consider the example of an environment call with symbolic arguments.  Concretization affects both the return value and the input parameters.
+%
+First, the return value is always concrete, which may lead the symbolic execution engine to miss value-dependent paths in the program, such as error handling.
+%
+Second, in order to maintain soundness, concretization introduces additional constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).  This too restricts the possible executions on the paths following the external call.
+%
+Avoiding the extra conditions might increase the coverage of the target program, at the expense of potentially introducing false executions.
 
 Finally, concretization may introduce additional inconsistencies when the environment state is shared among all execution paths, as it is the case with non-concolic (``pure-symbolic'') execution.  In that case, calls into the external environment end up operating on the same environment, causing cross-talking between different execution paths~\cite{klee}.
 
