@@ -108,7 +108,7 @@ Most notably, S2E discovered vulnerabilities in several Windows device drivers, 
 
 Symbolic execution also found use in security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs, at the expense of losing completeness.
 %
-For example, the AEG~\cite{aeg} tool uses symbolic analysis to both find bugs and automatically generate exploits (get a shell) from the bugs.  AEG uses heuristics that prioritize buggt paths and employs simple operating system models that minimize path explosion.
+For example, the AEG~\cite{aeg} tool uses symbolic analysis to both find bugs and automatically generate exploits (get a shell) from the bugs.  AEG uses heuristics that prioritize buggy paths and employs simple operating system models that minimize path explosion.
 %
 The Mayhem~\cite{mayhem} tool employs a simplified symbolic memory model where write addresses are concretized.
 %
@@ -147,7 +147,7 @@ In the rest of this section, we discuss in more detail each of the three environ
 
 \subsection{Over-approximation (Concretization)}
 
-A simple approach to simplifying the environment execution is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee}.
+A simple approach to simplifying the environment execution is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee,exe}.
 %
 For instance, when a symbolic value $\mu$ is passed as a parameter to an external function, the symbolic execution engine replaces the symbolic expression with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
 
@@ -167,22 +167,26 @@ This is commonly the case with non-concolic (``purely-symbolic'') execution, whe
 
 \subsection{Abstraction (Modeling)}
 
-An alternative approach to simplifying the environment is to replace its concrete implementation with a simpler one---a model---that captures its essential behavior.
+An alternative approach to simplifying the environment is to replace its concrete implementation with a simpler one---a model---that captures its essential behavior~\cite{klee,mayhem,aeg}.
 %
 The model is smaller---often by orders of magnitude---than the original implementation, as it drops non-functional requirements, such as performance or fault-tolerance.  For example a key-value store database dependency of a web application could be replaced with a plain dictionary when symbolically executing it.
 
 Symbolic execution engines implement models either by building them into the engine implementation (e.g., symbolic hardware models in S2E~\cite{s2eSystem}), or as guest code running together with the target program (e.g., the file system models in KLEE~\cite{klee}).
 
-Although they are effective at reducing path explosion, models are expensive to write correctly and completely.  As a result, they tend to be employed only for environment interfaces with simple semantics, or when the model accuracy is less important (e.g., security testing~\cite{aeg}).
+Although they are effective at reducing path explosion, models are expensive to write correctly and completely.  As a result, they tend to be employed only for simple or stable environment semantics, or when the model accuracy is less important (e.g., security testing~\cite{aeg}).
 
-Cloud9 takes the modeling approach to the environment problem, when symbolically executing programs interacting with the operating system.  Cloud9 is the first to provide an accurate and efficient model for an operating system interface as complex as POSIX.  Compared to previous approaches, Cloud9 divides the model code into built-in core primitives and guest code, which helps keep the implementation simple, while covering much of the most common operating system abstractions.
+Cloud9 takes the modeling approach to the environment problem, when symbolically executing programs interacting with the operating system.  Cloud9 is the first to provide an accurate and efficient model for an operating system interface as complex as POSIX.  Key to our approach is to divide the model code into built-in core primitives and guest code, which helps keep the implementation simple, while covering much of the most common operating system abstractions.
 
 \subsection{Inlining (Whole-system Analysis)}
 
-Finally, the approach that preserves full correctness and completeness is to bundle the environment with the program and execute it symbolically as one target.
+Concretizing environment calls or writing models is unfeasible when the environment interface is large or maintains a complex state, strongly coupled to the program state.
+%
+For example, once loaded, a device driver typically can interact with the entire operating system kernel.  Concretizing all kernel calls would drastically reduce the exploration space, while modeling all kernel features would be expensive, especially for kernels with high internal churn, such as Linux.
+
+For these cases, an approach that preserves correctness and completeness is to bundle the environment with the program and execute it symbolically as one target.
 %
 Full-VM symbolic execution engines provide this approach~\cite{s2e,bitBlaze}.
-%
+
 However, this approach reduces the effectiveness of symbolic execution on the original target program, due to the path explosion in the entire system, which may be orders of magnitude larger than the program.
 %
 To mitigate the path explosion, S2E introduces execution consistency models, which are principles of converting between symbolic and concrete values when crossing the program boundaries, in order to control the path explosion in the environment.
