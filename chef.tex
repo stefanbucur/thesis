@@ -311,8 +311,14 @@ Finally, we discuss the remaining work of building a language-specific testing A
 \paragraph{Standard Interpretation Model}
 
 In general, obtaining the high-level program counter in a running interpreter is undecidable.
+%
+The boundaries between program statements are a high-level property of the language, which may not reflect in the low-level implementation.  Even at the high level, statement boundaries may be ambiguous due to functional constructs, such as lambda functions and list comprehensions, or data definitions mixed with control flow, such as class definitions in Python.
 
-In practice, most interpreters follow a common structure that can be detected automatically.
+In practice, however, most interpreters follow a common structure that \emph{can be detected automatically}.
+%
+Instead of directly interpreting the source program, interpreters first compile it to an intermediate bytecode representation.  At that level, the statement boundaries are clear: each bytecode instruction is a statement.  Each function in the program gets its own bytecode block.  When a function is called, the interpreter pushes a frame on its high-level stack, which includes a high-level program counter variable that points inside the function bytecode buffer.
+%
+We confirmed these patterns by inspecting the source code of the most popular interpreters for Python, JavaScript, Ruby, PHP, and Lua.
 
 For each interpreter binary, \chef reconstructs a model consisting of three binary locations (breakpoints).
 
@@ -331,8 +337,6 @@ The calibration script is written once for each language, and executed once for 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In Section~\ref{sec:xxx}, we defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
-
-In general, determining HLPCs fully automatically is undecidable: the boundaries of the program statements are language-specific.  The situation is unclear even for imperative languages, that include lambda functions, comprehensions, and data declarations mixed with control flow.
 
 However, \chef relies on the insight that most popular interpreters for languages such as JavaScript, Python, Ruby, PHP, and Lua, compile the target programs to an intermediate bytecode representation, which is executed in an interpretation loop.
 %
