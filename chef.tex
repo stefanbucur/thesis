@@ -299,7 +299,36 @@ Finally, we discuss the remaining work of building a language-specific testing A
 \label{tab:api}
 \end{table}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/chef/interp-model}
+  \caption{Structure of interpretation loop in most common interpreters.  Program addresses of Lines 1, 2, and 4 are per interpreter.  High-level control flow changes at Lines 4, 9, and 10 are detected at runtime by watchpoints on HLPC address identified at Line 2.}
+  \label{fig:chef:interp-model}
+\end{figure}
+
 % Doing this automatically in general is undecidable, as the high-level semantics are language-specific. Not clear what distinguishes a path from another in the program.  Is it statement numbers?  What about complex statements, like list comprehensions?
+
+\paragraph{Standard Interpretation Model}
+
+In general, obtaining the high-level program counter in a running interpreter is undecidable.
+
+In practice, most interpreters follow a common structure that can be detected automatically.
+
+For each interpreter binary, \chef reconstructs a model consisting of three binary locations (breakpoints).
+
+At runtime, the breakpoints are used to maintain the high-level stack and the current high-level program counter.
+
+\paragraph{Model Reconstruction in \chef}
+
+\chef performs model reconstruction by observing all memory accesses in the interpreter when running a special ``calibration'' script.
+
+The role of the calibration script is to create HLPC update patterns that are distinguishable from other memory accesses.
+
+\chef uses a linear sequence of instructions to create a linear HLPC update pattern.
+
+The calibration script is written once for each language, and executed once for each interpreter binary.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In Section~\ref{sec:xxx}, we defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
 
