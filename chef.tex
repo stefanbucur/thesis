@@ -27,8 +27,7 @@ The resulting engine is a correct symbolic execution engine for the target langu
 %
 It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
 
-\section{\chef as Symbolic Execution Engine Adapter}
-
+\section{\chef's Architecture as Adapter Between Engine Interfaces}
 
 \begin{figure}
   \centering
@@ -37,22 +36,39 @@ It is fully precise and theoretically complete, i.e., it will not explore infeas
   \label{fig:system-arch}
 \end{figure}
 
-
 From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces:
 %
 the internal \emph{low-level} binary engine, and the developer-facing \emph{high-level} engine interface.
-
-Broadly speaking, a symbolic execution engine interface consists of two parts.
 %
-On the one hand, the engine receives the program and a test driver, and outputs a set of test cases.
+Broadly speaking, the interface of a symbolic execution engine consists, on the one hand, of the part that receives the program and the test driver, and outputs test cases.
 %
-On the other hand, the engine interacts with the execution strategy that decides which program state to execute next, according to the exploration goal.
+On the other hand, it includes the communication interface with the execution strategy, which decides which of the available program states in the execution tree to be run next (see Section~\ref{sec:intro:symbex}).
+
+Figure~\ref{fig:xxx} shows the architecture of \chef, which consists of a fixed part and a pluggable part.
 %
-\chef connects the two parts of the inner and outer engine interfaces, as follows.
+The fixed part includes the low-level symbolic execution engine (S2E), its state selection strategy, and a component that converts low-level execution states in the interpreter to high-level execution states in the target program.
+%
+The pluggable part contains the language interpreter, responsible with providing the implicit semantics of the language.
 
-Figure~\ref{fig:xxx} shows the architecture of \chef.
+The inner low-level symbolic execution engine operates with machine-level abstractions.
 
-Broadly speaking, a symbolic execution engine receives the program, a symbolic input for the program, and a goal in the form of a search strategy; the engine outputs test cases that exercise different paths in the program.
+The outer interface exposes high-level abstractions.
+
+The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
+
+Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
+
+The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
+
+The choice of low-level execution paths is governed by \chef's strategy subsystem.
+
+The low-level states maintained by the low-level engine are reported to a state adapter, which constructs the ``high-level view'' of the execution.
+
+The state adapter decides which high-level states to prioritize, according to a pluggable high-level strategy.
+
+In turn, the low-level strategy guides the exploration in the interpreter according to the selected high-level state.
+
+%%%%%%%%%%%%%%%%%%%%
 
 This chapter presents the techniques \chef employs to fullfill the adapter role, which is broadly divided in two parts:
 %
