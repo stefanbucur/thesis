@@ -6,17 +6,57 @@ In this chapeter, we present \chef, a symbolic execution platform for interprete
 
 \section{System Overview}
 
-\chef is a platform for language-specific symbolic execution.  Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:xxx}).
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/chef/system-arch}
+  \caption{Overview of \chef's usage.}
+  \label{fig:system-arch}
+\end{figure}
+
+\chef is a platform for language-specific symbolic execution.
+%
+Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:xxx}).
 %
 The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:xxx}.
 
-\chef is built on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes the interpreter environment \emph{at binary level}.  The interpreter environment is a virtual machine that bundles the interpreter, a testing library, the operating system, and other user programs.
+\chef is built on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes the interpreter environment \emph{at binary level}.
+%
+The interpreter environment is a virtual machine that bundles the interpreter, a testing library, the operating system, and other user programs.
 
-The resulting engine is a correct symbolic execution engine for the target language \emph{as defined by the interpreter}.  It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
+The resulting engine is a correct symbolic execution engine for the target language \emph{as defined by the interpreter}.
+%
+It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
 
-From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces: that of the \emph{low-level} binary engine, and the outer \emph{high-level} engine interface, which is what a hand-written engine would offer.
+\section{\chef as Symbolic Execution Engine Adapter}
 
-This chapter describes the techniques \chef employs to fullfill the adapter role, which is roughly divided in two parts: (1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/chef/iface-adapter}
+  \caption{The architecture of \chef.}
+  \label{fig:system-arch}
+\end{figure}
+
+
+From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces:
+%
+the internal \emph{low-level} binary engine, and the developer-facing \emph{high-level} engine interface.
+
+Broadly speaking, a symbolic execution engine interface consists of two parts.
+%
+On the one hand, the engine receives the program and a test driver, and outputs a set of test cases.
+%
+On the other hand, the engine interacts with the execution strategy that decides which program state to execute next, according to the exploration goal.
+%
+\chef connects the two parts of the inner and outer engine interfaces, as follows.
+
+Figure~\ref{fig:xxx} shows the architecture of \chef.
+
+Broadly speaking, a symbolic execution engine receives the program, a symbolic input for the program, and a goal in the form of a search strategy; the engine outputs test cases that exercise different paths in the program.
+
+This chapter presents the techniques \chef employs to fullfill the adapter role, which is broadly divided in two parts:
+%
+(1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
 
 \stefan{Mention here the interpreter preparation steps.}
 
@@ -53,6 +93,11 @@ This chapter describes the techniques \chef employs to fullfill the adapter role
 
 \subsection{High-level States and Paths}
 
+\chef's high-level symbolic execution interface 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Recall that, in general, a symbolic execution state contains the current program counter, the path condition (the set of all branch conditions taken by the state), and the symbolic memory contents of the program.
 %
 The sequence of program counters of the state determines one path in the symbolic execution tree.
@@ -63,7 +108,9 @@ The states contain an abstract \emph{high-level program counter} (HLPC) and opti
 %
 The high-level state memory is undefined in \chef, as its semantics are language-dependant.  However, the symbolic memory is implicitly encoded in the low-level interpreter state.
 
-The concrete semantics of the HLPC depend on the language and the interpreter.  \chef treats HLPC values opaquely, with the only assumption that each statement in the program maps to exactly one HLPC.  The sequence of all HLPCs taken by a high-level state forms a path in the high-level symbolic execution tree.
+The concrete semantics of the HLPC depend on the language and the interpreter.
+%
+\chef treats HLPC values opaquely, with the only assumption that each statement in the program maps to exactly one HLPC.  The sequence of all HLPCs taken by a high-level state forms a path in the high-level symbolic execution tree.
 %
 Section~\ref{sec:xxx} presents concrete HLPC semantics for the most popular interpreters in use today.
 
