@@ -93,7 +93,7 @@ The state adapter groups the low-level paths that execute the same sequence of H
 
 The number of low-level paths mapping to the same high-level path can be very large.
 
-\section{Trading Precision and Performance with State Completeness Models}
+\section{Trading Precision and Efficiency with State Completeness Models}
 
 The state adapter has two modes of managing the high-level states: partial and complete.
 %
@@ -105,19 +105,60 @@ A high-level path can be divided in three segments, defined by the position of t
 
 For each point on the high-level path, we define a path condition as the disjunction of the path conditions of all low-level states that have traversed the point.
 
+We also define the cost of advancing a high-level state as the cost of exploring the low-level states underneath in order to advance the path segment.
+
 \subsection{Partial High-level Execution States}
 
-In partial mode, a high-level state is allowed to be anywhere on the completed and partial segments.
+Under the partial model, a high-level state is allowed to be anywhere on the completed and partial segments.
 
-In partial mode, \chef cannot decide whether a high-level state would branch at the current HLPC.
+Under the partial model, \chef cannot decide whether a high-level state would branch at the current HLPC.
 
-The advantage of a partial state is that it can progress faster, as only one low-level state needs to be advanced.
+The consequence of this property is that a high-level strategy cannot control the ordering of high-level paths.
+
+However, the advantage of partial states is that they can progress efficiently, as only one low-level state needs to be advanced.
 
 As a result, in practice, \chef takes full advantage of this property and always keeps the partial states on head of the path, guided by the leading low-level states.
 
 \subsection{Complete High-level Execution States}
 
-In complete mode, a high-level state can only be anywhere on the completed path segment.
+Under the complete model, a high-level state can only reside on the completed path segment.
+
+Branch feasibility is decidable in the complete model, as the high-level path condition is complete.
+
+As a result of branch feasibility, the symbolic execution engine has a choice over which high-level states to explore next.
+
+However, advancing a high-level state is more expensive, as all low-level states on the path need to make progress.
+
+\subsection{Choosing Between the Two Models}
+
+\newcommand{\goodcolor}{\cellcolor{LimeGreen}}
+\newcommand{\badcolor}{\cellcolor{Lavender}}
+
+\begin{table}
+  \centering
+  \small
+  \begin{tabular}{r c c}
+    High-level State Model & \textbf{Partial} & \textbf{Complete}               \\
+    \hline
+    \noalign{\smallskip}
+    Location (HLPC) & Complete and partial segments & Complete segments only    \\
+    Path Condition  & Incomplete                    & Complete                  \\
+    Strategies      & Only at low level             & Both high- and low-level  \\
+    \noalign{\smallskip}
+    \hline
+    \noalign{\smallskip}
+    Efficiency (state cost) & \goodcolor One low-level state   & \badcolor All low-level states      \\
+    Precision       & \badcolor Low (no branch feasibility)   & \goodcolor Full control over states  \\
+  \end{tabular}
+  \caption{Comparing partial and complete high-level state models in \chef.}
+  \label{tab:chef:hl-states}
+\end{table}
+
+Table~\ref{tab:chef:hl-states} summarizes the trade-offs between the partial and complete state models.
+
+Both state models are useful for symbolic execution.
+
+
 
 
 \section{The Language Interpreter}
@@ -260,23 +301,6 @@ In complete state mode, the high-level state prioritization is decoupled from th
 This allows \chef to provide a pluggable \emph{high-level strategy} interface, which provides guidelines to the underlying low-level strategy to advance the low-level state execution only on the paths of interest.
 
 \subsubsection{Comparing the Two State Models}
-
-\begin{table}
-  \centering
-  \small
-  \begin{tabular}{r l l}
-    High-level State Model & \textbf{Partial} & \textbf{Complete} \\
-    \hline
-    Location (HLPC) & \cmark (leading LL state) & \cmark (complete segment) \\
-    Path Condition  & \xmark (incomplete)       & \cmark \\
-    Strategies      & \xmark (only LL)          & \cmark (both HL and LL) \\
-    \hline
-    Efficiency      & \cmark (one LL state)     & \xmark (all LL states) \\
-    Precision       & \xmark (no branch info)   & \cmark (full branch info) \\
-  \end{tabular}
-  \caption{Comparison of partial and complete high-level state modes in \chef.}
-  \label{tab:chef:hl-states}
-\end{table}
 
 % Table~\ref{tab:xxx} summarizes the differences between the two models.  While partial states are faster to explore, they lack predictability and control.
 
