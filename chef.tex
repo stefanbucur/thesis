@@ -158,7 +158,21 @@ Table~\ref{tab:chef:hl-states} summarizes the trade-offs between the partial and
 
 Both state models are useful for symbolic execution.
 
+The partial state model works best for exploratory automated test case generation.
 
+The precise state model is more appropriate for directed test case generation and exhaustive testing.
+
+\section{Search Strategies in \chef}
+
+Recall that the main goal of \chef was to prioritize the right low-level execution paths in the interpreter that maximize a high-level goal.
+
+Partial and complete high-level state models lend themselves to different approaches.
+
+As partial states do not offer a view into the available high-level states, the low-level strategy takes neutral decisions.
+%
+\chef uses CUPA (...)
+
+In the complete state model, the state selection happens in two stages: a high-level strategy decides the next high-level state to prioritize, then the low-level strategy picks an appropriate low-level state for that.
 
 
 \section{The Language Interpreter}
