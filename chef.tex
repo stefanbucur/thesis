@@ -42,11 +42,11 @@ the internal \emph{low-level} binary engine, and the developer-facing \emph{high
 
 Broadly speaking, the interface of a symbolic execution engine consists, on the one hand, of the part that receives the program and the test driver, and outputs test cases.
 %
-On the other hand, it includes the communication interface with the execution strategy, i.e., the component that decides which of the available program states in the execution tree to be run next (see Section~\ref{sec:intro:symbex}).
+On the other hand, it also includes the communication interface with the execution strategy, i.e., the component that decides which of the available program states in the execution tree to be run next (see Section~\ref{sec:intro:symbex}).
 
 Figure~\ref{fig:chef:arch} shows the architecture of \chef, which consists of a fixed part and a pluggable part.
 %
-The fixed part includes the low-level symbolic execution engine (S2E), its state selection strategy, and a component that converts low-level execution states in the interpreter to high-level execution states in the target program.
+The fixed part includes the low-level symbolic execution engine (S2E), its state selection strategy, and a state adapter, which converts low-level execution states in the interpreter to high-level execution states in the target program.
 %
 The pluggable part contains the language interpreter, responsible with providing the implicit semantics of the language.
 
@@ -54,32 +54,31 @@ The inner low-level symbolic execution engine operates with machine-level abstra
 %
 It runs a binary program and marks memory bytes from its address space as symbolic inputs.  In return, it provides test cases consisting of concrete values for the marked bytes.
 %
-During symbolic execution, the low-level execution strategy is informed of all execution states that fork in the execution tree, and decides which of them to execute next.
+During symbolic execution, the low-level engine informs the low-level execution strategy of all states created in the execution tree, and the strategy decides which of them to execute next.
 
-The outer interface exposes high-level abstractions (the outer block in Figure~\ref{fig:chef:arch}).
+The outer interface exposes similar abstractions, but at the high level (the outer block in Figure~\ref{fig:chef:arch}).
 %
 The high-level engine runs an interpreted program and marks objects in the program state, such as strings and numbers, as symbolic inputs.  In return, the engine provides concrete object values as test cases.
 %
 Optionally, a high-level execution strategy decides which high-level states to prioritize.
 
-%% This chapter presents the techniques \chef employs to fullfill the adapter role, which is broadly divided in two parts:
-%% %
-%% (1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
-
+In the following sections, we describe in detail the techniques \chef employs to fulfill its interface adapter role.
 
 \section{From Low-level to High-level Symbolic Execution Trees}
 
-The main function of \chef is to choose the low-level execution paths in the interpreter.
+The most important function of \chef is to pick the low-level execution paths in the interpreter that maximize its effectiveness as a high-level symbolic execution engine.
 %
-This is handled by \chef's strategy subsystem.
+This is handled by \chef's fixed part, in a language- and interpreter-agnostic way.
 
-The choice is done in a feedback loop.
+The low-level path selection works as a feedback loop, as follows.
+%
+First, the low-level engine reports the progress of its states to a \emph{state adapter}, which maintains a high-level symbolic execution tree from the low-level states.
+%
+Second, the state adapeter sends the high-level execution tree updates to a pluggable high-level strategy, which decides the next high-level state to explore.
+%
+Finally, the selected high-level state is communicated to the low-level strategy, which takes it into account when selecting the next low-level state.
 
-First, the low-level interpreter states are reported to a \emph{state adapter}, which constructs the ``high-level view'' of the interpreter execution.
-
-Second, a pluggable high-level strategy decides which high-level states provided by the state adapter to prioritize.
-
-Finally, back at the interpreter, the low-level strategy guides its exploration according to the selected high-level state.
+\paragraph{The State Adapter}
 
 The high-level view consists of high-level states that form a high-level execution tree.
 
@@ -175,7 +174,7 @@ As partial states do not offer a view into the available high-level states, the 
 In the complete state model, the state selection happens in two stages: a high-level strategy decides the next high-level state to prioritize, then the low-level strategy picks an appropriate low-level state for that.
 
 
-\section{The Language Interpreter}
+\section{The Role of the Language Interpreter in Providing Semantics}
 
 The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
 
