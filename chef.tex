@@ -10,14 +10,14 @@ In this chapeter, we present \chef, a symbolic execution platform for interprete
   \centering
   \includegraphics[width=0.8\textwidth]{figures/chef/system-arch}
   \caption{Overview of \chef's usage.}
-  \label{fig:system-arch}
+  \label{fig:chef:overview}
 \end{figure}
 
 \chef is a platform for language-specific symbolic execution.
 %
 Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:xxx}).
 %
-The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:xxx}.
+The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:chef:overview}.
 
 \chef is built on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes the interpreter environment \emph{at binary level}.
 %
@@ -33,26 +33,94 @@ It is fully precise and theoretically complete, i.e., it will not explore infeas
   \centering
   \includegraphics[width=0.8\textwidth]{figures/chef/iface-adapter}
   \caption{The architecture of \chef.}
-  \label{fig:system-arch}
+  \label{fig:chef:arch}
 \end{figure}
 
 From a systems perspective, \chef acts as an adapter between two symbolic execution engine interfaces:
 %
 the internal \emph{low-level} binary engine, and the developer-facing \emph{high-level} engine interface.
-%
+
 Broadly speaking, the interface of a symbolic execution engine consists, on the one hand, of the part that receives the program and the test driver, and outputs test cases.
 %
-On the other hand, it includes the communication interface with the execution strategy, which decides which of the available program states in the execution tree to be run next (see Section~\ref{sec:intro:symbex}).
+On the other hand, it includes the communication interface with the execution strategy, i.e., the component that decides which of the available program states in the execution tree to be run next (see Section~\ref{sec:intro:symbex}).
 
-Figure~\ref{fig:xxx} shows the architecture of \chef, which consists of a fixed part and a pluggable part.
+Figure~\ref{fig:chef:arch} shows the architecture of \chef, which consists of a fixed part and a pluggable part.
 %
 The fixed part includes the low-level symbolic execution engine (S2E), its state selection strategy, and a component that converts low-level execution states in the interpreter to high-level execution states in the target program.
 %
 The pluggable part contains the language interpreter, responsible with providing the implicit semantics of the language.
 
-The inner low-level symbolic execution engine operates with machine-level abstractions.
+The inner low-level symbolic execution engine operates with machine-level abstractions (the gray component in Figure~\ref{fig:chef:arch}).
+%
+It runs a binary program and marks memory bytes from its address space as symbolic inputs.  In return, it provides test cases consisting of concrete values for the marked bytes.
+%
+During symbolic execution, the low-level execution strategy is informed of all execution states that fork in the execution tree, and decides which of them to execute next.
 
-The outer interface exposes high-level abstractions.
+The outer interface exposes high-level abstractions (the outer block in Figure~\ref{fig:chef:arch}).
+%
+The high-level engine runs an interpreted program and marks objects in the program state, such as strings and numbers, as symbolic inputs.  In return, the engine provides concrete object values as test cases.
+%
+Optionally, a high-level execution strategy decides which high-level states to prioritize.
+
+%% This chapter presents the techniques \chef employs to fullfill the adapter role, which is broadly divided in two parts:
+%% %
+%% (1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
+
+
+\section{From Low-level to High-level Symbolic Execution Trees}
+
+The main function of \chef is to choose the low-level execution paths in the interpreter.
+%
+This is handled by \chef's strategy subsystem.
+
+The choice is done in a feedback loop.
+
+First, the low-level interpreter states are reported to a \emph{state adapter}, which constructs the ``high-level view'' of the interpreter execution.
+
+Second, a pluggable high-level strategy decides which high-level states provided by the state adapter to prioritize.
+
+Finally, back at the interpreter, the low-level strategy guides its exploration according to the selected high-level state.
+
+The high-level view consists of high-level states that form a high-level execution tree.
+
+The high-level states are \emph{abstract}, as they only include a \emph{high-level program counter} (HLPC) and, optionally, a path condition.
+%
+The high-level program data is not exposed in a \chef state, as its semantics are language-dependent.  However, the program data is implicitly encoded in the low-level interpreter state.
+
+The paths in the high-level tree envelop the paths in the low-level interpreter tree.
+
+The state adapter groups the low-level paths that execute the same sequence of HLPCs.
+
+The number of low-level paths mapping to the same high-level path can be very large.
+
+\section{Trading Precision and Performance with State Completeness Models}
+
+The state adapter has two modes of managing the high-level states: partial and complete.
+%
+The two modes are trade-offs between precision of controlling the high-level execution and performance.
+
+The two modes differ with respect to the position the high-level state is allowed to be on the high-level path.
+
+A high-level path can be divided in three segments, defined by the position of the \emph{low-level states} on it.
+
+For each point on the high-level path, we define a path condition as the disjunction of the path conditions of all low-level states that have traversed the point.
+
+\subsection{Partial High-level Execution States}
+
+In partial mode, a high-level state is allowed to be anywhere on the completed and partial segments.
+
+In partial mode, \chef cannot decide whether a high-level state would branch at the current HLPC.
+
+The advantage of a partial state is that it can progress faster, as only one low-level state needs to be advanced.
+
+As a result, in practice, \chef takes full advantage of this property and always keeps the partial states on head of the path, guided by the leading low-level states.
+
+\subsection{Complete High-level Execution States}
+
+In complete mode, a high-level state can only be anywhere on the completed path segment.
+
+
+\section{The Language Interpreter}
 
 The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
 
@@ -60,43 +128,11 @@ Symbolic tests set up the program and inject symbolic inputs, which consist of h
 
 The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
 
-The choice of low-level execution paths is governed by \chef's strategy subsystem.
 
-The low-level states maintained by the low-level engine are reported to a state adapter, which constructs the ``high-level view'' of the execution.
-
-The state adapter decides which high-level states to prioritize, according to a pluggable high-level strategy.
-
-In turn, the low-level strategy guides the exploration in the interpreter according to the selected high-level state.
 
 %%%%%%%%%%%%%%%%%%%%
 
-This chapter presents the techniques \chef employs to fullfill the adapter role, which is broadly divided in two parts:
-%
-(1) maintaining a view of high-level execution paths and states, obtained from the low-level interpreter execution (Section~\ref{sec:chef:hlsymbex}), and (2) translating high-level path prioritization goals back to choosing interpreter paths (Section~\ref{sec:chef:strategies}).
 
-\stefan{Mention here the interpreter preparation steps.}
-
-\stefan{Define the interface of a symbolic execution engine.}
-
-%% First, the abstractions offered by a binary-level---or, more generally, any \emph{low-level}---symbolic execution engine are inadequate for interpreted languages.  For example, the low-level engine inputs are memory bytes, while high-level programs work with types such as numbers, strings, and arbitrary objects.  The low-level execution paths are sequences of machine instructions, while high-level paths consist of target program statements.
-
-%% Naively executing a language interpreter in a low-level engine such as S2E would not yield a symbolic execution engine for the language, for two reasons.
-
-%% First, the low-level engine operates at a different abstraction level than a symbolic execution engine for the target language, which we call \emph{high-level}.
-%% %
-%% For instance, the inputs of programs in the low-level engine are memory bytes, while high-level programs operate with types such as numbers, strings, or arbitrary objects.
-%% %
-%% In addition, the low-level execution paths are sequences of x86 instructions in the interpreter binary, while the high-level execution paths are sequences of target program statements.
-%% %
-%% The symbolic expressions consist of binary arithmetic and memory operations at the low-level, and of language-specific operations and functions at the high-level.
-%% %
-%% Therefore, the role of \chef is to adapt the low-level abstractions to a set of high-level abstractions, similar as much as possible to those of a hand-written engine.
-
-%% Second, the path prioritization strategy in the interpreter may not lead to progress in the target program.
-%% %
-%% This is because a single high-level path can map to multiple low-level paths, corresponding to implementation details in the interpreter, such as object caches, reference counting, or garbage collection.
-%% %
-%% Therefore, \chef must prioritize the low-level interpreter paths in a way that is meaningful for the high-level program execution.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
