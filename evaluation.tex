@@ -63,9 +63,8 @@ The total developer time was 5 person-days for Python and 3 person-days for Lua,
 Interpreter core size (C LoC) & 427,435 & 14,553 \\
 \hline
 \hline
-HLPC instrumentation (C LoC) & 47 (0.01\%) & 44 (0.30\%) \\
+%% HLPC instrumentation (C LoC) & 47 (0.01\%) & 44 (0.30\%) \\
 Sym. optimizations (C LoC) & 274 (0.06\%) & 233 (1.58\%) \\
-\hline
 Native extensions (C LoC) & 1,320 (0.31\%) & 154 (1.06\%) \\
 Test library (Python/Lua LoC) & 103 & 87 \\
 \hline
@@ -73,20 +72,21 @@ Test library (Python/Lua LoC) & 103 & 87 \\
 Developer time (person-days) & 5 & 3 \\
 \hline
 \end{tabular}
-\caption{Summary of the effort required to support Python and Lua in \chef.  The first row is the interpreter size without the standard language library. The next two rows are changes in the interpreter core, while the following two constitute the symbolic test library.  The last item indicates total developer effort.}
+\caption{Summary of the effort required to support Python and Lua in \chef.  The first row is the interpreter size without the standard language library. The next row shows changes in the interpreter core, while the following two constitute the symbolic test library.  The last item indicates total developer effort.}
 \label{tab:pychanges}
 \end{table}
 
 \subsection{Symbolic Execution Engine for Python}
 \label{sec:eval:python-proto}
 
-\paragraph{Interpreter Instrumentation}
+\paragraph{Interpreter Preparation}
 
 We instrumented the CPython interpreter 2.7.3 for use with \chef, according to the guidelines presented in Section~\ref{sec:chef:recipe}.
 
 Python programs are composed of modules, corresponding to Python source files.  Each source file is compiled into an interpreter-specific bytecode format, i.e., each source statement is translated into one or more lower-level primitive instructions.  The instructions are grouped into blocks, corresponding to a single loop nesting, function, method, class, or global module definition.
 %
-We define an \hlpc as the concatenation of the unique block address of the top frame on the stack and the current instruction offset inside the block. We instrumented the Python interpreter to pass this program location to \chef; this required adding less than 50 LoC to the main interpreter loop.
+We automatically detect the HLPC variable pointing to the bytecode blocks, by applying the HLPC slice reconstruction procedure in Section~\ref{sec:chef:hlcf}.  We cross-checked the correctness of the obtained slice by looking it up in the interpreter source code, via the debug symbols in the binary.
+%% We define an \hlpc as the concatenation of the unique block address of the top frame on the stack and the current instruction offset inside the block. We instrumented the Python interpreter to pass this program location to \chef; this required adding less than 50 LoC to the main interpreter loop.
 
 We performed several optimizations on the Python interpreter: we neutralized the hash functions of strings and integers, which are the most common objects; we concretized the memory sizes passed to the garbage-collected memory allocator; and we eliminated interning for small integers and strings.    
 %
@@ -125,7 +125,8 @@ Lua is a lightweight scripting language mainly used as an interpreter library to
 
 Similar to Python, Lua programs are composed of one or more Lua source files, compiled into a bytecode format.  The code is compiled into a set of functions that operate on a global stack of values.  Each function is composed of a sequence of bytecode instructions, where each instruction is defined by an offset, opcode, and parameters.
 %
-We construct the \hlpc as the concatenation of the unique address of the function in the top frame and the current instruction offset being executed.  The instrumentation amounts to less than 50 LoC added to the interpreter loop.
+We automatically detect updates to the HLPC variable pointing to bytecode instructions.  We cross-checked the correctness of the interpreter HLPC slice using the debug symbols in the binary.
+%% We construct the \hlpc as the concatenation of the unique address of the function in the top frame and the current instruction offset being executed.  The instrumentation amounts to less than 50 LoC added to the interpreter loop.
 
 We optimized the Lua interpreter for symbolic execution by eliminating string interning.  In addition, we configured the interpreter to use integer numbers instead of the default floating point, for which S2E does not support symbolic expressions.  This change was easy, because it was available as a macro definition in the interpreter's configuration header.
 
@@ -134,18 +135,28 @@ We optimized the Lua interpreter for symbolic execution by eliminating string in
 \section{Methodology}
 \label{sec:eval:methodology}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Experimental Setup and Testing Targets}
-\label{sec:eval:targets}
-
-\subsection{Running Low-level Systems with Cloud9}
+\paragraph{Hardware Configuration}
 
 For all our \cnine experiments, we ran \cnine in parallel symbolic execution mode in a heterogeneous cluster environment, with worker CPU frequencies between 2.3--2.6 GHz and with 4--6 GB of RAM available per core.
 
+All reported \chef experiments were performed on a 48-core 2.3 GHz AMD Opteron 6176 machine with 512 GB of RAM, running Ubuntu 12.04. Each \chef invocation ran on 1 CPU core and used up to 8 GB of RAM on average.
+
+\paragraph{Coverage Measurement}
+
+Line or statement coverage remains widely used, even though its meaningfulness as a metric for test quality is disputed. We measure and report line coverage to give a sense of what users can expect from a test suite generated fully automatically by \cnine or a symbolic execution engine based on \chef.  For Python, we rely on the popular \codebit{coverage} package, and for Lua we use the \codebit{luacov} package.
+
+Since our \chef prototype only supports strings and integers as symbolic program inputs, we count only the lines of code that can be reached using such inputs. We report this number as ``coverable LOC'' in the fifth column of Table~\ref{tab:targets}, and use it in our experiments as a baseline for what such a symbolic execution engine could theoretically cover directly.  For example, for the \codebit{simplejson} library, this includes only code that decodes JSON-encoded strings, not code that takes a JSON object and encodes it into a string. Note that, in principle, such code could still be tested and covered by writing a more elaborate symbolic test that sets up a JSON object based on symbolic primitives~\cite{paas-testing}.
+
+\paragraph{State Searchers in \cnine}
+
 On each worker, the underlying \klee engine used the best searchers from \cite{klee}, namely an interleaving of random-path and coverage-optimized strategies. At each step, the engine alternately selects one of these heuristics to pick the next state to explore. Random-path traverses the execution tree starting from the root and randomly picks the next descendant node, until a candidate state is reached. The coverage-optimized strategy weighs the states according to an estimated distance to an uncovered line of code, and then randomly selects the next state according to these weights.
 
-To quantify coverage, we report both line coverage and path coverage numbers. Line coverage measures the fraction of program statements executed during a test run, while path coverage reports how many execution paths were explored during a test. Path coverage is the more relevant metric when comparing thoroughness of testing tools.  Nevertheless, we also evaluate properties related to line coverage, since this is still a de facto standard in software testing practice. Intuitively, and confirmed experimentally, path coverage in \cnine scales linearly with the number of workers.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Testing Targets}
+\label{sec:eval:targets}
+
+\subsection{Running Low-level Systems with Cloud9}
 
 Table~\ref{table:tested} shows a selection of the systems we tested with \cnine, covering several types of software.  We confirmed that each system can be tested properly under our POSIX model. In the rest of this section, we focus our in-depth evaluation on several networked servers and tools, as they are frequently used in settings where reliability matters.
 
@@ -173,7 +184,7 @@ Bandicoot 1.0           &                   6 & 4 & Lightweight DBMS \\ \hline
 \label{table:tested}
 \end{table}
 
-Due to its comprehensive POSIX model, \cnine can test many kinds of servers.  One example is lighttpd, a web server used by numerous high-profile web sites, such as YouTube, Wikimedia, Meebo, and SourceForge.  For lighttpd, \cnine proved that a certain bug fix was incorrect, and the bug could still manifest even after applying the patch (Section~\ref{sec:eval:lighttpd}). \cnine also found a bug in curl, an Internet transfer application that is part of most Linux distributions and other operating systems (Section~\ref{sec:curl}).  \cnine also found a hang bug in the UDP handling code of memcached, a distributed memory object cache system used by many Internet services, such as Flickr, Craigslist, Twitter, and Livejournal (Section~\ref{sec:memcached}).
+Due to its comprehensive POSIX model, \cnine can test many kinds of servers.  One example is lighttpd, a web server used by numerous high-profile web sites, such as YouTube, Wikimedia, Meebo, and SourceForge.  For lighttpd, \cnine proved that a certain bug fix was incorrect, and the bug could still manifest even after applying the patch (Section~\ref{sec:eval:lighttpd}). \cnine also found a bug in curl, an Internet transfer application that is part of most Linux distributions and other operating systems (Section~\ref{sec:eval:curl}).  \cnine also found a hang bug in the UDP handling code of memcached, a distributed memory object cache system used by many Internet services, such as Flickr, Craigslist, Twitter, and Livejournal (Section~\ref{sec:eval:memcached}).
 
 In addition to the testing targets mentioned above, we also tested a benchmark consisting of a multi-threaded and multi-process producer-consumer simulation. The benchmark exercises the entire functionality of the POSIX model: threads, synchronization, processes, and networking. 
 
@@ -181,10 +192,6 @@ We conclude that \cnine is practical and capable of testing a wide range of real
 
 
 \subsection{Targeting Python and Lua Packages with Chef}
-
-All reported \chef experiments were performed on a 48-core 2.3 GHz AMD Opteron 6176 machine with 512 GB of RAM, running Ubuntu 12.04. Each \chef invocation ran on 1 CPU core and used up to 8 GB of RAM on average.
-
-\paragraph{Testing Targets}
 
 \begin{table*}[!ht]
 \centering
@@ -231,11 +238,11 @@ All testing targets have a significant amount of their functionality written in 
 % The execution of parsers heavily depends on possible regular expression matches on input strings.
 To thoroughly test these parsers, it is important to also symbolically execute the native regular expression library. For this, the binary symbolic execution capabilities of \chef are essential.
 
-\paragraph{Methodology: Symbolic Tests}
+\paragraph{Symbolic Tests}
 
 For each package, we wrote a symbolic test that invokes the package's entry points with one or more symbolic strings.  
 %The symbolic tests invoke the code under test in a generic manner without specific checks.  
-Figure~\ref{fig:sample-test} in Section~\ref{sec:python} is an example of such a symbolic test.
+Figure~\ref{fig:sample-test} in Section~\ref{sec:eval:python-proto} is an example of such a symbolic test.
 
 Each symbolic test ran for 30 minutes within \chef, after which we replayed the collected high-level tests on the host machine, in a vanilla Python/Lua environment, to confirm test results and measure line coverage.  To compensate for the randomness in the state selection strategies, we repeated each experiment 15 times.  In each graph we present average values and error margins as +/- one standard deviation.
 
@@ -243,12 +250,6 @@ For our experiments, we did not use explicit specifications, but relied on gener
 For Python---which, unlike Lua, has an exception mechanism---we also flagged whenever a test case led to unspecified exceptions being thrown.
 %
 In general, one could find application-specific types of bugs by adding specifications in the form of assertions, as in normal unit tests.
-
-\paragraph{Methodology: Coverage Measurement}
-
-Line or statement coverage remains widely used, even though its meaningfulness as a metric for test quality is disputed. We measure and report line coverage to give a sense of what users can expect from a test suite generated fully automatically by a symbolic execution engine based on \chef.  For Python, we rely on the popular \codebit{coverage} package, and for Lua we use the \codebit{luacov} package.
-
-Since our prototype only supports strings and integers as symbolic program inputs, we count only the lines of code that can be reached using such inputs. We report this number as ``coverable LOC'' in the fifth column of Table~\ref{tab:targets}, and use it in our experiments as a baseline for what such a symbolic execution engine could theoretically cover directly.  For example, for the \codebit{simplejson} library, this includes only code that decodes JSON-encoded strings, not code that takes a JSON object and encodes it into a string. Note that, in principle, such code could still be tested and covered by writing a more elaborate symbolic test that sets up a JSON object based on symbolic primitives~\cite{paas-testing}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
