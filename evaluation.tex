@@ -4,7 +4,7 @@ In this chapter, after presenting the prototypes for \cnine (Section~\ref{sec:ev
 \begin{enumerate}
 \item Can \chef and \cnine symbolically execute real-world software (Section~\ref{sec:eval:targets})?
 \item Are the symbolic execution engines effective for bug finding and test suite generation (Section~\ref{sec:eval:bug-finding})?
-\item Given the overhead of using the language interpreter, how efficient is \chef's test suite generation (Section~\ref{sec:eval:xxx})?
+\item Given the overhead of using the language interpreter, how efficient is \chef's test suite generation (Section~\ref{sec:eval:chef-efficiency})?
 \end{enumerate}
 
 \section{Implementing Cloud9 as a Parallel Symbolic Execution Platform}
@@ -256,7 +256,7 @@ In general, one could find application-specific types of bugs by adding specific
 \section{Effectiveness for Bug Finding and Test Generation}
 \label{sec:eval:bug-finding}
 
-In this section we present several case studies that illustrate how \cnine can explore and find new bugs, confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
+In this section we present several case studies that illustrate how \cnine and \chef can explore and find new bugs. %% confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
 
 %--------------------------------------------------
 \subsection{Case Study \#1: Curl}
@@ -386,7 +386,12 @@ We looked at all the Python exceptions triggered by the test cases generated usi
 
 The sixth column in Table~\ref{tab:targets} summarizes our findings.  We found four undocumented exceptions in \codebit{xlrd}, the largest package.  These exceptions occur when parsing a Microsoft Excel file, and they are \codebit{BadZipfile}, \codebit{IndexError}, \codebit{error}, and \codebit{AssertionError}.  These errors occur inside the inner components of the Excel parser, and should have either been documented or, preferably, been caught by the parser and re-raised as the user-facing \codebit{XLRDError}.
 
-\section{Impact of \cupa Heuristics and Interpreter Optimizations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Efficiency of Test Generation with \chef}
+\label{sec:eval:chef-efficiency}
+
+\subsection{Impact of \cupa Heuristics and Interpreter Optimizations}
 \label{sec:sub:perf-cupa}
 
 We now analyze the impact of the \cupa heuristics (described in Section~\ref{sec:chef:cupa}) and the interpreter optimizations (described in Section~\ref{sec:chef:optimzeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
@@ -411,7 +416,7 @@ For all but one of the 11 packages (6 Python plus 5 Lua), the aggregate CUPA + i
 
 The CUPA strategy and the interpreter optimizations may interact non-linearly.  In two cases (Python's \codebit{xlrd} and \codebit{simplejson}), the aggregate significantly outperforms either individual technique. These are cases where the result is better than the sum of its parts.  In the other cases, the result is roughly the sum of each part, although the contribution of each part differs among targets.  This is visually depicted on the log-scale graph: for each cluster, the heights of the middle bars measured from level $1 \times$ roughly add up to the height of the aggregate (left) bar.
 
-In one case (Lua's \codebit{JSON}), the aggregate performs worse on average than using the interpreter optimizations alone.  Moreover, the performance of each configuration is less predictable, as shown by the large error bars.  This behavior is due to the generated tests that cause the interpreter to hang, as explained in Section~\ref{sec:eval:chef-atcg}.  To detect hangs, the test runs for 60 seconds before switching to another test case.  This acts as a ``penalty'' for the configurations that find more paths leading to the hang and also skews the distribution of path execution times, since the hanging paths take significantly longer than the normal (terminating) paths.
+In one case (Lua's \codebit{JSON}), the aggregate performs worse on average than using the interpreter optimizations alone.  Moreover, the performance of each configuration is less predictable, as shown by the large error bars.  This behavior is due to the generated tests that cause the interpreter to hang, as explained in Section~\ref{sec:eval:bug-finding}.  To detect hangs, the test runs for 60 seconds before switching to another test case.  This acts as a ``penalty'' for the configurations that find more paths leading to the hang and also skews the distribution of path execution times, since the hanging paths take significantly longer than the normal (terminating) paths.
 
 \paragraph{Line Coverage}
 
@@ -427,7 +432,7 @@ Note that these coverage improvements are obtained using basic symbolic tests th
   \label{fig:coverage-improv}
 \end{figure}
 
-\section{Breaking Down Chef's Interpreter Optimizations}
+\subsection{Breaking Down Chef's Interpreter Optimizations}
 \label{sec:sub:optimizations}
 
 We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in Section~\ref{sec:chef:optimzeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
@@ -446,7 +451,7 @@ This result suggests that, for large packages, a \emph{portfolio} of interpreter
 \end{figure}
 
 
-\section{Comparing Chef Against Hand-Made Engines}
+\subsection{Comparing Chef Against Hand-Made Engines}
 \label{sec:sub:comparison}
 
 We now evaluate the trade-offs in using a symbolic execution engine generated with \chef over building one ``by hand''.
@@ -547,13 +552,6 @@ The shape of the final performance curve (the solid line) is convex.  For 1 and 
 Despite \chef's performance penalty, the alternative of writing an engine by hand is daunting. It involves developing explicit models that, for a language like Python, are expensive, error-prone, and require continuous adjustments as the language evolves.
 %
 Where performance is crucial, a hand-written engine is superior; however, we believe that \chef is a good match in many cases.
-
-
-%% \section{Scalability Analysis}
-
-%% Discuss scalability of the Cloud9 parallelization algorithm.
-
-%% Discuss overhead of Chef compared to hand-written engines.
 
 %%% Local Variables: 
 %%% mode: latex
