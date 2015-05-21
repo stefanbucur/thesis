@@ -4,11 +4,20 @@ In this chapter, we evaluate the \cnine and \chef symbolic execution platforms b
 
 \subsection{Cloud9}
 
+\stefan{Expand on this, after refactoring the Cloud9 chapter. Mention that the prototype is a parallel symbolic execution engine.}
+
 We developed a \cnine prototype on top of the \klee~\cite{klee} symbolic execution engine.  The prototype has 7 \kloc.
 %
 The \klee modifications to support the symbolic OS abstractions amount to roughly 2 \kloc, while the rest consists of the POSIX model built on top of the abstractions.
 
 \subsection{Chef}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/evaluation/chef-implem-stack}
+  \caption{The implementation of \chef, as a stack of S2E analysis modules that refine the raw stream of x86 instructions into a high-level symbolic execution view.}
+  \label{fig:eval:chef-implem-stack}
+\end{figure}
 
 We used \chef to generate symbolic execution engines for Python (Section~\ref{sec:python}) and Lua (Section~\ref{sec:lua}). Table~\ref{tab:pychanges} summarizes the effort to set up the two interpreters for \chef.  The necessary changes to the interpreter amount to 321 lines of code for Python and 277 for Lua.
 %
