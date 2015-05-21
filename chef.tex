@@ -148,7 +148,7 @@ To make progress, \chef needs to advance at least one low-level execution state-
 
 However, under the partial model, \chef cannot decide whether the current high-level state would branch at any point on the partial segment.
 %
-This is because the local path condition is partial (hence the name of the model), and does not capture all possible executions on the path, which might reveal branching points.  For interpreted languages, many instructions can potentially be branching points, either as explicit branch instructions, or as statements that may throw exceptions.
+This is because the local path condition is partial (hence the name of the model), and does not capture all possible executions on the path, which might reveal branching points.  For interpreted languages, many instructions can potentially be branching points, either as explicit branch instructions, or as statements that may throw exceptions.  \stefan{Would an example be needed here?}
 
 The consequence of this property is that the high-level strategy cannot exercise control over the low-level execution in partial mode, as there are no known pending states to choose from.
 %
@@ -160,13 +160,15 @@ As a result, in practice, \chef takes full advantage of this property and always
 
 \subsection{Complete High-level Execution States}
 
-Under the complete model, a high-level state can only reside on the completed path segment.
+Under the complete model, a high-level state can only reside on the completed segment of a path.
+%
+To progress a complete state to the next HLPC, \chef must advance all the low-level execution states in it.  This makes the execution significantly more expensive than for partial execution states.
 
-Branch feasibility is decidable in the complete model, as the high-level path condition is complete.
+On the other hand, under the complete state model, branch feasibility is decidable, as the local path condition on the complete segment captures all possible interpreter executions.
 
-As a result of branch feasibility, the symbolic execution engine has a choice over which high-level states to explore next.
-
-However, advancing a high-level state is more expensive, as all low-level states on the path need to make progress.
+As a result, the state adapter has knowledge of the yet unexplored execution paths and informs the high-level search strategy of them.
+%
+In turn, the low-level search strategy can focus on advancing the next high-level state selected for execution.
 
 \subsection{Choosing Between the Two Models}
 
@@ -194,13 +196,24 @@ However, advancing a high-level state is more expensive, as all low-level states
 \end{table}
 
 Table~\ref{tab:chef:hl-states} summarizes the trade-offs between the partial and complete state models.
+%
+On the one hand, the partial state model lacks precision, as it does not expose to the high-level engine interface any pending high-level states, but gains efficiency, as it uses as little as one low-level state to explore a high-level path, once discovered.
+%
+On the other hand, the complete state model provides full precision, as it is able to determine all feasible branches along each explored path, at the expense of a more costly path exploration.
 
 Both state models are useful for symbolic execution.
+%
+Fundamentally, both models handle the same low-level state information coming from the underlying symbolic execution engine.  The difference relates to how the data is organized into execution paths and test cases.
 
 The partial state model works best for exploratory automated test case generation.
+%
+The low-level strategy aims to discover new high-level paths, which are then executed efficiently using a single low-level state, which gives the test case for the path.
 
 The precise state model is more appropriate for directed test case generation and exhaustive testing.
+%
+The high-level strategy works with the low-level strategy to focus the exploration on particular high-level paths.  At the same time, the decoupling between the two strategies opens up optimization opportunities at the low-level, such as state merging, which increases the efficiency of exhaustive testing.
 
+\iffalse
 \section{Search Strategies in \chef}
 
 Recall that the main goal of \chef was to prioritize the right low-level execution paths in the interpreter that maximize a high-level goal.
@@ -221,10 +234,7 @@ The input high-level program is bundled with the interpreter inside a virtual ma
 Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
 
 The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
-
-
-
-%%%%%%%%%%%%%%%%%%%%
+\fi
 
 %% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
 %% %
@@ -250,52 +260,10 @@ The test library converts between the high-level objects and memory bytes, which
 
 %% The leading low-level state of the high-level path defines the boundary between the partial and undiscovered segment, while the trailing state on the path defines the boundary between the completed and partial segment.
 
-\subsubsection{Partial High-level States}
-
-In partial high-level state mode (or ``partial state'', for short), the high-level state of a branch in the high-level tree is located at the HLPC of the leading low-level state on the high-level path (Figure~\ref{fig:xxx}).
-
-A new high-level state is created for each new high-level path discovered, and the state progresses together with the leading low-level state.
+%% %
+%% In other words, the goal of the system becomes that of maximizing the high-level path yield for the set of low-level paths explored.
 %
-This makes the execution efficient, once the path is discovered.
-
-% However, the high-level state lacks a complete path condition.  The state cannot determine the feasibility of a branching point, because it lacks the complete knowledge of all paths.  For example, the find statement in figure XXX, ....
-
-However, a partial state lacks a complete path condition (hence its name), as the entire set of low-level states are necessary to describe all possible executions on the path.
-%
-In particular, from a partial state, \chef cannot tell the feasibility of a branch.  More generally, it cannot tell whether a statement is branching at all (e.g., due to exceptions).
-
-The consequence of this model is that the program execution at the high-level cannot be directly controlled.  \chef can only resort to picking a new low-level path and expecting that it will lead to a newly discovered high-level path.
-%
-In other words, the goal of the system becomes that of maximizing the high-level path yield for the set of low-level paths explored.
-%
-However, as executing low-level paths is efficient, in practice, a judicious state selection strategy can effectively discover significantly more high-level paths compared to naively choosing paths at random (Section~\ref{sec:xxx}).
-
-
-\subsubsection{Complete High-level States}
-
-In complete high-level state mode, a high-level state may be located anywhere on the completed segment of its path.
-%
-Since all low-level paths are explored, the interpreter behavior on the high-level path is completely known.  In particular, the feasibility of any branching point is completely decided.
-
-A complete state has a well-defined path condition: it is the disjunction of all path conditions of the low-level states at the moment they entered the HLPC of the state.
-
-The cost of advancing a complete high-level state is higher than that of a partial state.  To advance by one high-level statement, \emph{all} low-level states on the path need to explore the statement.
-%
-In contrast, a partial state can be avanced as long at one low-level state (the leading one) makes progress on the path.
-
-In complete state mode, the high-level state prioritization is decoupled from the low-level state prioritization, as long as the high-level states stay within the completed segments.
-%
-This allows \chef to provide a pluggable \emph{high-level strategy} interface, which provides guidelines to the underlying low-level strategy to advance the low-level state execution only on the paths of interest.
-
-\subsubsection{Comparing the Two State Models}
-
-% Table~\ref{tab:xxx} summarizes the differences between the two models.  While partial states are faster to explore, they lack predictability and control.
-
-% This is similar to fuzzing: concrete inputs may discover new paths, but from them alone you cannot tell in advance which path is going to be discovered next (if at all).
-
-Partial mode is useful for exploratory testing.
-
-Complete mode is useful when a precise goal must be attained (in particular, when the goal is expressed with respect to high-level path properties).
+%% However, as executing low-level paths is efficient, in practice, a judicious state selection strategy can effectively discover significantly more high-level paths compared to naively choosing paths at random (Section~\ref{sec:xxx}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,11 +331,6 @@ Having computed this information, we instantiate a two-level \cupa strategy with
 \end{enumerate}
 
 Fork weight is computed by counting the number of consecutive forks at the same low-level program counter (i.e., at an input-dependent loop in machine code).  States $1, \ldots, n$ forking from the same path at the same location get weights $p^n, p^{n-1}, \ldots, 1$, where $p < 1$ de-emphasizes states forked earlier ($p = 0.75$ in our implementation).  The last state to fork at a certain location thus gets maximum weight, because alternating the last decision in a loop is often the quickest way to reach different program behavior (e.g., to satisfy a string equality check).
-
-
-\subsection{Decoupling High-level From Low-Level Strategies}
-
-% 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
