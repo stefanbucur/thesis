@@ -76,46 +76,86 @@ First, the low-level engine reports the progress of its states to a \emph{state 
 %
 Second, the state adapeter sends the high-level execution tree updates to a pluggable high-level strategy, which decides the next high-level state to explore.
 %
-Finally, the selected high-level state is communicated to the low-level strategy, which takes it into account when selecting the next low-level state.
+Finally, the selected high-level state is communicated to the low-level strategy, which takes it into account when selecting the next state for the low-level engine.
 
 \paragraph{The State Adapter}
 
-The high-level view consists of high-level states that form a high-level execution tree.
+The state adapter maintains a high-level model of the interpreter execution, consisting of high-level states in an execution tree (Figure~\ref{fig:chef:hl-tree}).
 
-The high-level states are \emph{abstract}, as they only include a \emph{high-level program counter} (HLPC) and, optionally, a path condition.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/chef/hl-tree}
+  \caption{The high-level symbolic execution tree maintained by the state adapter in \chef.}
+  \label{fig:chef:hl-tree}
+\end{figure}
+
+Each path in the high-level execution tree is a valid trace of locations in the target program.
 %
-The high-level program data is not exposed in a \chef state, as its semantics are language-dependent.  However, the program data is implicitly encoded in the low-level interpreter state.
+The state adapter handles the locations as opaque \emph{high-level program counter} (HLPC) values.  The concrete semantics of the HLPC depend on the language and interpreter.
 
-The paths in the high-level tree envelop the paths in the low-level interpreter tree.
+On each low-level path, the interpreter constantly reports to \chef the HLPC of the following program statement.
+%
+Based on this information, the state adapter reconstructs the high-level tree of HLPC values, and places both the low-level and high-level execution states on it.
+%
+The low-level execution paths that map to the same sequence of HLPC values are placed on the same high-level path.
+%
+Figure~\ref{fig:chef:hl-tree} depicts this relationship as the high-level execution tree (solid) enveloping the low-level execution tree (thin lines).
 
-The state adapter groups the low-level paths that execute the same sequence of HLPCs.
+In this model, the high-level execution states are \emph{abstract}.
+%
+They only contain the current HLPC and, optionally, a current path condition.
+%
+The high-level states do not include program data, as its semantics are language-dependent.  Instead, the program data is implicitly encoded in low-level interpreter states and manipulated by the interpreter, when executed by the low-level engine.
 
 The number of low-level paths mapping to the same high-level path can be very large.
 
 \section{Trading Precision and Efficiency with State Completeness Models}
 
-The state adapter has two modes of managing the high-level states: partial and complete.
+The high-level states advance in the symbolic execution tree according to the high-level execution strategy.
 %
-The two modes are trade-offs between precision of controlling the high-level execution and performance.
+The relationship between them and the low-level execution states on each high-level path is governed by the state adapter.
 
-The two modes differ with respect to the position the high-level state is allowed to be on the high-level path.
+To this end, the state adapter models the high-level states progress rules in two ways: either \emph{partially} or \emph{complete}.
+%
+The two modes provide trade-offs between the precision of controlling the high-level execution and performance.
 
-A high-level path can be divided in three segments, defined by the position of the \emph{low-level states} on it.
+We divide a high-level execution path in three segments, according to the position of the low-level states on it:
+\begin{itemize}
+\item The \emph{complete} segment was traversed by all low-level states on the path.
+\item The \emph{partial} segment follows the complete segment, and includes the HLPCs traversed by at least one low-level state, but not all.
+\item The \emph{undiscovered} segment was not yet traversed by any low-level state.  Since this part is not known a priori, the state adapter does not keep track of it.
+\end{itemize}
 
-For each point on the high-level path, we define a path condition as the disjunction of the path conditions of all low-level states that have traversed the point.
+\stefan{I'm not sure we should mention the undiscovered segment.}
 
-We also define the cost of advancing a high-level state as the cost of exploring the low-level states underneath in order to advance the path segment.
+Each HLPC location on a high-level execution path transitions from undiscovered, to partial, and then to complete.
+%
+In case a high-level path consists of a single low-level path, the transition goes from undiscovered to complete and the partial segment is empty.
+
+For each HLPC on the high-level path, we also define the local path condition as the disjunction of the path conditions of all low-level states at the moment they started executing the HLPC.
+
+The difference between the partial and complete high-level state models is with respect to the segments they are allowed to be on the high-level path.
+%
+When a high-level state is selected for execution, but cannot progress, the low-level strategy is responsible with advancing the appropriate low-level states on the path.
+
+%% We also define the cost of advancing a high-level state as the cost of exploring the low-level states underneath in order to advance the path segment.
 
 \subsection{Partial High-level Execution States}
 
-Under the partial model, a high-level state is allowed to be anywhere on the completed and partial segments.
+Under the partial model, a high-level state is allowed to be on the completed and partial segments.
+%
+To make progress, \chef needs to advance at least one low-level execution state---the leading state on the path.  This makes the execution efficient.
 
-Under the partial model, \chef cannot decide whether a high-level state would branch at the current HLPC.
+However, under the partial model, \chef cannot decide whether the current high-level state would branch at any point on the partial segment.
+%
+This is because the local path condition is partial (hence the name of the model), and does not capture all possible executions on the path, which might reveal branching points.  For interpreted languages, many instructions can potentially be branching points, either as explicit branch instructions, or as statements that may throw exceptions.
 
-The consequence of this property is that a high-level strategy cannot control the ordering of high-level paths.
-
-However, the advantage of partial states is that they can progress efficiently, as only one low-level state needs to be advanced.
-
+The consequence of this property is that the high-level strategy cannot exercise control over the low-level execution in partial mode, as there are no known pending states to choose from.
+%
+Instead, the low-level strategy must repeatedly select low-level states for execution, until a new high-level path is discovered.
+%
+Once discovered, the high-level path can be efficiently executed through one low-level state.
+%
 As a result, in practice, \chef takes full advantage of this property and always keeps the partial states on head of the path, guided by the leading low-level states.
 
 \subsection{Complete High-level Execution States}
@@ -186,60 +226,13 @@ The test library converts between the high-level objects and memory bytes, which
 
 %%%%%%%%%%%%%%%%%%%%
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{High-level Symbolic Execution}
-\label{sec:chef:hlsymbex}
-
-%% When executing the interpreter, \chef provides the abstraction of a symbolic execution engine that executes the target high-level program.
-%% %
-%% In this section, we present how \chef constructs the symbolic execution tree of the program from that of the interpreter (Section~\ref{sec:chef:ll2hl}) and how high-level symbolic execution states progress along this tree (Section~\ref{sec:chef:hlstates}).
-
-\subsection{High-level States and Paths}
-
-\chef's high-level symbolic execution interface 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Recall that, in general, a symbolic execution state contains the current program counter, the path condition (the set of all branch conditions taken by the state), and the symbolic memory contents of the program.
-%
-The sequence of program counters of the state determines one path in the symbolic execution tree.
-
-\chef's symbolic execution engine interface provides \emph{abstract} high-level states and paths, which encapsulate the low-level execution of the interpreter.
-%
-The states contain an abstract \emph{high-level program counter} (HLPC) and optionally, the path condition.
-%
-The high-level state memory is undefined in \chef, as its semantics are language-dependant.  However, the symbolic memory is implicitly encoded in the low-level interpreter state.
-
-The concrete semantics of the HLPC depend on the language and the interpreter.
-%
-\chef treats HLPC values opaquely, with the only assumption that each statement in the program maps to exactly one HLPC.  The sequence of all HLPCs taken by a high-level state forms a path in the high-level symbolic execution tree.
-%
-Section~\ref{sec:xxx} presents concrete HLPC semantics for the most popular interpreters in use today.
-
-\subsection{From Low-level to High-level Paths}
-\label{sec:chef:ll2hl}
-
 %% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
 %% %
 %% The low-level program path is the sequence of machine instructions from the interpreter binary, including the code for internal bookkeeping (e.g., details of reference counting and garbage collection).
 
-%% Defining the high-level program path depends on the nature and semantics of the language.  In this thesis, we focus on imperative dynamic languages, such as Python and JavaScript.  An execution path in these languages consists of a sequence of statements in the program.  We uniquely identify each statement in the program by its ``high-level program counter'' (HLPC), which, for now, we refer to it as an abstract value.
+%% In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting. \stefan{Maybe remove the reference to exponential growth, and give instead an example.}
 %% %
-%% We present in Section~\ref{sec:xxx} a concrete definition of HLPCs and methods from obtaining them during interpreter execution.
-
-\chef constructs the high-level tree of execution paths by grouping the low-level paths generated by executing the interpreter in the low-level symbolic execution engine, as follows.
-%
-For each low-level path in the interpreter, \chef reconstructs the sequence of HLPCs it executes by observing the statements fetched and executed in the interpretation loop (Section~\ref{sec:xxx}).
-%
-The low-level paths that execute the same sequence of HLPCs map to the same high-level path.  Figure~\ref{fig:xxx} illustrates the relationship between the low- and high-level paths as the high-level tree enveloping the low-level one.
-
-In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting. \stefan{Maybe remove the reference to exponential growth, and give instead an example.}
-%
-To mitigate the path explosion along high-level paths, \chef employs state prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
+%% To mitigate the path explosion along high-level paths, \chef employs state prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
 
 %% Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
 %% %
@@ -247,34 +240,15 @@ To mitigate the path explosion along high-level paths, \chef employs state prior
 %% %
 %% The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
 
-
-\subsection{Defining High-level Abstract States}
-\label{sec:chef:hlstates}
-
 %% This limitation makes it more difficult to build analyses that read the program state, including search selection strategies, such as the coverage-optimized strategy in \klee~\cite{klee}.
 %% %
 %% However, the high-level state remains implicitly encoded in the low-level interpreter state and can be accessed by executing code in the target language, by the interpreter runtime.  Therefore, a possible workaround is to split the analysis in a language-independent part, running as part of Chef, and a language-dependent part, written in the target language and running as an interrupt in the interpreter context, whenever it is needed.
 
-Determining the positions of a high-level state on its high-level path is not as clear-cut.
-%
-The low-level states on the high-level path may reside at different points on the path, so there is no straightforward mapping from them to the high-level state.
-%
-Instead, \chef provides two modes of operation---\emph{partial-state} and \emph{complete-state}---corresponding to where the high-level states are allowed to be on their path.
-
-%% The partial state mode allows \chef to explore high-level paths faster, by using only one low-level path for supporting the execution, at the expense of missing the information needed to precisely determine high-level branches and hence discover new high-level paths.
+%% Determining the positions of a high-level state on its high-level path is not as clear-cut.
 %% %
-%% In contrast, in complete state mode, \chef can precisely reason about high-level branches and therefore provides the means to implement high-level state selection strategies.  However, this comes at the expense of a slower path exploration rate.
-%% %
-%% We next describe in more detail the two \chef operating modes.
+%% The low-level states on the high-level path may reside at different points on the path, so there is no straightforward mapping from them to the high-level state.
 
-Before defining the two modes, it is useful to divide each high-level path in three segments (Figure~\ref{fig:xxx}):
-\begin{itemize}
-\item \emph{completed}, where all the low-level execution paths have been traversed by their states,
-\item \emph{partial}, where at least one low-level execution path has been traversed, and
-\item \emph{undiscovered}, where no low-level path has yet been explored.
-\end{itemize}
-
-The leading low-level state of the high-level path defines the boundary between the partial and undiscovered segment, while the trailing state on the path defines the boundary between the completed and partial segment.
+%% The leading low-level state of the high-level path defines the boundary between the partial and undiscovered segment, while the trailing state on the path defines the boundary between the completed and partial segment.
 
 \subsubsection{Partial High-level States}
 
