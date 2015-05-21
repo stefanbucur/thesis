@@ -1,8 +1,14 @@
-In this chapter, we evaluate the \cnine and \chef symbolic execution platforms by answering the following questions: (1) What real-world software can the two platforms target? (2) Are the test cases generated effective for bug finding or achieving high coverage? (3) How efficient are the two platforms with respect to the resources used?
+The goal of \chef and \cnine is to perform efficient and effective symbolic execution on real-world software targets with complex environment interfaces.
+%
+In this chapter, after presenting the prototypes for \cnine (Section~\ref{sec:eval:cnine-proto}) and \chef (Section~\ref{sec:eval:chef-proto}), we present our methodology (Section~\ref{sec:eval:methodology}) and answer the following questions:
+\begin{enumerate}
+\item Can \chef and \cnine symbolically execute real-world software (Section~\ref{sec:eval:targets})?
+\item Are the symbolic execution engines effective for bug finding and test suite generation (Section~\ref{sec:eval:bug-finding})?
+\item Given the overhead of using the language interpreter, how efficient is \chef's test suite generation (Section~\ref{sec:eval:xxx})?
+\end{enumerate}
 
-\section{Prototypes}
-
-\subsection{Cloud9}
+\section{Implementing Cloud9 as a Parallel Symbolic Execution Platform}
+\label{sec:eval:cnine-proto}
 
 \stefan{Expand on this, after refactoring the Cloud9 chapter. Mention that the prototype is a parallel symbolic execution engine.}
 
@@ -10,7 +16,8 @@ We developed a \cnine prototype on top of the \klee~\cite{klee} symbolic executi
 %
 The \klee modifications to support the symbolic OS abstractions amount to roughly 2 \kloc, while the rest consists of the POSIX model built on top of the abstractions.
 
-\subsection{Chef}
+\section{The Chef Prototype and Case Studies}
+\label{sec:eval:chef-proto}
 
 \begin{figure}
   \centering
@@ -19,7 +26,7 @@ The \klee modifications to support the symbolic OS abstractions amount to roughl
   \label{fig:eval:chef-implem-stack}
 \end{figure}
 
-We used \chef to generate symbolic execution engines for Python (Section~\ref{sec:python}) and Lua (Section~\ref{sec:lua}). Table~\ref{tab:pychanges} summarizes the effort to set up the two interpreters for \chef.  The necessary changes to the interpreter amount to 321 lines of code for Python and 277 for Lua.
+We used \chef to generate symbolic execution engines for Python (Section~\ref{sec:eval:python-proto}) and Lua (Section~\ref{sec:eval:lua-proto}). Table~\ref{tab:pychanges} summarizes the effort to set up the two interpreters for \chef.  The necessary changes to the interpreter amount to 321 lines of code for Python and 277 for Lua.
 %
 The total developer time was 5 person-days for Python and 3 person-days for Lua, which is orders of magnitude smaller than the effort required for building a complete symbolic execution engine from scratch.  
 
@@ -47,8 +54,8 @@ Developer time (person-days) & 5 & 3 \\
 \label{tab:pychanges}
 \end{table}
 
-\subsubsection{Symbolic Execution Engine for Python}
-\label{sec:python}
+\subsection{Symbolic Execution Engine for Python}
+\label{sec:eval:python-proto}
 
 \paragraph{Interpreter Instrumentation}
 
@@ -86,8 +93,8 @@ In \emph{symbolic mode}, the runner executes inside the guest virtual machine.  
 In \emph{replay mode}, the runner creates one instance of the test class for each test case created by \chef. The \codebit{getString} and \codebit{getInt} methods return the concrete input assignment of the test case.
 
 
-\subsubsection{Symbolic Execution Engine for Lua}
-\label{sec:lua}
+\subsection{Symbolic Execution Engine for Lua}
+\label{sec:eval:lua-proto}
 
 Lua is a lightweight scripting language mainly used as an interpreter library to add scripting capabilities to software written in other languages. However, it also has a standalone interpreter and several Lua-only projects exist. We generated a symbolic execution engine for Lua based on version 5.2.2 of the Lua interpreter.
 
@@ -101,7 +108,13 @@ We optimized the Lua interpreter for symbolic execution by eliminating string in
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Methodology}
+\label{sec:eval:methodology}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Experimental Setup and Testing Targets}
+\label{sec:eval:targets}
 
 \subsection{Running Low-level Systems with Cloud9}
 
@@ -216,20 +229,21 @@ Since our prototype only supports strings and integers as symbolic program input
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Cloud9's Effectiveness as a Testing Platform}
+\section{Effectiveness for Bug Finding and Test Generation}
+\label{sec:eval:bug-finding}
 
 In this section we present several case studies that illustrate how \cnine can explore and find new bugs, confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
 
 %--------------------------------------------------
 \subsection{Case Study \#1: Curl}
-\label{sec:curl}
+\label{sec:eval:curl}
 
-Curl is a popular data transfer tool for multiple network protocols, including HTTP and FTP.  When testing it, \cnine\ found a new bug which causes Curl to crash when given a URL regular expression of the form ``\codebit{http://site.\{one,\linebreak two,three\}.com\{}''. \cnine exposed a general problem in Curl's handling of the case when braces used for regular expression globbing are not matched properly.  The bug was confirmed and fixed within 24 hours by the developers. 
+Curl is a popular data transfer tool for multiple network protocols, including HTTP and FTP.  When testing it, \cnine\ found a new bug which causes Curl to crash when given a URL regular expression of the form ``\codebit{http://site.\{one,two,three\}.com\{}''. \cnine exposed a general problem in Curl's handling of the case when braces used for regular expression globbing are not matched properly.  The bug was confirmed and fixed within 24 hours by the developers. 
 
 This problem had not been noticed before because the globbing functionality in Curl was shadowed by the same functionality in command-line interpreters (e.g., Bash).  This case study illustrates a situation that occurs often in practice: when a piece of software is used in a way that has not been tried before, it is likely to fail due to latent bugs.
 
 \subsection{Case Study \#2: Memcached}
-\label{sec:memcached}
+\label{sec:eval:memcached}
 
 Memcached is a distributed memory object cache system, mainly used to speed up web application access to persistent
 data, typically residing in a database. % Memcached is deployed at many large sites like Facebook, Twitter, and YouTube. 
@@ -310,22 +324,21 @@ $2+5+1+5+2 \times 1 + 3 \times 2 + 5 + 2 \times 1 $	& crash + hang 	& crash + ha
 \end{table}
 
 \subsection{Case Study \#4: Bandicoot DBMS}
-\label{sec:bandicoot}
+\label{sec:eval:bandicoot}
 
 Bandicoot is a lightweight DBMS that can be accessed over an HTTP interface.  We exhaustively explored all paths handling the GET commands and found a bug in which Bandicoot reads from outside its allocated memory.  The particular test we ran fortuitously did not result in a crash, as Bandicoot ended up reading from the libc memory allocator's metadata preceding the allocated block of memory. However, besides the read data being wrong, this bug could cause a crash depending on where the memory block was allocated.
 
 To discover and diagnose this bug without \cnine is difficult. First, a concrete test case has little chance of triggering the bug.  Second, searching for the bug with a sequential symbolic execution tool seems impractical: the exhaustive exploration took 9 hours with a 4-worker \cnine (and less than 1 hour with a 24-worker cluster). 
 
-\subsection{Discussion}
+\subsection{Comparing \cnine to KLEE}
 
 \cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions. We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).  Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model allows \cnine to reach more paths and explore deeper portions of the tested program's code---this exposes additional potentially buggy situations. \cnine also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
 
-\section{Chef's Effectiveness for Automated Testing}
-\label{sec:eval:chef-atcg}
 
-We evaluate the effectiveness of the generated symbolic execution engines for bug detection and exception exploration.
+\subsection{Case Study \#5: Exploratory Bug Finding in Python and Lua Packages}
+\label{sec:eval:bug-explore}
 
-\paragraph{Bug Detection}
+We now evaluate the effectiveness of the \chef-obtained symbolic execution engines for bug detection.
 
 The specifications we used for our experiments are application-agnostic and only check for per-path termination within a given time bound and for the absence of unrecoverable crashes.  The first specification checks whether a call into the runtime returns within 60 seconds.  In this way, we discovered a bug in the Lua JSON package that causes the parser to hang in an infinite loop: if the JSON string contains the \codebit{/*} or \codebit{//} strings marking the start of a comment but no matching \codebit{*/} or line terminator, the parser reaches the end of the string and continues spinning waiting for another token.
 %
@@ -333,7 +346,9 @@ This bug is interesting for two reasons: First, comments are not part of the JSO
 
 The second implicit specification checks that a program never terminates non-gracefully, i.e., the interpreter implementation or a native extension crashes without giving the program a chance to recover through the language exception mechanisms.  In our experiments, our test cases did not expose any such behavior.
 
-\paragraph{Exception Exploration}
+
+\subsection{Case Study \#6: Undocumented Exceptions in Python Packages}
+\label{sec:eval:undoc-except}
 
 This scenario focuses on finding undocumented exceptions in Python code.
 %
