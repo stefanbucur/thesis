@@ -17,17 +17,30 @@ The goal of a symbolic model is to simulate the behavior of a real execution env
 %
 The symbolic execution engine (SEE) can then seamlessly transition back and forth between the program and the environment.
 
-While writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}, there exist cases in which models provide distinct advantages.
+While writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}, for operating system interfaces, a model provides distinct advantages.
 %
-First, symbolic execution with a model can be substantially faster than without.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc. Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model. Second, when an interface is as stable as POSIX, investing the time to model it becomes worthwhile.
+First, symbolic execution with a model can be substantially faster than without.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc. Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
+%
+Second, when an interface is as stable as POSIX, investing the time to model it becomes worthwhile.
+
+Ideally, a symbolic model would be implemented as guest code directly run by the SEE.
+%
+With this approach, the model would implicitly handle symbolic data, as opposed to explicitly build symbolic expressions using the internal engine API.
+%
+The resulting implementation would be significantly shorter and less prone to errors.
+
+However, modeling an operating system interface as guest code is challenging.
+%
+On the one hand, the operating system provides abstractions that cannot be expressed in the guest, such as threads and synchronization.
+%
+On the other hand, implementing the model inside the symbolic execution engine would constitute a significant engineering effort.
+
 
 We designed a minimal yet general ``symbolic system call'' interface to the \cnine SEE, which provides the essential building blocks for thread context switching, address space isolation, memory sharing, and sleep operations.
 %
 These are hard to provide solely through an external model. We give more details about symbolic system calls in Section~\ref{sec:symbolic-engine-modifications}.
 
-In some cases, it is practical to have the host OS handle parts of the environment via \emph{external calls}.
-%
-These are implemented by concretizing the symbolic parameters of a system call before invoking it from symbolically executing code. Unlike \cite{dart,klee,exe}, \cnine allows external calls \emph{only} for stateless or read-only system calls, such as reading a system configuration file from the \codebit{/etc} directory.  This restriction ensures that external concrete calls do not clobber other symbolically executing paths.
+
 
 In order to support the POSIX interface, we augmented \klee with two major features:
 %
@@ -42,7 +55,7 @@ multiple address spaces per state and support for scheduling threads and process
 \hline
 ~~~~~\textbf{Primitive Name} & ~~~~~~~~~~~~~~~~\textbf{Description} \\
 \hline
- \cninesuffix\_make\_shared & Share object across a CoW domain \\
+ \cninesuffix\_make\_shared & Share memory across address spaces \\
 \hline
 \hline
   \cninesuffix\_thread\_create & \multirow{2}{4cm}{Create and destroy threads}\\
@@ -97,8 +110,14 @@ The latter case is useful when looking for concurrency bugs, but it can be a sig
 
 If no thread can be scheduled when the current thread goes to sleep, then a hang is detected, the execution state is terminated,  and a corresponding test case is generated.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 \section{Case Study: A Symbolic POSIX Interface Model}
 \label{sec:cloud9:posix}
+
+We used the SEE system call interface to build a model for most common POSIX APIs.
 
 In this section, we describe the key design decisions involved in building the \cnine POSIX model, and we illustrate the use of the symbolic system call interface.
 %
@@ -149,6 +168,13 @@ In order to reduce the constraint solving overhead, we aim to reduce the amount 
 In order to enable testing the systems presented in the evaluation section (Section~\ref{sec:eval:targets}), we had to add support for various other components: IPC routines, \codebit{mmap()} calls, time-related functions, etc.
 %
 Even though laborious, this was mostly an engineering exercise, so we do not discuss it further.
+
+Finally, in some cases, it is practical to have the host OS handle parts of the environment via \emph{external calls}.
+%
+These are implemented by concretizing the symbolic parameters of a system call before invoking it from symbolically executing code. Unlike \cite{dart,klee,exe}, \cnine allows external calls \emph{only} for stateless or read-only system calls, such as reading a system configuration file from the \codebit{/etc} directory.  This restriction ensures that external concrete calls do not clobber other symbolically executing paths.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \section{Symbolic Test Suites}
