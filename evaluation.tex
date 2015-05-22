@@ -10,11 +10,53 @@ In this chapter, after presenting the prototypes for \cnine (Section~\ref{sec:ev
 \section{Implementing Cloud9 as a Parallel Symbolic Execution Platform}
 \label{sec:eval:cnine-proto}
 
-\stefan{Expand on this, after refactoring the Cloud9 chapter. Mention that the prototype is a parallel symbolic execution engine.}
-
 We developed a \cnine prototype on top of the \klee~\cite{klee} symbolic execution engine.  The prototype has 7 \kloc.
 %
 The \klee modifications to support the symbolic OS abstractions amount to roughly 2 \kloc, while the rest consists of the POSIX model built on top of the abstractions.
+%
+We also implemented in \cnine support for parallelizing symbolic execution on a cluster of nodes~\cite{cloud9}.
+
+\begin{figure}[h!]
+  \centering
+  \epsfig{file=figures/cloud9/posix-model.eps, width=6in}
+  \caption{Architecture of the \cnine POSIX model.}
+  \label{fig:cloud9:posixmodel}
+\end{figure}
+
+\cnine builds upon the \klee symbolic execution engine, and so it inherits from \klee the mechanism for replacing parts of the C Library with model code; it also inherits the external calls mechanism.  \cnine adds the symbolic system call interface and replaces parts of the C Library with the POSIX model.  The resulting architecture is shown in Figure~\ref{fig:cloud9:posixmodel}.
+
+\newcommand{\cI}{\!{\raisebox{-0.2ex}{\large\ding{192}}}\xspace}
+\newcommand{\cII}{\!{\raisebox{-0.2ex}{\large\ding{193}}}\xspace}
+\newcommand{\cIII}{\!{\raisebox{-0.2ex}{\large\ding{194}}}\xspace}
+\newcommand{\cIV}{\!{\raisebox{-0.2ex}{\large\ding{195}}}\xspace}
+\newcommand{\cV}{\!{\raisebox{-0.2ex}{\large\ding{196}}}\xspace}
+\newcommand{\cVI}{\!{\raisebox{-0.2ex}{\large\ding{197}}}\xspace}
+\newcommand{\cVII}{\!{\raisebox{-0.2ex}{\large\ding{198}}}\xspace}
+\newcommand{\cVIII}{\!{\raisebox{-0.2ex}{\large\ding{199}}}\xspace}
+
+Before symbolic execution starts, the \cnine system links the program under test with a special symbolic C Library.
+%
+We built this library by replacing parts of the existing uClibc library in \klee with the POSIX model code.  Developers do not need to modify the code of to-be-tested programs in any way to make it run on \cnine.  
+
+In the C Library, we replaced operations related to threads, processes, file descriptors, and network operations with their corresponding model \cI, and augmented the API with \cnine-specific extensions \cII.
+%
+A large portion of the C Library is reused, since it works out of the box \cIII (e.g. memory and string operations).  Finally, parts of the original C Library itself use  the modeled code \cIV (e.g., Standard I/O \codebit{stdio} relies on the modeled POSIX file descriptors).
+
+The modeled POSIX components interface with the SEE through symbolic system calls \cV, listed in Table~\ref{table:cloud9:primitives} from Section~\ref{sec:primitives}.
+%
+Occasionally, the unmodified part of the C Library invokes external system calls \cVI, and the model code itself needs support from the host OS \cVII---in order to make sure the external calls do not interfere with the symbolic engine's own operations~\cVIII, such access is limited to read-only and/or stateless operations.  This avoids problems like, for instance, allowing an external \codebit{close()} system call to close a network connection or log file that is actually used by the SEE itself.
+
+\paragraph{Address Spaces}
+
+\klee uses copy-on-write (CoW) to enable memory sharing between symbolic states.
+%
+We extend this functionality in two ways.  First, we enable multiple address spaces within a single execution state, corresponding to multiple processes encompassed in that state. Address spaces can thus be duplicated both across states (as in classic \klee) and within a state, when \codebit{\cninesuffix\_process\_fork} is invoked, e.g., as used by the POSIX model's \codebit{fork()}.
+
+Second, we organize the address spaces in an execution state as \emph{CoW domains} that permit memory sharing between processes.
+%
+A memory object can be marked as shared by calling \codebit{\cninesuffix\_\allowbreak{}make\_\allowbreak{}shared}; it is then automatically mapped in the address spaces of the other processes within the CoW domain.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the other members of the CoW domain.  The shared memory objects can then be used by the model as global memory for inter-process communication.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The Chef Prototype and Case Studies}
 \label{sec:eval:chef-proto}
@@ -30,7 +72,7 @@ The \klee modifications to support the symbolic OS abstractions amount to roughl
 
 We implemented \chef on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes entire virtual machines.
 %
-\chef consists of a stack of dynamic analysis modules that refine the raw stream of x86 instructions at the CPU level into high-level program statements forming a symbolic execution tree (Figure~\ref{fig:eval:chef-implem-stack}).
+The implementation consists of a stack of dynamic analysis modules that refine the raw stream of x86 instructions at the CPU level into high-level program statements forming a symbolic execution tree (Figure~\ref{fig:eval:chef-implem-stack}).
 
 First, the OS Monitor module breaks down the raw stream of x86 instructions into processes, and separates the user from the kernel mode.
 %
