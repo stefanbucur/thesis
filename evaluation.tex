@@ -7,14 +7,14 @@ In this chapter, after presenting the prototypes for \cnine (Section~\ref{sec:ev
 \item Given the overhead of using the language interpreter, how efficient is \chef's test suite generation (Section~\ref{sec:eval:chef-efficiency})?
 \end{enumerate}
 
-\section{Implementing Cloud9 as a Parallel Symbolic Execution Platform}
+\section{The \cnine Prototype}
 \label{sec:eval:cnine-proto}
 
 We developed a \cnine prototype on top of the \klee~\cite{klee} symbolic execution engine.  The prototype has 7 \kloc.
 %
 The \klee modifications to support the symbolic OS abstractions amount to roughly 2 \kloc, while the rest consists of the POSIX model built on top of the abstractions.
 %
-We also implemented in \cnine support for parallelizing symbolic execution on a cluster of nodes~\cite{cloud9}.
+In addition, we implemented support for parallelizing symbolic execution on a cluster of nodes (Section~\ref{sec:xxx}).
 
 \begin{figure}[h!]
   \centering
@@ -42,7 +42,7 @@ In the C Library, we replaced operations related to threads, processes, file des
 %
 A large portion of the C Library is reused, since it works out of the box \cIII (e.g. memory and string operations).  Finally, parts of the original C Library itself use  the modeled code \cIV (e.g., Standard I/O \codebit{stdio} relies on the modeled POSIX file descriptors).
 
-The modeled POSIX components interface with the SEE through symbolic system calls \cV, listed in Table~\ref{table:cloud9:primitives} from Section~\ref{sec:primitives}.
+The modeled POSIX components interface with the SEE through symbolic system calls \cV, listed in Table~\ref{table:cloud9:primitives} from Section~\ref{sec:cloud9:primitives}.
 %
 Occasionally, the unmodified part of the C Library invokes external system calls \cVI, and the model code itself needs support from the host OS \cVII---in order to make sure the external calls do not interfere with the symbolic engine's own operations~\cVIII, such access is limited to read-only and/or stateless operations.  This avoids problems like, for instance, allowing an external \codebit{close()} system call to close a network connection or log file that is actually used by the SEE itself.
 
@@ -366,7 +366,7 @@ We discovered the bug by limiting the maximum number of instructions executed pe
 
 The lighttpd web server is specifically engineered for high request throughput, and it is quite sensitive to the rate at which new data is read from a socket.  Alas, the POSIX specification offers no guarantee on the number of bytes that can be read from a file descriptor at a time.  lighttpd 1.4.12 has a bug in the command-processing code that causes the server to crash (and connected clients to hang indefinitely) depending on how the incoming stream of requests is fragmented. 
 
-We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in Section~\ref{sec:cloud9:platform}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
+We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in Section~\ref{sec:cloud9:symtests}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
 
 This case study shows that \cnine can find bugs caused by specific interactions with the environment which are hard to test with a concrete test suite. It also shows how \cnine can be used to write effective regression test suites---had a stream-fragmentation symbolic test been run after the fix, the lighttpd developers would have promptly discovered the incompleteness of their fix.
 
