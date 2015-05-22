@@ -46,15 +46,13 @@ The modeled POSIX components interface with the SEE through symbolic system call
 %
 Occasionally, the unmodified part of the C Library invokes external system calls \cVI, and the model code itself needs support from the host OS \cVII---in order to make sure the external calls do not interfere with the symbolic engine's own operations~\cVIII, such access is limited to read-only and/or stateless operations.  This avoids problems like, for instance, allowing an external \codebit{close()} system call to close a network connection or log file that is actually used by the SEE itself.
 
-\paragraph{Address Spaces}
-
 \klee uses copy-on-write (CoW) to enable memory sharing between symbolic states.
 %
-We extend this functionality in two ways.  First, we enable multiple address spaces within a single execution state, corresponding to multiple processes encompassed in that state. Address spaces can thus be duplicated both across states (as in classic \klee) and within a state, when \codebit{\cninesuffix\_process\_fork} is invoked, e.g., as used by the POSIX model's \codebit{fork()}.
-
-Second, we organize the address spaces in an execution state as \emph{CoW domains} that permit memory sharing between processes.
+We extend this functionality to provide support for multiple address spaces.
 %
-A memory object can be marked as shared by calling \codebit{\cninesuffix\_\allowbreak{}make\_\allowbreak{}shared}; it is then automatically mapped in the address spaces of the other processes within the CoW domain.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the other members of the CoW domain.  The shared memory objects can then be used by the model as global memory for inter-process communication.
+We organize the address spaces in an execution state as \emph{CoW domains} that permit memory sharing between processes.
+%
+A memory object marked as shared by calling \codebit{\cninesuffix\_\allowbreak{}make\_\allowbreak{}shared} is automatically mapped in the address spaces of the other processes within the CoW domain.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the other members of the CoW domain.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
