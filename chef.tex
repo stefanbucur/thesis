@@ -1,8 +1,10 @@
-In the previous chapter, we showed that symbolic models are effective for environments with a stable interface, such as operating systems.
+In the previous chapter, we showed how to efficiently create accurate models for operating system interfaces.  Modeling the operating system is feasible, as the interface is stable and well documented.
 %
-For interfaces with incomplete and unstable specifications, such as those of popular dynamic languages like Python and Ruby, the environment problem lends itself to a different approach.
+However, this approach does not benfit another important class of software: interpreted programs written in dynamic languages, such as Python, Ruby, or JavaScript.
 %
-In this chapeter, we present \chef, a symbolic execution platform for interpreted languages that relies on using the language interpreter as an ``executable language specification''.
+The language runtime, which is the program environment, is complex and has incomplete and unstable specifications, so modeling it would constitute a significant engineering effort.
+%
+In this chapeter, we address the environment problem for interpreted languages by using the language interpreter as an ``executable language specification''.
 
 \section{System Overview}
 
