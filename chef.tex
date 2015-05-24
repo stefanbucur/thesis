@@ -10,14 +10,14 @@ In this chapeter, we address the environment problem for interpreted languages b
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/chef/system-arch}
+  \includegraphics[width=0.3\textwidth]{figures/chef/usage-model}
   \caption{Overview of \chef's usage.}
   \label{fig:chef:overview}
 \end{figure}
 
 \chef is a platform for language-specific symbolic execution.
 %
-Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:xxx}).
+Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:chef:overview}).
 %
 The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:chef:overview}.
 
@@ -57,8 +57,8 @@ We illustrate the \chef workflow using the Python example in Figure~\ref{fig:che
 
 \begin{figure}
   \centering
-  \includegraphics[width=2.2in]{figures/chef/running-example}
-  \caption{Example of Python code that validates an e-mail address provided as a string.}
+  \includegraphics[width=4in]{figures/chef/running-example}
+  \caption{Example of Python code that validates an e-mail address given as a string (left) with corresponding symbolic execution tree (right).  Marks on the execution path indicate program statements.}
   \label{fig:chef:running-example}
 \end{figure}
 
@@ -158,10 +158,16 @@ We divide a high-level execution path in three segments, according to the positi
 \begin{itemize}
 \item The \emph{complete} segment was traversed by all low-level states on the path.
 \item The \emph{partial} segment follows the complete segment, and includes the HLPCs traversed by at least one low-level state, but not all.
-\item The \emph{undiscovered} segment was not yet traversed by any low-level state.  Since this part is not known a priori, the state adapter does not keep track of it.
+\item The \emph{unexplored} segment was not yet traversed by any low-level state.  Since this part is not known a priori, the state adapter does not keep track of it.
 \end{itemize}
 
-\stefan{I'm not sure we should mention the undiscovered segment.}
+\begin{figure}
+  \centering
+  \includegraphics[width=3in]{figures/chef/path-segments}
+  \caption{High-level execution path, segmented according to completeness of exploration by the low-level paths.}
+  \label{fig:chef:path-segments}
+\end{figure}
+
 
 Each HLPC location on a high-level execution path transitions from undiscovered, to partial, and then to complete.
 %
