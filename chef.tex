@@ -21,6 +21,8 @@ Provided with an interpreter environment, which acts as an executable language s
 %
 The resulting engine can be used like a hand-written one, in particular for test case generation.  When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:chef:overview}.
 
+\paragraph{The Interpreter as Language Specification}
+
 \chef is built on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes the interpreter environment \emph{at binary level}.
 %
 The interpreter environment is a virtual machine that bundles the interpreter, a testing library, the operating system, and other user programs.
@@ -28,6 +30,30 @@ The interpreter environment is a virtual machine that bundles the interpreter, a
 The resulting engine is a correct symbolic execution engine for the target language \emph{as defined by the interpreter}.
 %
 It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths.\footnote{The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impractical in finite time.}
+
+\paragraph{Example}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=4in]{figures/chef/running-example}
+  \caption{Example of Python code that validates an e-mail address given as a string (left) with corresponding symbolic execution tree (right).  Marks on the execution path indicate program statements.}
+  \label{fig:chef:running-example}
+\end{figure}
+
+We illustrate the functionality of \chef using the Python example in Figure~\ref{fig:chef:running-example}.
+%
+The function \codebit{validateEmail} receives an e-mail address string and raises an exception if the address is malformed.
+
+We symbolically execute the function using a \chef engine obtained by plugging the reference CPython interpreter.
+%
+Internally, \chef runs the interpreter by invoking \codebit{./python program.py} in the S2E symbolic execution engine.
+%
+S2E generates multiple execution paths in the interpreter, which \chef aggregates into a symbolic execution tree of the program, as shown on the right in Figure~\ref{fig:chef:running-example}.
+%
+In our example, there are two execution states in the tree: $S_1$, which executes the exception path, and $S_2$, which executes the normal path.
+%
+The two execution states are prioritized according to a pluggable search strategy (see Section~\ref{sec:intro:symbex}).  For example, one strategy may randomly select states to uniformly cover the set of possible paths.  Another strategy may favor the states that are triggering exceptions in the program, such as $S_1$.
+
 
 \section{\chef's Architecture as Adapter Between Engine Interfaces}
 
@@ -55,12 +81,7 @@ On the other hand, the fixed part is language-agnostic and handles the \emph{str
 
 We illustrate the \chef workflow using the Python example in Figure~\ref{fig:chef:running-example}, which receives an e-mail address string and raises an exception if the address is malformed.
 
-\begin{figure}
-  \centering
-  \includegraphics[width=4in]{figures/chef/running-example}
-  \caption{Example of Python code that validates an e-mail address given as a string (left) with corresponding symbolic execution tree (right).  Marks on the execution path indicate program statements.}
-  \label{fig:chef:running-example}
-\end{figure}
+
 
 We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
 %
