@@ -35,7 +35,7 @@ It is fully precise and theoretically complete, i.e., it will not explore infeas
 
 \begin{figure}
   \centering
-  \includegraphics[width=4in]{figures/chef/running-example}
+  \includegraphics[width=\textwidth]{figures/chef/running-example}
   \caption{Example of Python code that validates an e-mail address given as a string (left) with corresponding symbolic execution tree (right).  Marks on the execution path indicate program statements.}
   \label{fig:chef:running-example}
 \end{figure}
@@ -50,7 +50,11 @@ Internally, \chef runs the interpreter by invoking \codebit{./python program.py}
 %
 S2E generates multiple execution paths in the interpreter, which \chef aggregates into a symbolic execution tree of the program, as shown on the right in Figure~\ref{fig:chef:running-example}.
 %
-In our example, there are two execution states in the tree: $S_1$, which executes the exception path, and $S_2$, which executes the normal path.
+The paths in the tree are sequences of values of the high-level program counter (HLPC).  Each \hlpc value corresponds to a program statement or bytecode instruction.  Branches can occur explicitly at control flow statements (as in our example), or implicitly through exceptions.
+%
+For each path in the tree, \chef outputs a concrete test case.  In our example, the test cases are Python strings.
+
+There are two execution states in the tree in Figure~\ref{fig:chef:running-example}: $S_1$, which executes the exception path, and $S_2$, which executes the normal path.
 %
 The two execution states are prioritized according to a pluggable search strategy (see Section~\ref{sec:intro:symbex}).  For example, one strategy may randomly select states to uniformly cover the set of possible paths.  Another strategy may favor the states that are triggering exceptions in the program, such as $S_1$.
 
@@ -73,15 +77,15 @@ the user-facing \emph{high-level} engine interface that receives the target prog
 Figure~\ref{fig:chef:arch} shows the architecture of \chef, consisting of a pluggable part and a fixed part.
 %
 The pluggable part contains the language interpreter, which provides the implicit semantics of the language.  This part handles the \emph{program-facing} side of the symbolic execution interface, which receives the program and the test driver, and outputs test cases.
+
+The fixed part is language-agnostic and handles the \emph{strategy-facing} side of the symbolic execution interface.
 %
-On the other hand, the fixed part is language-agnostic and handles the \emph{strategy-facing} side of the symbolic execution interface. \chef communicates with a pluggable state selection strategy that decides the next state to executed among the currently available states (see Section~\ref{sec:intro:symbex}).
+\chef communicates with a pluggable state selection strategy that decides the next state to executed among the currently available states (see Section~\ref{sec:intro:symbex}).
 
 
 \subsection{From Interpreted Programs to Machine Instructions}
 
-We illustrate the \chef workflow using the Python example in Figure~\ref{fig:chef:running-example}, which receives an e-mail address string and raises an exception if the address is malformed.
-
-
+In our example in Figure~\ref{fig:chef:running-example}, we showed that \chef takes the high-level program and the symbolic test and ...
 
 We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
 %
@@ -114,34 +118,47 @@ Optionally, a high-level execution strategy decides which high-level states to p
 
 In the following sections, we describe in detail the techniques \chef employs to fulfill its interface adapter role.
 
-\subsection{From Low-level to High-level Symbolic Execution Trees}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{From Low-level to High-level Symbolic Execution Trees}
 
-The most important function of \chef is to pick the low-level execution paths in the interpreter that maximize its effectiveness as a high-level symbolic execution engine.
+The language interpreter automatically provides the semantics for symbolic execution (the pluggable part in Figure~\ref{fig:chef:arch}).  The main task left to \chef is to pick the low-level execution paths in the interpreter that maximize its effectiveness as a high-level symbolic execution engine (the fixed part in Figure~\ref{fig:chef:arch}).
 %
-This is handled by \chef's fixed part, in a language- and interpreter-agnostic way.
+%% This is handled by \chef's fixed part, in a language- and interpreter-agnostic way.
 
-The low-level path selection works as a feedback loop, as follows.
+%% The low-level path selection works as a feedback loop, as follows.
+%% %
+%% First, the low-level engine reports the progress of its states to a \emph{state adapter}, which maintains a high-level symbolic execution tree from the low-level states.
+%% %
+%% Second, the state adapeter sends the high-level execution tree updates to a pluggable high-level strategy, which decides the next high-level state to explore.
+%% %
+%% Finally, the selected high-level state is communicated to the low-level strategy, which takes it into account when selecting the next state for the low-level engine.
+
+\paragraph{The High-level Symbolic Execution Tree}
+
+Consider again the example in Figure~\ref{fig:chef:running-example}.  On line $L_2$, the \codebit{find} method executes as a single statement at the Python level, but internally, the interpreter could fork hundreds of alternate states, for each possible path in the implementation of substring searching.
 %
-First, the low-level engine reports the progress of its states to a \emph{state adapter}, which maintains a high-level symbolic execution tree from the low-level states.
+Some of these paths lead the program to take the branch and raise the exception, while the others continue the execution normally.
 %
-Second, the state adapeter sends the high-level execution tree updates to a pluggable high-level strategy, which decides the next high-level state to explore.
+\chef groups the low-level interpreter paths into the high-level program paths (right side of Figure~\ref{fig:chef:running-example}) and reports a single test case per high-level path.
+
+%% \chef builds the high-level symbolic execution tree of the program by aggregating the low-level execution paths it observes in the interpreter.
+%% %
+
+To group the low-level paths into high-level paths, \chef tracks the high-level program counter (HLPC) of each interpreter state.
 %
-Finally, the selected high-level state is communicated to the low-level strategy, which takes it into account when selecting the next state for the low-level engine.
+The low-level paths that have the same sequence of HLPC values map to the same high-level path.
+
+The resulting high-level symbolic execution tree envelops the low-level interpreter tree.
+%
+
+
+
+
+In Figure~\ref{fig:chef:running-example}, the low-level paths fork at the same 
+
 
 \paragraph{The State Adapter}
-
-The state adapter maintains a high-level model of the interpreter execution, consisting of high-level states in an execution tree (Figure~\ref{fig:chef:hl-tree}).
-
-\begin{figure}
-  \centering
-  \includegraphics[width=0.6\textwidth]{figures/chef/hl-tree}
-  \caption{The high-level symbolic execution tree maintained by the state adapter in \chef.}
-  \label{fig:chef:hl-tree}
-\end{figure}
 
 Each path in the high-level execution tree is a valid trace of locations in the target program.
 %
