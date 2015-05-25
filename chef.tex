@@ -79,13 +79,26 @@ the user-facing \emph{high-level} engine interface that receives the target prog
 %% %
 %% The main function of \chef is to prioritize the low-level interpreter states that maximize the effectiveness of test case generation at the high-level.
 
-Figure~\ref{fig:chef:arch} shows the architecture of \chef, consisting of a pluggable part and a fixed part.
+The interface of a symbolic execution engine consists of a program-facing part and a strategy-facing part.
 %
-The pluggable part contains the language interpreter, which provides the implicit semantics of the language.  This part handles the \emph{program-facing} side of the symbolic execution interface, which receives the program and the test driver, and outputs test cases.
+Through the program-facing part, the symbolic execution engine receives the program and the symbolic test and outputs test cases.
+%
+Through the strategy-facing part, the engine sends the active execution states to an external state selection strategy and receives the choice of the next state to run (see Section~\ref{sec:intro:symbex}).
 
-The fixed part is language-agnostic and handles the \emph{strategy-facing} side of the symbolic execution interface.
+
+Figure~\ref{fig:chef:arch} shows the architecture of \chef, consisting of the base and an interpreter module.
 %
-\chef communicates with a pluggable state selection strategy that decides the next state to executed among the currently available states (see Section~\ref{sec:intro:symbex}).
+The base contains the \emph{low-level} binary symbolic execution engine (S2E) that runs the interpreter, its state selection strategy, and an \emph{adapter} that converts from the low-level interpreter paths to the high-level program paths.
+%
+An external high-level strategy communicates with the base to provide the next high-level state to run.
+
+The interpreter module contains the language interpreter, which provides the implicit semantics of the language.
+
+Both the inner and the outer interfaces of \chef expose the program-facing and the strategy-facing part.
+%
+The inner engine operates with machine-level abstractions: it runs a binary program---the interpreter---and marks memory bytes as symbolic inputs.  During symbolic execution, it generates paths through the interpreter binary, prioritized by the low-level strategy.
+%
+The outer engine operates with corresponding high-level abstractions: it runs an interpreted program and marks objects, instead of bytes, as symbolic.  During execution, it generates paths through the high-level program.
 
 
 \subsection{From Interpreted Programs to Machine Instructions}
@@ -109,17 +122,9 @@ Key to \chef's effectiveness is choosing the right low-level paths through the i
 Consider again the example in Figure~\ref{fig:chef:running-example}....
 
 
-The inner low-level symbolic execution engine operates with machine-level abstractions (the gray component in Figure~\ref{fig:chef:arch}).
-%
-It runs a binary program and marks memory bytes from its address space as symbolic inputs.  In return, it provides test cases consisting of concrete values for the marked bytes.
-%
-During symbolic execution, the low-level engine informs the low-level execution strategy of all states created in the execution tree, and the strategy decides which of them to execute next.
 
-The outer interface exposes similar abstractions, but at the high level (the outer block in Figure~\ref{fig:chef:arch}).
-%
-The high-level engine runs an interpreted program and marks objects in the program state, such as strings and numbers, as symbolic inputs.  In return, the engine provides concrete object values as test cases.
-%
-Optionally, a high-level execution strategy decides which high-level states to prioritize.
+
+
 
 In the following sections, we describe in detail the techniques \chef employs to fulfill its interface adapter role.
 
