@@ -100,33 +100,13 @@ The inner engine operates with machine-level abstractions: it runs a binary prog
 %
 The outer engine operates with corresponding high-level abstractions: it runs an interpreted program and marks objects, instead of bytes, as symbolic.  During execution, it generates paths through the high-level program.
 
-
-\subsection{From Interpreted Programs to Machine Instructions}
-
-In our example in Figure~\ref{fig:chef:running-example}, we showed that \chef takes the high-level program and the symbolic test and ...
-
-We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
+The interpreter module \emph{by construction} adapts the program-facing part of the two interfaces, as shown in Figure~\ref{fig:chef:arch}.
 %
-The \chef engine receives the program, which is wrapped in a symbolic test that marks its input parameter \codebit{email} as symbolic.
+Reusing the interpreter provides substantial savings in terms of development effort.  For instance, the Python interpreter has over 400 KLOC; an equivalent hand-written symbolic execution engine would reimplement from scratch the same language semantics in an implementation of the same order of magnitude.
+
+The main task left for \chef is to provide the low-level strategy for choosing the interpreter paths that maximize \chef's effectiveness as a high-level symbolic execution engine.
 %
-\chef runs the program by invoking its interpreter inside the low-level symbolic execution engine, using a command line such as \codebit{./python program.py}.
-
-When the symbolic test marks the \codebit{email} parameter as symbolic, a \chef test library for Python marks the underlying bytes representation of the string using the primitives of the low-level engine.
-
-During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
-%
-The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
-
-Key to \chef's effectiveness is choosing the right low-level paths through the interpreter.
-%
-Consider again the example in Figure~\ref{fig:chef:running-example}....
-
-
-
-
-
-
-In the following sections, we describe in detail the techniques \chef employs to fulfill its interface adapter role.
+We discuss this aspect in the next section.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -323,6 +303,25 @@ The input high-level program is bundled with the interpreter inside a virtual ma
 Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
 
 The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
+
+\subsection{From Interpreted Programs to Machine Instructions}
+
+We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
+%
+The \chef engine receives the program, which is wrapped in a symbolic test that marks its input parameter \codebit{email} as symbolic.
+%
+\chef runs the program by invoking its interpreter inside the low-level symbolic execution engine, using a command line such as \codebit{./python program.py}.
+
+When the symbolic test marks the \codebit{email} parameter as symbolic, a \chef test library for Python marks the underlying bytes representation of the string using the primitives of the low-level engine.
+
+During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
+%
+The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
+
+Key to \chef's effectiveness is choosing the right low-level paths through the interpreter.
+%
+Consider again the example in Figure~\ref{fig:chef:running-example}....
+
 \fi
 
 %% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
