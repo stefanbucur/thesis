@@ -434,7 +434,7 @@ The sixth column in Table~\ref{tab:targets} summarizes our findings.  We found f
 \subsection{Impact of \cupa Heuristics and Interpreter Optimizations}
 \label{sec:sub:perf-cupa}
 
-We now analyze the impact of the \cupa heuristics (described in Section~\ref{sec:chef:cupa}) and the interpreter optimizations (described in Section~\ref{sec:chef:optimzeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
+We now analyze the impact of the \cupa heuristics (described in Section~\ref{sec:chef:cupa}) and the interpreter optimizations (described in Section~\ref{sec:chef:optimizeforsymbex}) on test generation effectiveness.  Specifically, we measure the number of paths (respectively source code lines) covered by the test suite generated in 30 minutes for the packages in Table~\ref{tab:targets}.
 
 We compare the results obtained in 4 different configurations: (1) the baseline, consisting of performing random state selection while executing the unmodified interpreter, and then either use (2) the path- or coverage-optimized CUPA only, (3) the optimized interpreter only, or (4) both CUPA and the optimized interpreter.  This way we measure the individual contribution of each technique, as well as their aggregate behavior.
 
@@ -475,7 +475,7 @@ Note that these coverage improvements are obtained using basic symbolic tests th
 \subsection{Breaking Down Chef's Interpreter Optimizations}
 \label{sec:sub:optimizations}
 
-We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in Section~\ref{sec:chef:optimzeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
+We now analyze in more depth the impact of the interpreter optimizations by breaking them down into the three types mentioned in Section~\ref{sec:chef:optimizeforsymbex}: avoiding symbolic pointers, hash neutralization, and fast-path elimination.  We run again the symbolic tests for 30 minutes, using the path-optimized CUPA and four different interpreter builds, starting from the vanilla interpreter and adding the optimization types one by one.  For each build and package, we count the number of high-level paths discovered by \chef.
 
 Figure~\ref{fig:optimizations} shows the results for Python.  The data is normalized such that the number of high-level paths for each target reaches $100\%$.  For 3 out of 6 packages (\codebit{simplejson}, \codebit{argparse}, and \codebit{HTMLParser}), \chef's performance monotonically increases as more optimizations are introduced.  For \codebit{unicodecsv} and \codebit{ConfigParser}, the optimizations do not bring any benefits or even hurt slightly.  
 

@@ -1,48 +1,6 @@
-\subsection{The Role of the Language Interpreter in Providing Semantics}
-
-The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
-
-Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
-
-The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
-
-\subsection{From Interpreted Programs to Machine Instructions}
-
-We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
+Integrating an interpreter in \chef requires preparing a virtual machine that includes the interpreter binary, a symbolic test library, and a launcher.
 %
-The \chef engine receives the program, which is wrapped in a symbolic test that marks its input parameter \codebit{email} as symbolic.
-%
-\chef runs the program by invoking its interpreter inside the low-level symbolic execution engine, using a command line such as \codebit{./python program.py}.
-
-When the symbolic test marks the \codebit{email} parameter as symbolic, a \chef test library for Python marks the underlying bytes representation of the string using the primitives of the low-level engine.
-
-During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
-%
-The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
-
-Key to \chef's effectiveness is choosing the right low-level paths through the interpreter.
-%
-Consider again the example in Figure~\ref{fig:chef:running-example}....
-
-\subsection{The Symbolic Test Library}
-
-
-To run an interpreter, \chef must be able to obtain the stream of high-level program counters (HLPCs) for each execution path.  For most interpreters of popular languages, \chef can perform this task fully automatically (Section~\ref{sec:chef:hlcf}), while providing a guest API for manual interpreter instrumentation as a fallback.
-
-An optional step is to optimize the interpreter for symbolic execution (Section~\ref{sec:chef:optimizeforsymbex}).  \chef provides an API (Table~\ref{tab:api}) that will be explained along with its use.
-
-Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:chef:testingAPI}).
-
-\subsection{Testing API}
-\label{sec:chef:testingAPI}
-
-Programs to be tested can be fed symbolic inputs by marking input buffers with \codebit{make\_symbolic} and defining conditions over the input with the \codebit{assume} call, in accordance to the test specification.  Note that the buffer is a memory region of concrete bounds.  It is the job of the symbolic test library in the interpreter VM to convert from the language data structures (e.g., strings, integers) to the memory locations used to store the data in the interpreter implementation.
-
-
-\subsection{Automated High-level Control Flow Detection in Interpreters}
-\label{sec:chef:hlcf}
-
-We defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
+To communicate with the interpreter runtime, \chef provides an API (Table~\ref{tab:chef:api}) that will be explained along with its use.
 
 \begin{table}
 \centering
@@ -58,15 +16,56 @@ We defined a high-level path as a sequence of statements identified by high-leve
 \hline
 \codebit{make\_symbolic(buf)} & Make buffer symbolic \\
 \codebit{concretize(buf)} & Concretize buffer of bytes \\
-\codebit{upper\_bound(value)} & Get maximum value for expression\\
-                              & on current path \\
+\codebit{upper\_bound(value)} & Get maximum value for expression on current path \\
 \codebit{is\_symbolic(buf)} & Check if buffer is symbolic \\
 \codebit{assume(expr)} & Assume constraint \\
 \hline
 \end{tabular}
 \caption{The \chef API used by the interpreters running inside the S2E VM.}
-\label{tab:api}
+\label{tab:chef:api}
 \end{table}
+
+\paragraph{Preparing the Interpreter Binary}
+
+In principle, \chef can run unmodified interpreters for major popular languages, such as Python and JavaScript.
+%
+\chef automatically obtains from the running interpreter the stream of high-level program counters (HLPCs) for each execution path, required by the state adapter to reconstruct the high-level symbolic execution tree (Section~\ref{sec:chef:hlcf}).
+
+In practice, however, applying a number of optimizations in the interpreter implementation significantly improve symbolic execution performance (Section~\ref{sec:chef:optimizeforsymbex}).
+
+
+\paragraph{The Symbolic Test Library}
+
+The unit of symbolic execution in \chef is the \emph{symbolic test}.
+%
+A symbolic test is a class, function, or other language-specific construct that encapsulates the symbolic input setup, the invocation, and the property checking of the feature targeted by the test.
+%
+A symbolic test is similar to a unit test, except for an extra set of primitives for creating symbolic values.
+
+The symbolic tests are written in the same language as the target, and require runtime support in the form of a language-specific \emph{symbolic test library}.
+%
+The symbolic test library provides the developer interface for writing symbolic tests.
+%
+In addition, it translates the requests for marking language values as symbolic into the \chef API primitives for marking memory buffers as symbolic (the \codebit{make\_symbolic} call, together with the \codebit{assume} call for defining conditions over the input).
+%
+For example, when a symbolic test requests a 10-character symbolic string, the symbolic test library creates a concrete 10-character string object, then it finds its buffer address in the internal representation and marks it as symbolic.
+%
+As a result, the symbolic test library is typically implemented as a native extension module, so it gains access to the internal data structures of the interpreter.
+
+%% During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
+%% %
+%% The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
+
+The execution of the interpreter in the virtual machine is bootstrapped by a launcher.  The launcher receives the location of the symbolic test (e.g., the module file and the class name, for Python) and runs the interpreter binary with the appropriate arguments such that it starts executing the symbolic test.
+%
+The launcher is typically a small web server running inside the guest, listening for commands from \chef.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Automated High-level Control Flow Detection in Interpreters}
+\label{sec:chef:hlcf}
+
+We defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
 
 \begin{figure}
   \centering
@@ -77,9 +76,9 @@ We defined a high-level path as a sequence of statements identified by high-leve
 
 \paragraph{Standard Interpretation Model}
 
-In general, obtaining the high-level program counter in a running interpreter is undecidable.
+In general, obtaining the high-level program counter in a running interpreter is undecidable, because the boundaries between program statements are a high-level property of the language, and the separation may not reflect in the low-level implementation.
 %
-The boundaries between program statements are a high-level property of the language, and the separation may not reflect in the low-level implementation.  Even at the high level, statement boundaries may be ambiguous due to functional constructs, such as lambda functions and list comprehensions, or data definitions mixed with control flow, such as the class definitions in Python.
+Even at the high level, statement boundaries may be ambiguous due to functional constructs, such as lambda functions and list comprehensions, or data definitions mixed with control flow, such as the class definitions in Python.
 
 In practice, however, most interpreters follow a common structure that \emph{can be detected automatically}.
 %
@@ -153,8 +152,6 @@ In case the calibration ends with no remaining memory write group, or more than 
 %
 This could happen, for instance, when the calibration is attempted on a non-conforming interpreter, or when the calibration script is too short.  To this end, we empirically determined that a 100-statement calibration script is sufficient for a successful calibration for all interpreters we tested.
 
-\paragraph{Discussion}
-
 In principle, defining program statements at an intermediate representation risks missing paths at the high-level.
 %
 This would happen, for instance, if the interpreter translated code with complex control flow to a linear bytecode sequence.
@@ -167,12 +164,15 @@ In particular, interpreters perform little or no optimization on the bytecode.
 
 When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Interpreter Optimizations}
-\label{sec:chef:optimzeforsymbex}
+\label{sec:chef:optimizeforsymbex}
 
 In order to maximize performance, interpreters make heavy use of special cases and sophisticated data structures.  Unfortunately, these features hurt the performance of symbolic execution by amplifying path explosion and increasing the complexity of symbolic formulas~\cite{overify}.
 
-We identify a number of easy optimizations that preserve the interpretation semantics but significantly improve symbolic execution performance.  The optimizations use the \chef API in the last block of rows in Table~\ref{tab:api}.
+We identify a number of optimizations that preserve the interpretation semantics but significantly improve symbolic execution performance.  The optimizations use the \chef API in the last block of rows in Table~\ref{tab:api}.
 
 \paragraph{Neutralizing Hash Functions}
 
