@@ -159,6 +159,12 @@ An abstract high-level state may only advance to the next HLPC when the underlyi
 \chef provides two policies that govern this relationship, called \emph{state completeness models}.  They are discussed in detail in the next section.
 
 
+We call an abstract high-level state \emph{blocking}, when it cannot make progress on the path, according to the state completeness model used.
+%
+When the abstract state is blocking, the low-level strategy selects for execution low-level states that unblock the abstract state.
+
+\paragraph{The Low-level State Selection Workflow}
+
 By using abstract high-level states, the selection of low-level states becomes a two-stage process, as shown in the architecture diagram (Figure~\ref{fig:chef:arch}).
 %
 First, the low-level engine reports its execution states to an \emph{adapter} component, which maintains the high-level symbolic execution tree and the abstract high-level states.
@@ -184,7 +190,7 @@ Instead, the program data is implictly encoded and distributed across the low-le
 \section{Trading Precision for Efficiency with State Completeness Models}
 \label{sec:chef:completeness-models}
 
-The state adapter uses the state completeness model to determine whether an abstract high-level state can be advanced to the next HLPC on its path.
+The state adapter uses the state completeness model to determine whether an abstract high-level state blocks or can be advanced to the next HLPC on its path.
 %
 \chef provides two completeness models: \emph{partial} and \emph{complete}.
 %
@@ -229,47 +235,54 @@ The segment starts at the beginning of the path and ends at the HLPC of the leas
 The segment starts with the least advanced low-level state on the path and ends at the leading state on the path.  Figure~\ref{fig:chef:path-segments} shows the partial segment in nuances of gray, according to the degree of local path completeness.
 \end{itemize}
 
-Each HLPC location on the high-levle path transitions from partial to complete.
+Each HLPC location on the high-level path transitions from partial to complete.
 %
 In case a high-level path consists of a single low-level path, the transition goes directly to complete and the partial segment is empty.
 
-For each HLPC on the high-level path, we also define the local path condition as the disjunction of the path conditions of all low-level states at the moment they started executing the HLPC.
+\paragraph{The State Completeness Models}
 
-The difference between the partial and complete high-level state models is with respect to the segments they are allowed to be on the high-level path.
+The partial and completeness models are defined with respect to the path segments on which the abstract high-level states are allowed to reside.
+
+In the partial model, the abstract high-level states are allowed to reside anywhere on the high-level execution path, i.e., on both its complete and partial segment.
 %
-When a high-level state is selected for execution, but cannot progress, the low-level strategy is responsible with advancing the appropriate low-level states on the path.
+On the other hand, in the complete model, the abstract high-level states are only allowed on complete segments.
 
-%% We also define the cost of advancing a high-level state as the cost of exploring the low-level states underneath in order to advance the path segment.
+This difference creates substantial divergences in the properties of the two models, which we discuss next.
 
 \subsection{Partial High-level Execution States}
 
-Under the partial model, a high-level state is allowed to be on the completed and partial segments.
+In the partial model, the abstract high-level states are allowed to reside anywhere on the high-level execution path.
 %
-To make progress, \chef needs to advance at least one low-level execution state---the leading state on the path.  This makes the execution efficient.
+Therefore, the states block only at the last HLPC location on the path.
 
-However, under the partial model, \chef cannot decide whether the current high-level state would branch at any point on the partial segment.
+The low-level strategy unblocks the abstract high-level states by selecting for execution the leading low-level state on the path.
 %
-This is because the local path condition is partial (hence the name of the model), and does not capture all possible executions on the path, which might reveal branching points.  For interpreted languages, many instructions can potentially be branching points, either as explicit branch instructions, or as statements that may throw exceptions.  \stefan{Would an example be needed here?}
+Therefore, the cost of unblocking the state is relatively low: only one low-level state from the entire path is required, which amounts to simpler symbolic expressions and faster solver queries.
 
-The consequence of this property is that the high-level strategy cannot exercise control over the low-level execution in partial mode, as there are no known pending states to choose from.
+On the other hand, in the partial model, the execution of the abstract high-level state may miss feasible high-level branches.
 %
-Instead, the low-level strategy must repeatedly select low-level states for execution, until a new high-level path is discovered.
+This is because the local path condition of the abstract state is incomplete, and therefore may not include the low-level executions that diverge into other high-level paths at branching points.
+% GIVE EXAMPLE
+% For interpreted languages, many instructions can potentially be branching points, either as explicit branch instructions, or as statements that may throw exceptions.
+
+As a result, the high-level strategy can only exercise control over high-level paths \emph{already discovered}.
 %
-Once discovered, the high-level path can be efficiently executed through one low-level state.
-%
-As a result, in practice, \chef takes full advantage of this property and always keeps the partial states on head of the path, guided by the leading low-level states.
+New high-level paths are discovered only as the low-level strategy repeatedly selects low-level states for execution on the existing paths.
+
 
 \subsection{Complete High-level Execution States}
 
-Under the complete model, a high-level state can only reside on the completed segment of a path.
+In the complete model, the abstract high-level states can only reside on the complete path segment.
 %
-To progress a complete state to the next HLPC, \chef must advance all the low-level execution states in it.  This makes the execution significantly more expensive than for partial execution states.
+The states block at the first low-level state encountered on the path, before entering the partial segment.
 
-On the other hand, under the complete state model, branch feasibility is decidable, as the local path condition on the complete segment captures all possible interpreter executions.
-
-As a result, the state adapter has knowledge of the yet unexplored execution paths and informs the high-level search strategy of them.
+The low-level strategy unblocks the abstract high-level states by executing all low-level states that reside on the next statement on the path.
 %
-In turn, the low-level search strategy can focus on advancing the next high-level state selected for execution.
+Therefore, compared to the partial mode, the cost of unblocking the state is significantly higher.
+
+However, in the complete model, the feasibility of all branching instructions traversed by the abstract high-level states are decided, as the local path conditions are complete.
+%
+In turn, the high-level execution strategy has knowledge of all paths forking off the currently discovered ones, and can influence the exploration ordering.
 
 \subsection{Choosing Between the Two Models}
 
