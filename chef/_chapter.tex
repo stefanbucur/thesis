@@ -1,0 +1,120 @@
+In the previous chapter, we showed how to efficiently create accurate models for operating system interfaces, which are stable and well documented.
+%
+For interfaces with unstable and incomplete specifications, such as those of dynamic languges, such as Python, Ruby, or JavaScript, the environment problem mandates a different approach.
+%
+In this chapeter, we present \chef, a symbolic execution platform for interpreted languages that relies on using the language interpreter as an ``executable specification''.
+
+\section{System Overview}
+\input{chef/overview}
+
+\section{\chef's Architecture as Adapter Between Engine Interfaces}
+\input{chef/architecture}
+
+\section{From Low-level to High-level Symbolic Execution Trees}
+\input{chef/hlsymbex}
+
+\section{Trading Precision for Efficiency with State Completeness Models}
+\label{sec:chef:completeness-models}
+\input{chef/completeness}
+
+\section{Path Prioritization in The Interpreter}
+\label{sec:chef:strategies}
+\input{chef/strategies}
+
+\section{Packaging the Interpreter for Symbolic Execution}
+\label{sec:chef:recipe}
+\input{chef/interpreter}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\iffalse
+\section{Symbolically Executing the Interpreter}
+
+Building a correct and complete symbolic execution engine for an interpreted language is generally harder than building one for a low-level language. 
+%
+Statements of interpreted languages can wrap complex operations that, in lower-level languages, would be implemented through libraries. For instance, Python strings are a built-in type offering more than 30 operations (such as \codebit{find}) as part of the language, implemented natively in the interpreter. 
+%
+Other language features that allow to inspect or even modify the code itself, i.e., runtime reflection, are even more tedious to implement and very hard to get right.
+
+Finally, besides requiring an enormous initial effort to build a symbolic execution engine that fully supports them, dynamic languages also evolve fast. This implies constant, labor-intensive maintenance and co-evolution of the symbolic execution engine, if it is to keep up with the newest versions of the language.
+
+Considering the difficulty of directly supporting interpreted languages, we resort to symbolically executing the interpreter itself, since it completely defines the semantics of the target language as a function of the semantics of the language the interpreter is implemented in.
+%
+After compiling the interpreter to a format supported by an existing symbolic execution engine, one can symbolically execute an interpreted program by symbolically executing the interpreter with the target program as argument.
+%
+However, even though in principle this direct approach yields a symbolic execution engine for the target language, it is impractical, due to the engine not being aware of the control flow of the interpreted program.
+
+\paragraph{High- vs. Low-level Program Paths}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=2.2in]{chef/figures/running-example}
+  \caption{Two examples of Python code that lead to path explosion when the interpreter running it is symbolically executed.}
+  \label{fig:running-examples}
+\end{figure}
+
+
+An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
+%
+A high-level program path is a sequence of values of the high-level program counter (\hlpc). Each \hlpc value corresponds to a program statement or bytecode instruction (both Python and Lua use intermediate bytecode).  Branches can occur explicitly at control flow statements, or implicitly through exceptions.
+%
+A low-level program path is a sequence of machine instructions from the interpreter binary, including its code for internal bookkeeping (e.g., details of reference counting and garbage collection).
+
+Due to the additional implementation details, a single high-level path can map to multiple low-level paths.
+%
+Figure~\ref{fig:running-examples} shows two examples of Python code that have few high-level but many low-level paths. The \codebit{validateEmail} method has only two high-level paths, but its use of \codebit{string.find} leads to as many low-level paths as there can be characters in the \codebit{email} string.
+%
+The second example \codebit{average} may come as more of a surprise: even though it has just a single high-level path, symbolic execution can end up enumerating many low-level paths: Python uses arbitrary-precision integers, so the interpreter may have to iterate over digit vectors of arbitrary length, which can in principle spawn arbitrarily many paths.
+
+
+\paragraph{Challenges for Search Strategies}
+%
+The search strategy of a low-level symbolic execution engine is oblivious to the high-level program structure of the target program, and it essentially just tries to cover the interpreter. This generally leads to covering the same high-level paths many times with multiple distinct low-level paths.
+%
+For instance, a high-level statement like \codebit{find} can lead to hundreds of alternate states, whereas a primitive integer comparison might just create a single one. Therefore, the low-level search strategy is likely to explore multiple ways for \codebit{find} to succeed or fail, without increasing high-level coverage, before eventually exploring the alternate outcome of the comparison.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=2.8in]{chef/figures/hl-symbex}
+  \caption{High-level execution tree (paths A, B, and C), as induced by its low-level execution paths (1--5) for the first running example in Figure~\ref{fig:running-examples}.  Dotted lines segment high-level execution paths into bytecode instructions.  One high-level path may correspond to multiple low-level paths explored.}
+  \label{fig:hl-symbex}
+\end{figure}
+
+The key is to make the engine aware of the high-level interpreted program. By tracing the values of the \hlpc, the engine can construct a high-level control flow graph~(CFG) on the fly that can be be leveraged by the search strategy.
+
+Alas, a strategy cannot straightforwardly determine future branching points in a high-level CFG: two low-level paths can fork from the same prefix \emph{before} their corresponding high-level paths do.  This can be due to having distinct bytecode instructions for comparisons and conditional jumps, or due to native library calls.  
+%
+In Figure~\ref{fig:hl-symbex}, three low-level paths fork within the single \hlpc location for \codebit{email.find}. The low-level paths remain on the same high-level path until reaching the branching \hlpc, where they diverge into two distinct high-level paths. The relevant alternate low-level states for covering the distinct high-level paths thus were located away from the location of the code interpreting the high-level control flow statement.
+%
+The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
+
+\section{The \chef System}
+
+We now present the architecture of \chef (Section~\ref{sec:chef:architecture}) and introduce \cupa, our state selection mechanism (Section~\ref{sec:chef:cupa}). We then describe \cupa optimized for exploring distinct high-level paths (Section~\ref{sec:chef:cupa-paths}) and optimized for high line coverage~(Section~\ref{sec:chef:cupa-coverage}).
+
+\subsection{System Overview}
+\label{sec:chef:architecture}
+
+\chef is a platform for language-specific symbolic execution. Provided with an interpreter environment, which acts as an executable language specification, it becomes a symbolic execution engine for the target language (see Figure~\ref{fig:system-arch}).
+%
+The resulting engine can be used like a hand-written one, in particular for test case generation. When fed with a target program and a symbolic test case (also called test driver or test specification in the literature), it outputs a set of concrete test cases, as shown in Figure~\ref{fig:system-arch}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=2.6in]{chef/figures/system-arch}
+  \caption{Schema of \chef's architecture.}
+  \label{fig:system-arch}
+\end{figure}
+
+\chef is built on top of the S2E analysis platform~\cite{s2eSystem}. S2E symbolically executes a virtual machine containing the interpreter and a testing library at the level of machine code,  including the OS kernel, drivers, and user programs.  S2E provides an API that guest code can use to declare memory buffers as symbolic. Comparisons on symbolic values cause S2E to fork new paths, which are enqueued and explored following a search strategy.
+%
+\chef extends the S2E guest API with a high-level instruction instrumentation call (Section~\ref{sec:chef:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths (Section~\ref{sec:chef:cupa}).
+\fi
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:

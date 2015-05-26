@@ -1,0 +1,79 @@
+\paragraph{The High-level Symbolic Execution Tree}
+
+Consider again the example in Figure~\ref{fig:chef:running-example}.
+%
+On line $L_2$, the \codebit{find} method executes as a single statement at the Python level, but internally, the interpreter forks hundreds of alternate states, for each possible path in the implementation of the substring searching algorithm.
+%
+Some of these paths lead the program to take the branch at line $L_4$ and raise the exception, while the others continue the execution normally.
+%
+\chef groups the low-level interpreter paths into their corresponding high-level program paths (right side of Figure~\ref{fig:chef:running-example}) and reports a single test case per high-level path.
+
+%% \chef builds the high-level symbolic execution tree of the program by aggregating the low-level execution paths it observes in the interpreter.
+%% %
+
+To group the low-level paths into high-level paths, \chef tracks the program location---the \emph{high-level program counter} (HLPC)---of each low-level interpreter state.
+%
+The HLPC values are opaque to \chef.  Their concrete semantics depend on the language and the interpreter.  For example, for interpreters that compile programs to an intermediate bytecode representation, the HLPC can be the address in memory of each bytecode instruction (Section~\ref{sec:chef:hlcf}).
+
+The low-level paths that have the same sequence of HLPC values map to the same high-level path.
+%
+This results in a high-level symbolic execution tree that ``envelops'' the low-level symbolic execution tree of the interpreter.
+
+\paragraph{Abstract High-level States}
+
+The expansion of the high-level tree is governed by the high-level strategy.
+%
+The strategy expects a set of high-level states to choose from, as per the general contract of the strategy interface.  There is one high-level state per path, reflecting the progress of the execution on that path.
+%
+However, it is the \emph{low-level} execution states that determine the high-level paths, as previously explained.
+%
+Moreover, there could be \emph{several} low-level states on the path.
+Intuitively, each low-level state executes a ``slice'' of the entire high-level path, and may reside at any HLPC location on the path.
+
+
+To adapt between the two interface levels, \chef introduces the notion of \emph{abstract high-level state}.
+%
+Each high-level path has exactly one abstract high-level state, which resides at a HLPC location on the path.
+%
+When a new high-level path branches, its abstract high-level state starts at the beginning of the path.
+%
+The state subsequently advances to the next HLPC when it is selected for execution, and it is terminated when it reaches the end of the path.
+
+
+An abstract high-level state may only advance to the next HLPC when the underlying low-level states on the path have executed enough of the program statement.
+%
+\chef provides two policies that govern this relationship, called \emph{state completeness models}.  They are discussed in detail in the next section.
+
+
+We call an abstract high-level state \emph{blocking}, when it cannot make progress on the path, according to the state completeness model used.
+%
+When the abstract state is blocking, the low-level strategy selects for execution low-level states that unblock the abstract state.
+
+\paragraph{The Low-level State Selection Workflow}
+
+By using abstract high-level states, the selection of low-level states becomes a two-stage process, as shown in the architecture diagram (Figure~\ref{fig:chef:arch}).
+%
+First, the low-level engine reports its execution states to an \emph{adapter} component, which maintains the high-level symbolic execution tree and the abstract high-level states.
+%
+The state adapter reports the abstract high-level states to the high-level strategy, which decides the next high-level state---and therefore path---to explore.
+%
+If the state completeness model allows the state to advance on the path, the state adapter updates the HLPC directly.
+%
+If not, the high-level strategy communicates its choice to the low-level strategy, which selects a low-level state on the path that helps unblock the abstract high-level state.
+
+
+This state selection process both (a) provides an adapter mechanism for selecting \emph{low-level} interpreter states for execution based on a \emph{high-level} strategy, and (b) still preseves the high-level abstractions by hiding the interpreter and its states.
+
+
+The abstract high-level states only contain the current HLPC and a path condition.
+%
+Unlike the low-level states, they do not include program data, as its semantics are language-dependent.
+%
+Instead, the program data is implictly encoded and distributed across the low-level states on the path and manipulated by the interpreter.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
