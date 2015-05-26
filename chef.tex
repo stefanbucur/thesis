@@ -327,62 +327,6 @@ The precise state model is more appropriate for directed test case generation an
 %
 The high-level strategy works with the low-level strategy to focus the exploration on particular high-level paths.  At the same time, the decoupling between the two strategies opens up optimization opportunities at the low-level, such as state merging, which increases the efficiency of exhaustive testing.
 
-\iffalse
-\section{Search Strategies in \chef}
-
-Recall that the main goal of \chef was to prioritize the right low-level execution paths in the interpreter that maximize a high-level goal.
-
-Partial and complete high-level state models lend themselves to different approaches.
-
-As partial states do not offer a view into the available high-level states, the low-level strategy takes neutral decisions.
-%
-\chef uses CUPA (...)
-
-In the complete state model, the state selection happens in two stages: a high-level strategy decides the next high-level state to prioritize, then the low-level strategy picks an appropriate low-level state for that.
-
-
-\section{The Role of the Language Interpreter in Providing Semantics}
-
-The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
-
-Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
-
-The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
-
-\subsection{From Interpreted Programs to Machine Instructions}
-
-We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
-%
-The \chef engine receives the program, which is wrapped in a symbolic test that marks its input parameter \codebit{email} as symbolic.
-%
-\chef runs the program by invoking its interpreter inside the low-level symbolic execution engine, using a command line such as \codebit{./python program.py}.
-
-When the symbolic test marks the \codebit{email} parameter as symbolic, a \chef test library for Python marks the underlying bytes representation of the string using the primitives of the low-level engine.
-
-During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
-%
-The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
-
-Key to \chef's effectiveness is choosing the right low-level paths through the interpreter.
-%
-Consider again the example in Figure~\ref{fig:chef:running-example}....
-
-\fi
-
-%% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
-%% %
-%% The low-level program path is the sequence of machine instructions from the interpreter binary, including the code for internal bookkeeping (e.g., details of reference counting and garbage collection).
-
-%% In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting. \stefan{Maybe remove the reference to exponential growth, and give instead an example.}
-%% %
-%% To mitigate the path explosion along high-level paths, \chef employs state prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
-
-%% Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
-%% %
-%% For example, the interpreter may implement a branching statement in two distinct steps: a comparison and a conditional jump.  In Figure~\ref{fig:xxx}, three low-level paths fork within the single HLPC location for \codebit{email.find}.  The low-level paths remain on the same high-level path until reaching the branching HLPC, where they diverge into two distinct high-level paths.  The relevant alternate low-level states for covering the distinct high-level paths thus were located away from the location of the code interpreting the high-level control flow statement.
-%% %
-%% The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
-
 %% This limitation makes it more difficult to build analyses that read the program state, including search selection strategies, such as the coverage-optimized strategy in \klee~\cite{klee}.
 %% %
 %% However, the high-level state remains implicitly encoded in the low-level interpreter state and can be accessed by executing code in the target language, by the interpreter runtime.  Therefore, a possible workaround is to split the analysis in a language-independent part, running as part of Chef, and a language-dependent part, written in the target language and running as an interrupt in the interpreter context, whenever it is needed.
@@ -403,6 +347,26 @@ Consider again the example in Figure~\ref{fig:chef:running-example}....
 
 \section{Path Prioritization in The Interpreter}
 \label{sec:chef:strategies}
+
+%% An interpreted program conceptually executes both on a high level---the level of the target language---and a low level---the level of the interpreter.
+%% %
+%% The low-level program path is the sequence of machine instructions from the interpreter binary, including the code for internal bookkeeping (e.g., details of reference counting and garbage collection).
+
+%% In practice, the number of low-level paths mapping to the same high-level path can be very large.  Their number increases roughly exponentially with the number of internal interpreter branches occurring along the high-level path, caused by implementation details, such as garbage collection or reference counting. \stefan{Maybe remove the reference to exponential growth, and give instead an example.}
+%% %
+%% To mitigate the path explosion along high-level paths, \chef employs state prioritization heuristics, which are discussed in Section~\ref{sec:xxx}.
+
+%% Third, a high-level branch can occur \emph{at any point after} the low-level paths branches inside the interpreter.  This impacts the effectiveness of the heuristics aiming at discovering new high-level paths through the interpreter.
+%% %
+%% For example, the interpreter may implement a branching statement in two distinct steps: a comparison and a conditional jump.  In Figure~\ref{fig:xxx}, three low-level paths fork within the single HLPC location for \codebit{email.find}.  The low-level paths remain on the same high-level path until reaching the branching HLPC, where they diverge into two distinct high-level paths.  The relevant alternate low-level states for covering the distinct high-level paths thus were located away from the location of the code interpreting the high-level control flow statement.
+%% %
+%% The issue of pre-determining branches is present also when exploring regular code, but it is ubiquitous when exploring code on interpreters.
+
+Recall that the main goal of \chef was to prioritize the right low-level execution paths in the interpreter that maximize a high-level goal.
+
+Partial and complete high-level state models lend themselves to different approaches.
+
+In the complete state model, the state selection happens in two stages: a high-level strategy decides the next high-level state to prioritize, then the low-level strategy picks an appropriate low-level state for that.
 
 % Executing the interpreter naively won't be efficient.  A lot of the interpreter paths redundantly explore the same program paths.
 
@@ -468,8 +432,37 @@ Fork weight is computed by counting the number of consecutive forks at the same 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Interpreter Preparation}
+\section{Packaging the Interpreter for Symbolic Execution}
 \label{sec:chef:recipe}
+
+\section{The Role of the Language Interpreter in Providing Semantics}
+
+The input high-level program is bundled with the interpreter inside a virtual machine, and executed at the x86 level.
+
+Symbolic tests set up the program and inject symbolic inputs, which consist of high-level objects, such as strings and integers.
+
+The test library converts between the high-level objects and memory bytes, which is what the low-level engine understands.
+
+\subsection{From Interpreted Programs to Machine Instructions}
+
+We symbolically execute this program using a \chef engine obtained by plugging the reference CPython interpreter.
+%
+The \chef engine receives the program, which is wrapped in a symbolic test that marks its input parameter \codebit{email} as symbolic.
+%
+\chef runs the program by invoking its interpreter inside the low-level symbolic execution engine, using a command line such as \codebit{./python program.py}.
+
+When the symbolic test marks the \codebit{email} parameter as symbolic, a \chef test library for Python marks the underlying bytes representation of the string using the primitives of the low-level engine.
+
+During symbolic execution, the low-level engine generates test cases as concrete assignments to the memory bytes marked as symbolic.
+%
+The \chef test library takes care of translating the concrete bytes back to string objects reported as test cases to the developer.
+
+Key to \chef's effectiveness is choosing the right low-level paths through the interpreter.
+%
+Consider again the example in Figure~\ref{fig:chef:running-example}....
+
+\subsection{The Symbolic Test Library}
+
 
 To run an interpreter, \chef must be able to obtain the stream of high-level program counters (HLPCs) for each execution path.  For most interpreters of popular languages, \chef can perform this task fully automatically (Section~\ref{sec:chef:hlcf}), while providing a guest API for manual interpreter instrumentation as a fallback.
 
@@ -477,11 +470,16 @@ An optional step is to optimize the interpreter for symbolic execution (Section~
 
 Finally, we discuss the remaining work of building a language-specific testing API to the resulting engine (Section~\ref{sec:chef:testingAPI}).
 
+\subsection{Testing API}
+\label{sec:chef:testingAPI}
+
+Programs to be tested can be fed symbolic inputs by marking input buffers with \codebit{make\_symbolic} and defining conditions over the input with the \codebit{assume} call, in accordance to the test specification.  Note that the buffer is a memory region of concrete bounds.  It is the job of the symbolic test library in the interpreter VM to convert from the language data structures (e.g., strings, integers) to the memory locations used to store the data in the interpreter implementation.
+
 
 \subsection{Automated High-level Control Flow Detection in Interpreters}
 \label{sec:chef:hlcf}
 
-In Section~\ref{sec:xxx}, we defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
+We defined a high-level path as a sequence of statements identified by high-level program counters (HLPCs).  In this section, we present the concrete semantics of the HLPC and how \chef obtains it automatically from a running interpreter.
 
 \begin{table}
 \centering
@@ -604,7 +602,7 @@ In particular, interpreters perform little or no optimization on the bytecode.
 
 \paragraph{Manually Annotating the High-level Program Counter}
 
-When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information (Figure~\ref{fig:xxx}).
+When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information.
 
 \subsection{Interpreter Optimizations}
 \label{sec:chef:optimzeforsymbex}
@@ -647,12 +645,6 @@ Second, \emph{caching and ``interning'' can be eliminated}.  Caching computed re
 A common way to speed-up the native performance of a function is to handle different classes of inputs using faster specialized implementations (``fast paths'').  For example, a string comparison automatically returns false if the two strings have different lengths, without resorting to byte-wise comparison.
 
 Fast paths may hurt symbolic execution because they cause symbolic branches in the code checking for the special input conditions.  \emph{Eliminating short-circuited returns} can reduce path explosion.  Instead of returning to the caller as soon as it produced an answer, the function continues running and stops on an input-independent condition.  For example, when comparing two strings of concrete length, a byte-wise string comparison would then traverse the entire string buffers in a single execution path, instead of returning after the first difference found.
-
-\subsection{Testing API}
-\label{sec:chef:testingAPI}
-
-Programs to be tested can be fed symbolic inputs by marking input buffers with \codebit{make\_symbolic} and defining conditions over the input with the \codebit{assume} call, in accordance to the test specification.  Note that the buffer is a memory region of concrete bounds.  It is the job of the symbolic test library in the interpreter VM to convert from the language data structures (e.g., strings, integers) to the memory locations used to store the data in the interpreter implementation.
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -739,22 +731,6 @@ The resulting engine can be used like a hand-written one, in particular for test
 \chef is built on top of the S2E analysis platform~\cite{s2eSystem}. S2E symbolically executes a virtual machine containing the interpreter and a testing library at the level of machine code,  including the OS kernel, drivers, and user programs.  S2E provides an API that guest code can use to declare memory buffers as symbolic. Comparisons on symbolic values cause S2E to fork new paths, which are enqueued and explored following a search strategy.
 %
 \chef extends the S2E guest API with a high-level instruction instrumentation call (Section~\ref{sec:chef:exposehlpc}), invoked by interpreters to trace the currently executing high-level path.  The explored high-level paths are used to construct a high-level execution tree and a low-level to high-level mapping (i.e., the data structure shown in Figure~\ref{fig:hl-symbex}).  \chef uses a state selection strategy to maximize the ratio of high-level to low-level paths (Section~\ref{sec:chef:cupa}).
-
-The resulting engine is a correct symbolic execution engine for the target language \textit{as defined by the interpreter}. It is fully precise and theoretically complete, i.e., it will not explore infeasible paths and will eventually explore all paths. The usual limitations of symbolic execution engines apply: completeness holds only under the assumption that the constraint solver can reason about all generated path conditions, and it is understood that exhaustive exploration is usually impossible in finite time.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Exposing the High-level Program Location}
-\label{sec:chef:exposehlpc}
-
-To reconstruct the high-level program paths and CFG, \chef needs to identify the high-level instructions executed on each low-level path.  \chef provides the \codebit{log\_pc(pc, opcode)} API call to the interpreter, which declares the current high-level program location and the type (opcode) of the next instruction.  A high-level instruction is executed in between two consecutive \codebit{log\_pc} calls.
-%
-Interpreters typically contain a main interpretation loop that \codebit{switch}-es over the type of the current instruction and invokes specific handlers.  The \codebit{log\_pc} call can be added conveniently at the head of the interpreter loop.
-
-In our design, we make minimal assumptions about the language structure, so the \hlpc and opcode values are opaque; the \cupa strategies were designed accordingly.  Nonetheless, more specific versions of the system could add structure to the two values, e.g. provide a pair of function name and offset as \hlpc.  The additional information can be used by \chef to improve the exploration heuristics (e.g., by creating a \cupa class).
-
-The granularity of \codebit{log\_pc} calls depends on the language structure.  \chef's correctness does not depend on the specific instrumentation pattern, but the more closely the reported \hlpc corresponds to statements in the target program, the more accurately \cupa can cluster states. In the extreme, if \codebit{log\_pc} is never invoked, \chef would see the entire program as a single high-level instruction and lose the advantage of \cupa clustering for \hlpcs.
-
 \fi
 
 %%% Local Variables: 
