@@ -138,7 +138,7 @@ This results in a high-level symbolic execution tree that ``envelops'' the low-l
 The expansion of the high-level tree is governed by the high-level strategy.
 %
 The strategy expects a set of high-level states to choose from, as per the general contract of the strategy interface.  There is one high-level state per path, reflecting the progress of the execution on that path.
-
+%
 However, it is the \emph{low-level} execution states that determine the high-level paths, as previously explained.
 %
 Moreover, there could be \emph{several} low-level states on the path.
@@ -148,6 +148,16 @@ Intuitively, each low-level state executes a ``slice'' of the entire high-level 
 To adapt between the two interface levels, \chef introduces the notion of \emph{abstract high-level state}.
 %
 Each high-level path has exactly one abstract high-level state, which resides at a HLPC location on the path.
+%
+When a new high-level path branches, its abstract high-level state starts at the beginning of the path.
+%
+The state subsequently advances to the next HLPC when it is selected for execution, and it is terminated when it reaches the end of the path.
+
+
+An abstract high-level state may only advance to the next HLPC when the underlying low-level states on the path have executed enough of the program statement.
+%
+\chef provides two policies that govern this relationship, called \emph{state completeness models}.  They are discussed in detail in the next section.
+
 
 By using abstract high-level states, the selection of low-level states becomes a two-stage process, as shown in the architecture diagram (Figure~\ref{fig:chef:arch}).
 %
@@ -155,11 +165,15 @@ First, the low-level engine reports its execution states to an \emph{adapter} co
 %
 The state adapter reports the abstract high-level states to the high-level strategy, which decides the next high-level state---and therefore path---to explore.
 %
-Finally, the high-level strategy communicates its choice to the low-level strategy, which takes it into account when selecting the next state for the low-level engine.
+If the state completeness model allows the state to advance on the path, the state adapter updates the HLPC directly.
+%
+If not, the high-level strategy communicates its choice to the low-level strategy, which selects a low-level state on the path that helps unblock the abstract high-level state.
 
-This state selection process hides the low-level symbolic execution engine from the outer interface, hence preserving the high-level abstractions.
 
-The abstract high-level states only contain the current HLPC and, optionally, a path condition.
+This state selection process both (a) provides an adapter mechanism for selecting \emph{low-level} interpreter states for execution based on a \emph{high-level} strategy, and (b) still preseves the high-level abstractions by hiding the interpreter and its states.
+
+
+The abstract high-level states only contain the current HLPC and a path condition.
 %
 Unlike the low-level states, they do not include program data, as its semantics are language-dependent.
 %
@@ -167,22 +181,14 @@ Instead, the program data is implictly encoded and distributed across the low-le
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Trading Precision and Efficiency with State Completeness Models}
+\section{Trading Precision for Efficiency with State Completeness Models}
+\label{sec:chef:completeness-models}
 
-The high-level states advance in the symbolic execution tree according to the high-level execution strategy.
+The state adapter uses the state completeness model to determine whether an abstract high-level state can be advanced to the next HLPC on its path.
 %
-The relationship between them and the low-level execution states on each high-level path is governed by the state adapter.
-
-To this end, the state adapter models the high-level states progress rules in two ways: either \emph{partially} or \emph{complete}.
+\chef provides two completeness models: \emph{partial} and \emph{complete}.
 %
-The two modes provide trade-offs between the precision of controlling the high-level execution and performance.
-
-We divide a high-level execution path in three segments, according to the position of the low-level states on it:
-\begin{itemize}
-\item The \emph{complete} segment was traversed by all low-level states on the path.
-\item The \emph{partial} segment follows the complete segment, and includes the HLPCs traversed by at least one low-level state, but not all.
-\item The \emph{unexplored} segment was not yet traversed by any low-level state.  Since this part is not known a priori, the state adapter does not keep track of it.
-\end{itemize}
+The two models provide different trade-offs between the precision of controlling the high-level execution and the expected path throughput in the high-level symbolic execution engine.
 
 \begin{figure}
   \centering
@@ -191,10 +197,41 @@ We divide a high-level execution path in three segments, according to the positi
   \label{fig:chef:path-segments}
 \end{figure}
 
+Before we present the two models, we introduce the notion of \emph{local path condition} and \emph{path segments} (Figure~\ref{fig:chef:path-segments}).
 
-Each HLPC location on a high-level execution path transitions from undiscovered, to partial, and then to complete.
+\paragraph{Local Path Condition}
+
+We define the local path condition of a high-level path at a given HLPC location as the disjunction of the path conditions of all low-level states that traversed the HLPC location, \emph{at the moment the interpreter started executing the statement at the given HLPC}.
 %
-In case a high-level path consists of a single low-level path, the transition goes from undiscovered to complete and the partial segment is empty.
+Each statement on the high-level path has a local path condition.
+
+The local path condition of a HLPC location is \emph{complete} if all low-level states on the path are located after the statement.
+%
+This means that there is no further interpreter execution that would reach the HLPC location.
+%
+Hence, a complete local path condition describes \emph{all} inputs that take the program along the given high-level path.
+
+Converseley, if there exist low-level states that are located before the HLPC location on the path, its local path condition is \emph{partial}.
+%
+The local path condition shown in Figure~\ref{fig:chef:path-segments} is partial, because there are three states before it.
+%
+Any of them could reach the program at that location and augment the possible program executions on the path.
+
+\paragraph{Path Segments}
+
+We divide a high-level execution path in two segments, according to the completeness of the local path conditions of its HLPC locations:
+\begin{itemize}
+\item The \emph{complete segment} consists of all locations traversed by all low-level states on the path.
+%
+The segment starts at the beginning of the path and ends at the HLPC of the least advanced low-level state on the path (the green block in Figure~\ref{fig:chef:path-segments}).
+\item The \emph{partial segment} consists of the rest of the path, which contains the locations traversed by at least one, but not all, low-level states on the path.
+%
+The segment starts with the least advanced low-level state on the path and ends at the leading state on the path.  Figure~\ref{fig:chef:path-segments} shows the partial segment in nuances of gray, according to the degree of local path completeness.
+\end{itemize}
+
+Each HLPC location on the high-levle path transitions from partial to complete.
+%
+In case a high-level path consists of a single low-level path, the transition goes directly to complete and the partial segment is empty.
 
 For each HLPC on the high-level path, we also define the local path condition as the disjunction of the path conditions of all low-level states at the moment they started executing the HLPC.
 
