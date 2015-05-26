@@ -48,7 +48,7 @@ The symbolic test library provides the developer interface for writing symbolic 
 %
 In addition, it translates the requests for marking language values as symbolic into the \chef API primitives for marking memory buffers as symbolic (the \codebit{make\_symbolic} call, together with the \codebit{assume} call for defining conditions over the input).
 %
-For example, when a symbolic test requests a 10-character symbolic string, the symbolic test library creates a concrete 10-character string object, then it finds its buffer address in the internal representation and marks it as symbolic.
+For example, when a symbolic test requests a 10-character symbolic string, the symbolic test library creates a concrete 10-character string object, then it finds its buffer address in the internal representation and marks the buffer as symbolic.
 %
 As a result, the symbolic test library is typically implemented as a native extension module, so it gains access to the internal data structures of the interpreter.
 
@@ -172,7 +172,7 @@ When the interpreter structure diverges from our assumptions, \chef provides a f
 
 In order to maximize performance, interpreters make heavy use of special cases and sophisticated data structures.  Unfortunately, these features hurt the performance of symbolic execution by amplifying path explosion and increasing the complexity of symbolic formulas~\cite{overify}.
 
-We identify a number of optimizations that preserve the interpretation semantics but significantly improve symbolic execution performance.  The optimizations use the \chef API in the last block of rows in Table~\ref{tab:api}.
+We identify a number of optimizations that preserve the interpretation semantics but significantly improve symbolic execution performance.  The optimizations use the \chef API in the last block of rows in Table~\ref{tab:chef:api}.
 
 \paragraph{Neutralizing Hash Functions}
 
