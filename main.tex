@@ -98,37 +98,7 @@
 
 \maketitle
 
-\chapter*{Abstract (German)}
-
-Testen von Software ist aufwändig, zeitintensiv, und fehleranfällig. Symbolische Ausführung von Software ist eine vielversprechende Technik zum automatischen Erstellen von Testfällen. In der Praxis limitiert jedoch das Umgebungsproblem die Skalierbarkeit von symbolischer Ausführung: Software ist auf komplexe Schnittstellen zu ihrer Umgebung angewiesen, und die symbolische Ausführungsplattform sollte diese Schnittstellen bereitstellen. Es ist schwierig, das Umgebungsproblem ein für alle mal zu lösen, denn seine Natur hängt von der gegebenen Schnittstelle und ihrer Implementierung ab.
-
-Diese Doktorarbeit behandelt zwei Fälle des Umgebungsproblems, welche zusammen ein breites Spektrum von praxisrelevanter Software abdecken: (1) Systemprogramme, welche mit dem Betriebssystem interagieren, und (2) Programme, welche in höheren, dynamischen Sprachen wie Python, Ruby oder JavaScript geschrieben sind. Diese beiden Fälle haben entgegengesetzte Eigenschaften: Betriebssystemschnittstellen sind typischerweise stabil und gut dokumentiert (z.B. POSIX); demgegenüber sind die Spezifikationen von dynamischen Sprachen partiell und unbeständig.
-
-Um das Umgebungsproblem im Fall von stabilen Betriebssystemschnittstellen zu lösen, stellt diese Doktorarbeit \emph{\cnine} vor: eine Plattform zur symbolischen Ausführung mit einem genauen und effizienten Modell der POSIX Schnittstellen, wie sie von Systemprogrammen, Webservern und verteilten Systemen benutzt werden. \cnine beruht auf der Erkenntnis, dass die Betriebssystemschnittstelle zu Testzwecken durch ein Modell ersetzt werden kann, welches innerhalb der Testumgebung läuft und auf wenigen grundlegenden Abstraktionen aufbaut: Threads und Prozesse, Synchronisation und Adressräume mit gemeinsam genutztem Speicher. Diese Abstraktionen müssen als primitive Operationen von der symbolischen Ausführungsplattform bereitgestellt werden, während die restlichen Teile des Modells innerhalb der Testumgebung emuliert werden können.
-
-Für den Fall der partiellen und unbeständigen Spezifikationen von dynamischen Sprachen stellt diese Arbeit \emph{\chef} vor. \chef erstellt symbolische Ausführungsplattformen für dynamische Sprachen, indem es deren Interpreter als ausführbare Spezifikation verwendet. \chef führt das zu testende Programm gemeinsam mit dem Interpreter auf maschinennaher Ebene (z.B. x86) symbolisch aus, so dass das Gesamtsystem zu einer symbolischen Ausführungsplattform auf höherer Ebene wird. \chef reduziert die Komplexität dieses Ansatzes mittels klassen-uniformer Pfadanalyse (class-uniform path analysis, CUPA), einer Heuristik zur Priorisierung von Pfaden. CUPA gruppiert Pfade in Äquivalenzklassen basierend auf Zielvorgaben der Analyse. 
-
-\noindent \textbf{Keywords:} Symbolische Ausführung, Programmumgebungen, Systemsoftware, interpretierte Programmiersprachen.
-
-\chapter*{Abstract}
-
-Software testing is laborious, time-consuming, and prone to human error.  Symbolic execution is a promising technique for automating test case generation.  However, its scalability to real-world software is limited by the \emph{environment problem}, i.e., the reliance of the target program on external functionality provided through complex interfaces, which the symbolic execution engine ought to support.
-%
-The environment problem is challenging to attack systematically, as its manifestations depend on the nature of the environment interface and its implementation.
-
-This thesis addresses two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
-
-To address the environment problem for stable operating system interfaces, this thesis introduces \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
-%
-\cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
-
-For incomplete and unstable dynamic language semantics, this thesis introduces \emph{\chef}, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In \chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
-%
-%% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
-%
-To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduces Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
-
-\noindent \textbf{Keywords:} Symbolic execution, program environments, systems software, interpreted languages.
+\input{abstract}
 
 
 \chapter*{Acknowledgments}
