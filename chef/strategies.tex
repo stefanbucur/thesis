@@ -32,7 +32,7 @@ In the complete state model, the state selection happens in two stages: a high-l
 % Complete states have a high-level strategy.  This one can influence a lower-level strategy (tactic) optimized for reaching the goal of the high-level strategy.
 \fi
 
-\subsection{Class-Uniform Path Analysis}
+\subsection{Class-Uniform Path Analysis (CUPA)}
 
 Consider using symbolic execution for achieving statement coverage on a program containing a function with an input-dependent loop.  At each iteration, the loop forks one additional state (or exponentially many in the number of iterations, if there are branches in the loop). A strategy that selects states to explore uniformly is therefore biased toward selecting more states from this function, at the expense of states in other functions that fork less but contribute equally to the statement coverage goal.
 

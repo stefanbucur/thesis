@@ -195,7 +195,7 @@ Second, a symbolic test case explores conditions that are hard to produce reliab
 %
 Furthermore, symbolic test suites can easily cover unknown corner cases, as well as new, untested functionality.  In this section, we present the API for symbolic tests and illustrate it with a use case.
 
-\subsection{Testing Platform API}
+\subsection{Testing Platform Interface}
 
 The \cnine symbolic testing API (Tables~\ref{table:globalapi} and~\ref{table:ioctlapi}) allows tests to programmatically control events in the environment of the program under test.
 %
@@ -277,7 +277,7 @@ Most programs can tolerate such failed calls, but even high-quality production s
 Currently, \cnine supports a round-robin scheduler and two schedulers specialized for bug finding: a variant of the iterative context bounding scheduling algorithm~\cite{chess} and an exhaustive exploration of all possible scheduling decisions.  
 
 
-\subsection{Use Case}
+\subsection{Usage Example: Testing Custom Header Handling in Web Server}
 
 Consider a scenario in which we want to test the support for a new \codebit{X-NewExtension} HTTP header, just added to a web server.
 %
