@@ -113,7 +113,9 @@ The two properties make symbolic execution highly effective at automatically gen
 
 Alas, symbolic execution is challenging to apply to non-trivial software.  The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops further amplifying the problem.  Even for moderately sized programs with hundreds of branches, the size of the execution tree becomes too large to be completely covered in a reasonable amount of time.
 %
-This is commonly known as the ``path explosion'' problem and, in practice, symbolic execution engines resort to prioritizing paths within a given time budget, guided by a pluggable component in the engine called a \emph{search strategy}.
+This is commonly known as the ``path explosion'' problem~\cite{burnim2008heuristics,klee,godefroid:compdyntest,rwset,state-merging}.
+%
+In practice, given a limited time budget, most symbolic execution engines resort to prioritizing paths guided by a pluggable engine component called a \emph{search strategy}~\cite{burnim2008heuristics,hct,dart,klee,godefroid:fuzz}.
 
 
 \subsection{The Environment Problem in Symbolic Execution}
