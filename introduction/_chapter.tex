@@ -1,0 +1,28 @@
+\section{Problem Definition}
+\input{introduction/problem}
+
+\section{Solution Overview: A Tailored Approach to The Environment Problem}
+\input{introduction/solution}
+
+\section{Thesis Roadmap}
+
+The rest of the thesis presents in detail the design, implementation, and evaluation of the two approaches to the environment problem.
+
+Chapter~\ref{ch:relatedwork} provides more background on symbolic execution and the environment problem, by surveying the related work and positioning our contributions with respect to it.
+
+Chapter~\ref{ch:cloud9} expands on the idea of modeling the operating system interface.  It presents the core abstractions that are built into the symbolic execution engine, then elaborates on the specifics of modeling the POSIX interface on top of them.
+
+Chapter~\ref{ch:chef} presents the approach of using interpreters as executable language specifications.  It presents an overview of the Chef system, then it goes into the details of converting between the low-level symbolic execution of the interpreter and the high-level program execution.
+
+Chapter~\ref{ch:evaluation} provides the experimental evaluation of the two systems we built, along two main dimensions: the effectiveness in generating test suites and finding bugs, and the scalability to real-world software.
+
+Chapter~\ref{ch:paas} presents the ongoing work and longer-term vision of building a cloud-based testing service for cloud applications based on the techniques introduced in this thesis.
+
+Chapter~\ref{ch:conclusion} ends the thesis with conclusions.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
