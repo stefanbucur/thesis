@@ -10,7 +10,7 @@ While both interfaces provide deep abstractions and strong encapsulation, they e
 
 On the one hand, an operating system interface is stable and well documented.
 %
-Moreover, while the interface consist of hundreds of system calls, their usage follows a power-law distribution, such that most software only uses a small fraction of them.
+Moreover, while the interface consist of hundreds of system calls, they operate with simple data types---integers and memory buffers---and their usage follows a power-law distribution, such that most software only uses a small fraction of them.
 
 On the other hand, the interface of a dynamic language runtime is only partially specified and the specification changes frequently.
 %
@@ -21,15 +21,17 @@ These functions are not implemented in the language itself, but are part of the 
 
 \subsection{Symbolic Models for a Stable Operating System Interface}
 
-To address the environment problem for stable operating system interfaces, this thesis introduces \cnine, a symbolic execution platform with an accurate and efficient operating system model, as used by systems such as system utilities, web servers, or distributed systems.
-
-\cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory.
+To address the environment problem for operating system interfaces, this thesis introduces the idea of using a split environment model:
 %
-These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code, by substituting the standard C library used by the target programs.
+a core set of operating system primitives is built into the symbolic execution engine and the full operating system interface is emulated on top, as guest code.
 
-We prototyped \cnine for system code that uses the standard POSIX interface.  \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other miscellaneous functions.
+Our insight is that as few as \emph{three} primitives are sufficient to support complex operating system interfaces such as POSIX: threads and processes, synchronization, and address spaces with shared memory.
 %
-By using these models as substitutes for the complex kernel implementations, \cnine is the first to efficiently target complex system utilities such as \textsf{curl}, web servers such as Apache and lighttpd, or other networked services, such as memcached.
+This results in a substantially simpler implementation in the symbolic execution engine, with opportunities of reusing existing symbolic execution primitives.
+
+We prototyped our design in the \emph{\cnine} symbolic execution platform for POSIX programs.  In under 7 KLOC, \cnine provides accurate and efficient models for files, network sockets, threads, processes, synchronization, IPC, signals, and other functions.
+%
+We used \cnine to test complex system utilities such as \textsf{curl}, web servers such as Apache and lighttpd, and other networked services, such as memcached.
 %
 As a result, \cnine uncovered new bugs, including a security vulnerability in memcached, and generated high-coverage test suites.
 
