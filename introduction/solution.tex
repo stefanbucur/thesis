@@ -38,17 +38,21 @@ As a result, \cnine uncovered new bugs, including a security vulnerability in me
 
 \subsection{Using Interpreters as Specifications for Fast-changing Languages}
 
-For programs written in high-level dynamic languages, such as Python, Ruby, or JavaScript, the environment problem lends itself to a different approach.
+For programs written in high-level dynamic languages, such as Python, Ruby, or JavaScript, writing a complete and accurate model is a significant engineering effort.
 %
-Building a symbolic execution engine by hand for these languages is a significant engineering undertaking.  The language semantics are complex, loosely specified, and change frequently.  Moreover, they rely heavily on built-in functionality that ought to be modeled in the symbolic execution engine.
+The language semantics are complex, partially specified, and change frequently.  Moreover, they rely heavily on functionality built into their runtime, so a symbolic execution engine ought to model it from scratch.
 
-This thesis introduces the idea of using the language interpreter---the de facto standard of the language semantics---as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it executes the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
+This thesis introduces the idea of using the language interpreter---the de facto standard of the language semantics---as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it interprets the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
 
-To map the low-level interpreter paths to high-level program paths, we partition the interpreter paths into chunks, one for each high-level instruction executed on the path. Then, the low-level paths with the same sequence of high-level instructions map to the same high-level path.
-
-To circumvent the path explosion arising in the interpreter, we introduce Class-uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
+\chef automatically converts between the symbolic execution tree of the interpreter and that of the target program.
 %
-CUPA works by grouping paths into equivalence classes, according to a coverage goal.  The prioritization is done by uniformly choosing groups instead of paths.  As a result, any path selection bias introduced by program locations with higher path explosion is contained within one equivalence class.
+It does so by partitioning the interpreter paths into segments corresponding to the program statements executed on the path.  The interpreter paths with the same sequences of statements map to the same program path.
+
+Interpreters of popular dynamic languages, such as Python and JavaScript, have large implementations, ranging up to hundreds of thousands of lines of code.
+%
+To circumvent the path explosion arising by executing them directly, we introduce Class-Uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
+%
+CUPA works by grouping paths into equivalence classes, according to a coverage goal.  The prioritization is done by uniformly choosing groups instead of paths.  Any path selection bias introduced by program locations with higher path explosion is contained within one equivalence class, with the net result that the execution of paths in the interpreter is distributed more uniformly.
 
 We prototyped these ideas in the \chef symbolic execution platform for interpreted languages.  With \chef, we obtained engines for Python and Lua, which generated test suites and found bugs in popular library packages.
 
