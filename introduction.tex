@@ -9,18 +9,18 @@ Ideally, software would be written correctly by construction.  This was the way 
 However, the decades of software development experience that followed have painted a different picture.  As it turns out, the software complexity---up to hundreds of millions of lines of code---and rapid pace of feature development have precluded a formal, rigorous approach.
 %
 With the exception of a few safety-critical segments, such as avionics~\cite{Astree}, automotive~\cite{automotive}, or medical equipment, most of the software industry today relies on \emph{testing} for its quality assurance~\cite{softwareMetrics}.
-%
-In this thesis, we refer to such software as \emph{real-world software}, which we define more precisely as follows.
+%% %
+%% In this thesis, we refer to such software as \emph{real-world software}, which we define more precisely as follows.
 
-\medskip
+%% \medskip
 
-\textbf{Definition:} We define \emph{real-world software} to be commodity software developed in industry in the form of products (e.g., browsers or CAD tools), services (e.g., web search or web-based email), building blocks (e.g., libraries), and developer support tools (compilers, benchmarks, etc.).
-%
-The development of real-world software is primarily governed by market and logistic constraints, such as budgets, shipping deadlines, and competition on features.
-%
-In this respect, real-world software distinguishes itself from safety-critical software developed in the automotive, avionics, or space industry.
+%% \textbf{Definition:} We define \emph{real-world software} to be commodity software developed in industry in the form of products (e.g., browsers or CAD tools), services (e.g., web search or web-based email), building blocks (e.g., libraries), and developer support tools (compilers, benchmarks, etc.).
+%% %
+%% The development of real-world software is primarily governed by market and logistic constraints, such as budgets, shipping deadlines, and competition on features.
+%% %
+%% In this respect, real-world software distinguishes itself from safety-critical software developed in the automotive, avionics, or space industry.
 
-\medskip
+%% \medskip
 
 Testing a program consists of exercising multiple different paths through it and checking whether ``they do the right thing.''
 %
@@ -132,21 +132,37 @@ In practice, given a limited time budget, most symbolic execution engines resort
 
 \subsection{The Environment Problem in Symbolic Execution}
 
-The existing path explosion mitigation techniques are not sufficient for real-world software of thousands and even millions of lines of code, given the sheer size of the symbolic execution tree.
-%
-For instance, consider a small system utility that prints on the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen.
-%
-Testing just the utility code still involves executing tens of thousands of lines of kernel and library code.
+The environment problem in symbolic execution is closely related to the notion of \emph{real-world} software, which we define first below.
 
-We call this the ``environment problem'': to execute a program that relies on external functionality---its environment---the symbolic execution engine needs to efficiently support the environment interface.
-%
-At the same time, any technique used to reduce the time spent in the environment should keep the execution of the utility sound and avoid missing feasible paths.
-%
-The environment problem is the main scalability issue of applying symbolic execution on real-world software.
+\begin{framed}
+  In this thesis, we define \textbf{real-world software} as programs that use external functionality---e.g., libraries or the operating system---to perform their function.
+  %
+  We call this external functionality the \emph{environment} of the program, with which the program interacts through an environment \emph{interface}.
+\end{framed}
 
-One simple approach for dealing with the environment problem is to let the calls into the environment go through concretely.  For instance, the symbolic parameters of a system call could be forcefully assigned concrete values satisfying the path condition, before executing the system call.
+The size of the environment---code and state---is typically much larger than the size of the program itself.
 %
-However, this approach risks introducing inconsistencies in the execution and miss feasible paths in the target program itself.
+For instance, consider a 50 lines of code system utility that prints on the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen, implemented in tens of thousands of lines of kernel and library code.
+
+The environment interface is often stateful and its state is closely coupled with the program state.
+%
+In our example, the kernel keeps the open file and the terminal in a file table, and the program keeps file descriptors that index into the table.
+
+The existing path explosion mitigation techniques do not suffice for efficient symbolic execution of real-world software.
+%
+On the one hand, executing a real-world program soundly and completely involves running the program together with its environment.
+%
+On the other hand, the symbolic execution engine would get lost in the implementation details of the environment, and make little progress inside the target program.
+
+\begin{framed}
+  This defines the \textbf{environment problem} in symbolic execution: to execute a program that relies on its environment, the symbolic execution engine needs to \emph{efficiently} support the environment interface, while maintaining as much as possible soundness and completeness in the target program.
+  %
+  The environment problem is the main scalability issue of applying symbolic execution on real-world software.
+\end{framed}
+
+One simple approach for dealing with the environment problem is to let the calls into the environment go through concretely.
+%
+For instance, the symbolic parameters of a system call could be forcefully assigned concrete values satisfying the path condition, before executing the system call.  However, this approach risks introducing inconsistencies in the execution and miss feasible paths in the target program itself.
 %
 For example, if opening a file with a symbolic name would succeed or fail depending on whether the file exists or not, concretizing to an existing file name would cause the symbolic execution to miss the error handling path in the program.
 %
@@ -158,11 +174,11 @@ For this example, a possible approach to simplifying the environment, while main
 \begin{table}
   \centering
   \small
-  \begin{tabular}{r p{5cm} p{5cm}}
+  \begin{tabular}{r p{6cm} p{6cm}}
     
-    \textbf{Abstraction} & \cnineccolor Same-level & \chefccolor Nested \\
+    \textbf{Abstraction} & \cnineccolor Exposed & \chefccolor Hidden \\
     \hline
-    \bigskip Examples      & C program using a numerical library.    & Program written in a numerical computing language (e.g., Julia~\cite{julia-lang}). \\
+    \bigskip Examples      & Library of arbitrary-precision numbers exposed as buffers of digits to C programs.     & Native arbitrary-precision datatypes in dynamic languages (e.g., Python). \\
     
     \textbf{Encapsulation} & \chefccolor Weak & \cnineccolor Strong \\
     \hline
@@ -180,13 +196,18 @@ For this example, a possible approach to simplifying the environment, while main
 
 In general, systematically addressing the environment problem is challenging, as its manifestations depend on the nature of the environment interface and its implementation.
 
-To roughly structure the problem space, we classify in Table~\ref{tab:intro:env} the instances of the environment problem along three main axes of the environment interface: abstraction, encapsulation, and interface stability in time.
+To broadly structure the problem space, we classify in Table~\ref{tab:intro:env} the instances of the environment problem along three main axes of the environment interface: abstraction, encapsulation, and interface stability in time.
 %
-Abstraction and encapsulation are two essential principles in system design.  In particular, for program environments, abstraction refers to hiding the complexity of data representation and handling behind simpler concepts exposed to the program.  Encapsulation refers to restricting access to the environment state through narrow, well-defined interfaces.
+Abstraction and encapsulation are two essential principles in system design.  For environments, abstraction refers to hiding the environment state behind simpler entities.
 %
-Finally, interface stability refers to the degree of churn in the interface specification.  For instance, well-documented and standardized interfaces tend to change less often.
+Encapsulation refers to restricting access to the environment state through narrow, well-defined interfaces.
+%
+Finally, interface stability refers to the frequency of changes in the interface specification.  For instance, well-documented and standardized interfaces tend to change less often.
 
-Table~\ref{tab:intro:env} illustrates with examples the different levels of abstraction, encapsulation, and stability occurring in real-world situations.  For each example, a symbolic execution engine would need to approach the environment in fundamentally different ways.
+For each combination of the three axes, a symbolic execution engine needs to approach the environment problem in different ways.
+%
+To give a sense of the environment diversity, Table~\ref{tab;intro:env} provides concrete examples for each level of abstraction, encapsulation, and stability occurring in real-world software.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
