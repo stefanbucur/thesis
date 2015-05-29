@@ -47,7 +47,7 @@ These vulnerabilities are exploited to cause major disruptions~\cite{sony-hack} 
 
 %% Facing this situation, organizations recognize that software testing is cumbersome.  In a recent survey, more than two thirds of the organizations questioned admitted they have difficulties determining relevant tests for their software and pointed at the lack of adequate tools to support that.
 
-Alas, with a few exceptions---seL4~\cite{seL4}, a recent effort of formally verifying an operating system kernel---switching to a formal development model is not feasible for most of the software written today.
+Alas, with a few exceptions---e.g., seL4~\cite{seL4}, a recent effort of formally verifying an operating system kernel---switching to a formal development model is not feasible for most of the software written today.
 %
 Despite recent advancements in formal techniques and tools, which have brought down the cost of building formally-proven software, it still takes on the order of person-years to develop a few thousand lines of verified code~\cite{seL4}.
 %
@@ -174,15 +174,15 @@ For this example, a possible approach to simplifying the environment, while main
   \small
   \begin{tabular}{r p{6cm} p{6cm}}
     
-    \textbf{Abstraction} & \cnineccolor Exposed & \chefccolor Hidden \\
+    \textbf{Abstraction} & Shallow & Deep \\
     \hline
     \bigskip Examples      & Library of arbitrary-precision numbers exposed as buffers of digits to C programs.     & Native arbitrary-precision datatypes in dynamic languages (e.g., Python). \\
     
-    \textbf{Encapsulation} & \chefccolor Weak & \cnineccolor Strong \\
+    \textbf{Encapsulation} & Weak & Strong \\
     \hline
     \bigskip Examples      & Linux file system implemented as a kernel module.   & Linux file system implemented using the FUSE user-space interface. \\
     
-    \textbf{Stability}   & \cnineccolor Stable    & \chefccolor Frequently-changing \\
+    \textbf{Stability}   & Stable    & Frequently-changing \\
     \hline
         Examples          & A web application that uses a standard web interface, such as CGI.    & A web application that uses the fast-changing native API of its web server (e.g., Apache). \\
   \end{tabular}
@@ -204,7 +204,7 @@ Finally, interface stability refers to the frequency of changes in the interface
 
 For each combination of the three axes, a symbolic execution engine needs to approach the environment problem in different ways.
 %
-To give a sense of the environment diversity, Table~\ref{tab;intro:env} provides concrete examples for each level of abstraction, encapsulation, and stability occurring in real-world software.
+To give a sense of the environment diversity, Table~\ref{tab:intro:env} provides concrete examples for each level of abstraction, encapsulation, and stability occurring in real-world software.
 
 
 %%% Local Variables: 
