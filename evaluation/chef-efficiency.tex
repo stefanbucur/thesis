@@ -81,7 +81,7 @@ We grouped the supported language features into program state representation (th
 \newcommand{\partsupp}{\ensuremath{\LEFTcircle}}
 \newcommand{\unsupp}{\ensuremath{\Circle}}
 
-\begin{table}[tb]
+\begin{table}
 \centering
 \small
 \begin{tabular}{@{\hspace*{2pt}}l@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}} | @{\hspace*{2pt}}c@{\hspace*{2pt}}}
@@ -99,7 +99,7 @@ Data manipulation     & $\compsupp^{\hphantom{*}}$ & \partsupp  &  \partsupp & \
 Basic control flow    & $\compsupp^{\hphantom{*}}$ & \compsupp  &  \partsupp & \compsupp   \\
 Advanced control flow & $\compsupp^{\hphantom{*}}$ & \compsupp  &  \unsupp   & \compsupp   \\
 Native methods        & $\compsupp^{\hphantom{*}}$ & \partsupp  &  \unsupp   & \unsupp     \\
-\end{tabular}
+\end{tabular} \\
 \rule{0pt}{12pt}\compsupp Complete \hspace{12pt} \partsupp Partial \hspace{12pt} \unsupp Not supported
 \caption{Language feature support comparison for \chef and dedicated Python symbolic execution engines.  %% A full bullet means complete concrete and symbolic support for the feature available in the implementation.  A half-full bullet means a partial implementation, while an empty bullet means no support for the feature.
   Complete support with (*) refers to the internal program data flow and not to the initial symbolic variables.}

@@ -15,31 +15,29 @@ First, we measure how fast \cnine\ can exhaustively explore a fixed number of pa
 
 \begin{figure}
   \centering
-  \epsfig{file=evaluation/graphs/cloud9/scalab-time-vs-workers-edited.eps, width=2.9in}
+  \includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-time-vs-workers-edited}
   \caption{\cnine\ scalability in terms of the time it takes to exhaustively complete a symbolic test case for memcached.}
   \label{fig:scalab-time-vs-workers}
 \end{figure}
 
 \begin{figure}
-  \centering
-  \epsfig{file=evaluation/graphs/cloud9/scalab-time-vs-workers-cov-printf-edited.eps, width=2.9in}
-  \caption{\cnine\ scalability in terms of the time it takes to obtain a target coverage level when testing \codebit{printf}.}
-  \label{fig:scalab-time-vs-workers-cov}
+  \centering   \includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-time-vs-workers-cov-printf-edited}
+\caption{\cnine\ scalability in terms of the time it takes to obtain a target coverage level when testing \codebit{printf}.}
+\label{fig:scalab-time-vs-workers-cov}
 \end{figure}
 
 \begin{figure}
   \centering
-  \epsfig{file=evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-memcached-edited.eps, width=2.9in} \\
-  \epsfig{file=evaluation/graphs/cloud9/scalab-thr-cpu-perc-vs-workers-memcached-edited.eps, width=2.9in}
+  \includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-memcached-edited} \\ \includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-thr-cpu-perc-vs-workers-memcached-edited}
   \caption{\cnine\ scalability in terms of useful work done for four different running times when testing memcached.}
   \label{fig:scalab-memcached}
 \end{figure}
 
 \begin{figure}
   \centering
-  \epsfig{file=evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-edited.eps, width=2.9in} \\
-  \epsfig{file=evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-test-edited.eps, width=2.9in}
-  \caption{\cnine's useful work on \codebit{printf} (top) and \codebit{test} (bottom) increases roughly linearly in the size of the cluster.}  
+\includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-edited} \\
+\includegraphics[width=0.7\textwidth]{evaluation/graphs/cloud9/scalab-thr-cpu-vs-workers-test-edited}
+  \caption{\cnine's useful work on \codebit{printf} (top) and \codebit{test} (bottom) increases roughly linearly in the size of the cluster.}
   \label{fig:scalab}
 \end{figure}
 
