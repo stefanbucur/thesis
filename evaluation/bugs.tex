@@ -1,0 +1,136 @@
+In this section we present several case studies that illustrate how \cnine and \chef can explore and find new bugs. %% confirm/disprove that existing bugs have been correctly fixed, and regression-test a program after it has been modified.  In the common case, \cnine users start with a concrete test case (e.g., from an existing test suite) and generalize it by making data symbolic and by controlling the environment.
+
+%--------------------------------------------------
+\subsection{Case Study \#1: Curl}
+\label{sec:eval:curl}
+
+Curl is a popular data transfer tool for multiple network protocols, including HTTP and FTP.  When testing it, \cnine\ found a new bug which causes Curl to crash when given a URL regular expression of the form ``\codebit{http://site.\{one,two,three\}.com\{}''. \cnine exposed a general problem in Curl's handling of the case when braces used for regular expression globbing are not matched properly.  The bug was confirmed and fixed within 24 hours by the developers. 
+
+This problem had not been noticed before because the globbing functionality in Curl was shadowed by the same functionality in command-line interpreters (e.g., Bash).  This case study illustrates a situation that occurs often in practice: when a piece of software is used in a way that has not been tried before, it is likely to fail due to latent bugs.
+
+\subsection{Case Study \#2: Memcached}
+\label{sec:eval:memcached}
+
+Memcached is a distributed memory object cache system, mainly used to speed up web application access to persistent
+data, typically residing in a database. % Memcached is deployed at many large sites like Facebook, Twitter, and YouTube. 
+
+Memcached comes with an extensive test suite comprised of C and Perl code. Running it completely takes about 1 minute; it runs 6,472 different test cases  and explores $83.66\%$ of the code. While this is considered thorough by today's standards, two easy \cnine\ test cases further increased code coverage. Table~\ref{table:memcached} contains a summary of our results, presented in more details in the following paragraphs.
+
+
+\paragraph{Symbolic Packets}
+
+The memcached server accepts commands over the network. Based on memcached's C test suite, we wrote a test case that sends memcached a generic, symbolic binary command (i.e., command content is fully symbolic), followed by a second symbolic command. This test captures all operations that entail a pair of commands.
+
+A 24-worker \cnine\ explored in less than 1 hour all 74,503 paths associated with this sequence of two symbolic packets, covering an additional 1.13\% of the  code relative to the original test suite.  What we found most encouraging in this result is that such exhaustive tests constitute first steps toward using symbolic tests to \emph{prove} properties of real-world programs, not just to look for bugs.  Symbolic tests may provide an alternative to complex proof mechanisms that is more intuitive for developers and thus more practical.
+
+\paragraph{Symbolic Fault Injection}
+
+We also tested memcached with fault injection enabled, whereby we injected all feasible failures in memcached's calls to the C Standard Library.  After 10 minutes of testing, a 24-worker \cnine\ explored 312,465 paths, adding $1.28\%$ over the base test suite.  The fact that {\em line} coverage increased by so little, despite having covered almost $50\times$ more paths, illustrates the weakness of line coverage as a metric for test quality---high line coverage should offer no high confidence in the tested code's quality.
+
+For the fault injection experiment, we used a special strategy that sorts the execution states according to the number of faults recorded along their paths, and favors the states with fewer fault injection points. This led to a uniform injection of faults: we first injected one fault in every possible fault injection point along the original C test suite path, then injected pairs of faults, and so on.  We believe this is a practical approach to using fault injection as part of regular testing.
+
+\begin{table}
+\small
+\centering
+\addtolength{\tabcolsep}{-1.3pt}
+\begin{tabular}{| p{2.3cm} | r | c | c | }
+\hline
+{\bf Testing Method}   & {\bf Paths}~~       & {\bf Isolated}             & {\bf Cumulated}          \\ 
+                                & {\bf  Covered}  & {\bf Coverage$^{*}$} & {\bf Coverage$^{**}$}      \\
+\hline
+Entire test suite               & 6,472         & $83.67\%$        &---                   \\
+\hline
+\raggedright Binary protocol test suite      & 27            & $46.79\%$        & $84.33\%$ ($+0.67\%$) \\
+\hline
+Symbolic packets                & 74,503        & $35.99\%$        & $84.79\%$ ($+1.13\%$) \\
+\hline
+\raggedright Test suite + fault~injection    & 312,465       & $47.82\%$        & $84.94\%$ ($+1.28\%$) \\
+\hline
+\end{tabular}
+\caption{Path and code coverage increase obtained by each symbolic testing technique on memcached. We show total coverage obtained with each testing method (*), as well as total coverage obtained by augmenting the original test suite with the indicated method  (**); in parentheses, we show the increase over the entire test suite's coverage.}
+\label{table:memcached}
+% \vspace{-0.3cm}
+\end{table}
+
+\paragraph{Hang Detection}
+
+We tested memcached with symbolic UDP packets, and \cnine discovered a hang condition in the packet parsing code: 
+when a sequence of packet fragments of a certain size arrive at the server, memcached enters an infinite loop, which prevents it from serving any further UDP connections. This bug can seriously hurt the availability of infrastructures using memcached.
+
+We discovered the bug by limiting the maximum number of instructions executed per path to $5 \times 10^6$.  The paths without the bug terminated after executing $\approximately 3\times 10^5$ instructions; the other paths that hit the maximum pointed us to the bug.
+
+%--------------------------------------------------
+\subsection{Case Study \#3: Lighttpd}
+\label{sec:eval:lighttpd}
+
+
+The lighttpd web server is specifically engineered for high request throughput, and it is quite sensitive to the rate at which new data is read from a socket.  Alas, the POSIX specification offers no guarantee on the number of bytes that can be read from a file descriptor at a time.  lighttpd 1.4.12 has a bug in the command-processing code that causes the server to crash (and connected clients to hang indefinitely) depending on how the incoming stream of requests is fragmented. 
+
+We wrote a symbolic test case to exercise different \emph{stream fragmentation} patterns and see how different lighttpd versions behave. We constructed a simple HTTP request, which was then sent over the network to lighttpd. We activated network packet fragmentation via the symbolic \codebit{ioctl()}  API explained in Section~\ref{sec:cloud9:symtests}. We confirmed that certain fragmentation patterns cause lighttpd to crash (prior to the bug fix). However, we also tested the server right after the fix and discovered that the bug fix was incomplete, as some fragmentation patterns still cause a crash and hang the client (Table~\ref{table:lighttpd}).
+
+This case study shows that \cnine can find bugs caused by specific interactions with the environment which are hard to test with a concrete test suite. It also shows how \cnine can be used to write effective regression test suites---had a stream-fragmentation symbolic test been run after the fix, the lighttpd developers would have promptly discovered the incompleteness of their fix.
+
+\begin{table}
+\small
+\centering
+\begin{tabular}{| p{3.8cm} | p{1.65cm} | p{1.65cm} |}
+\hline
+\bf Fragmentation pattern & \bf ver. 1.4.12 & \bf ver. 1.4.13 \\
+\bf (data sizes in bytes) & \bf (pre-patch)     & \bf (post-patch)\\
+\hline
+$1 \times 28$ 			& 		OK		& OK \\
+\hline
+$1 \times 26 + 1 \times 2$  & crash + hang 	& OK \\
+\hline
+$2+5+1+5+2 \times 1 + 3 \times 2 + 5 + 2 \times 1 $	& crash + hang 	& crash + hang \\
+\hline
+\end{tabular}
+\caption{The behavior of different versions of lighttpd to three ways of fragmenting the HTTP request "GET /index.html HTTP/1.0\textsc{Cr}\textsc{Lf}\textsc{Cr}\textsc{Lf}" (string length 28).}
+\label{table:lighttpd}
+\end{table}
+
+\subsection{Case Study \#4: Bandicoot DBMS}
+\label{sec:eval:bandicoot}
+
+Bandicoot is a lightweight DBMS that can be accessed over an HTTP interface.  We exhaustively explored all paths handling the GET commands and found a bug in which Bandicoot reads from outside its allocated memory.  The particular test we ran fortuitously did not result in a crash, as Bandicoot ended up reading from the libc memory allocator's metadata preceding the allocated block of memory. However, besides the read data being wrong, this bug could cause a crash depending on where the memory block was allocated.
+
+To discover and diagnose this bug without \cnine is difficult. First, a concrete test case has little chance of triggering the bug.  Second, searching for the bug with a sequential symbolic execution tool seems impractical: the exhaustive exploration took 9 hours with a 4-worker \cnine (and less than 1 hour with a 24-worker cluster). 
+
+\subsection{Comparing \cnine to KLEE}
+
+\cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions. We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).  Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model allows \cnine to reach more paths and explore deeper portions of the tested program's code---this exposes additional potentially buggy situations. \cnine also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
+
+
+\subsection{Case Study \#5: Exploratory Bug Finding in Python and Lua Packages}
+\label{sec:eval:bug-explore}
+
+We now evaluate the effectiveness of the \chef-obtained symbolic execution engines for bug detection.
+
+The specifications we used for our experiments are application-agnostic and only check for per-path termination within a given time bound and for the absence of unrecoverable crashes.  The first specification checks whether a call into the runtime returns within 60 seconds.  In this way, we discovered a bug in the Lua JSON package that causes the parser to hang in an infinite loop: if the JSON string contains the \codebit{/*} or \codebit{//} strings marking the start of a comment but no matching \codebit{*/} or line terminator, the parser reaches the end of the string and continues spinning waiting for another token.
+%
+This bug is interesting for two reasons: First, comments are not part of the JSON standard, and the parser accepts them only for convenience, so this is a clear case of an interpreter-specific bug.  Second, JSON encodings are normally automatically generated and transmitted over the network, so they are unlikely to contain comments; traditional testing is thus likely to miss this problem. However, an attacker could launch a denial of service attack by sending a JSON object with a malformed comment.
+
+The second implicit specification checks that a program never terminates non-gracefully, i.e., the interpreter implementation or a native extension crashes without giving the program a chance to recover through the language exception mechanisms.  In our experiments, our test cases did not expose any such behavior.
+
+
+\subsection{Case Study \#6: Undocumented Exceptions in Python Packages}
+\label{sec:eval:undoc-except}
+
+This scenario focuses on finding undocumented exceptions in Python code.
+%
+Being memory-safe languages, crashes in Python and Lua code tend to be due to \emph{unhandled exceptions} rather than bad explicit pointers.  When such exceptions are not caught by the program, they propagate to the top of the stack and cause the program to be terminated prematurely. 
+%
+In dynamic languages, it is difficult to determine all the possible exceptions that a function can throw to the callee, because there is no language-enforced type-based API contract.  Users of an API can only rely on the documentation or an inspection of the implementation.  Therefore, undocumented exceptions are unlikely to be checked for in \codebit{try}-\codebit{except} constructs and can erroneously propagate further.
+%
+They can then hurt productivity (e.g., a script that crashes just as it was about to complete a multi-TB backup job) or disrupt service (e.g., result in an HTTP 500 Internal Server Error).
+
+We looked at all the Python exceptions triggered by the test cases generated using \chef and classified them into \emph{documented} and \emph{undocumented}.  The documented exceptions are either exceptions explicitly mentioned in the package documentation or common Python exceptions that are part of the standard library (e.g., \codebit{KeyError}, \codebit{ValueError}, \codebit{TypeError}).  Undocumented exceptions are all the rest.
+
+The sixth column in Table~\ref{tab:targets} summarizes our findings.  We found four undocumented exceptions in \codebit{xlrd}, the largest package.  These exceptions occur when parsing a Microsoft Excel file, and they are \codebit{BadZipfile}, \codebit{IndexError}, \codebit{error}, and \codebit{AssertionError}.  These errors occur inside the inner components of the Excel parser, and should have either been documented or, preferably, been caught by the parser and re-raised as the user-facing \codebit{XLRDError}.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
