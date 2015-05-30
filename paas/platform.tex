@@ -2,13 +2,11 @@ We deploy LSE inside a symbolic execution-aware virtual machine (the symbolic VM
 %
 The test-mode deployment then requires just the push of a button for the system to execute the layered parameterized tests, generate coverage statistics, and highlight any failing test cases.
 
-This deployment model leverages the properties of PaaS in several
-ways:
+This deployment model leverages the properties of PaaS in several ways:
 %
 (1)~By hiding the testing VMs behind a service interface, the PaaS system can faithfully reproduce the exact environment of production VMs inside the testing VMs without exposing its internals.
 %
-(2)~The testing task can be transparently scaled across multiple VMs
-by using parallel symbolic execution~\cite{cloud9}.
+(2)~The testing task can be transparently scaled across multiple VMs by using parallel symbolic execution~\cite{cloud9}.
 %
 (3)~Since the application uses standard interfaces for accessing the PaaS components (storage, networking, etc.), the provider is able to substitute production-optimized implementations with testing-optimized stubs that offer a simplified behavior that is better suited to automated program analysis.
 
@@ -23,11 +21,7 @@ From the perspective of the PaaS provider, the test runner service consists of a
   \label{fig:fse}
 \end{figure}
 
-Figure~\ref{fig:fse} illustrates the architecture of the symbolic VM
-environment.  Inside the VM~\cI, all application components are
-symbolically executed in the same low-level representation (e.g., x86
-machine code or LLVM~\cite{llvm}).  The components execute inside
-their own vanilla interpreters~\cII.  
+Figure~\ref{fig:fse} illustrates the architecture of the symbolic VM environment.  Inside the VM~\cI, all application components are symbolically executed in the same low-level representation (e.g., x86 machine code or LLVM~\cite{llvm}).  The components execute inside their own vanilla interpreters~\cII.
 %
 The test framework~\cIII plays two roles: it implements (1) the APIs for LPTs and onion objects that developers use to write the testing code, and (2) the LSE algorithm that guides the test case generation.
 

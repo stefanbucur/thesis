@@ -1,11 +1,26 @@
-In this chapter, we present our ongoing work of building a cloud-based distributed testing service for PaaS applications.  The foundation of the service is a parallelization algorithm for symbolic execution that is the first to demonstrate linear scalability up to hundreds of cluster nodes.
+In this chapter, we present our ongoing work on a cloud-based automated testing service for PaaS applications.
+%
+We first present the opportunities that computing clouds provide to developers, as well as the challenges they face to test and secure their applications (Section~\ref{sec:paas:opportunity}).
+%
+We then give an overview of the usage of our PaaS-based testing service (Section~\ref{sec:paas:abstractions}).
+%
+The foundation of our service is a parallelization algorithm for symbolic execution that is the first to demonstrate linear scalability up to hundreds of cluster nodes (Section~\ref{sec:paas:parsymbex}).
+%
+On top, we introduce layered symbolic execution for addressing path explosion in systems composed of several stacked layers, such as protocol stacks (Section~\ref{sec:paas:layeredsymbex}).
+%
+Finally, we show how all pieces fit together in our S2E-based platform (Section~\ref{sec:paas:fedsymbex}).
 
 \section{The Opportunity of the Cloud Application Model}
+\label{sec:paas:opportunity}
 \input{paas/opportunity}
 
 \section{A PaaS Test Interface}
 \label{sec:paas:abstractions}
 \input{paas/interface}
+
+\section{Parallel Symbolic Execution in Cloud9}
+\label{sec:paas:parsymbex}
+\input{paas/parsymbex}
 
 \section{Layered Symbolic Execution}
 \label{sec:paas:layeredsymbex}
@@ -15,9 +30,7 @@ In this chapter, we present our ongoing work of building a cloud-based distribut
 \label{sec:paas:fedsymbex}
 \input{paas/platform}
 
-\section{Parallel Symbolic Execution in Cloud9}
-\label{sec:paas:parsymbex}
-\input{paas/parsymbex}
+
 
 
 %%% Local Variables: 
