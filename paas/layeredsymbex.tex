@@ -1,0 +1,74 @@
+In this section, we introduce \emph{layered symbolic execution} (LSE), an LPT execution technique that focuses on covering a particular application layer.  LSE uses symbolic execution---a test case generation technique that observes the program structure---to generate inputs in the representation of the layer of interest (e.g., HTTP headers or a JSON payload).  Each generated layer-level input is then assembled back into application-level input based on the structure encoded in the onion object, in order to form an integration test case.
+
+Na\"ive application of dynamic test generation to execute the LPT for a cloud app is of little use: First, the path exploration can end up exploring many different paths within the framework code, but might test only a single path within the application layer over and over again. Second, the path conditions will encode many branches due to the multiple layers of parsing logic, making symbolic execution of cloud apps prohibitively expensive. Third, if the exploration is unaware of the connections between abstraction layers, blindly negating just single branch conditions will produce many infeasible paths before finding a new valid test input.
+
+\paragraph{LSE and Onion Objects}
+
+LSE relies on onion objects to mark input variables as symbolic and generate new values based on the alternate path conditions.  To this end, each onion object exposes a number of operations:
+
+\begin{itemize}
+\item \codebit{instrument(var)} instruments the variable \codebit{var}
+  for symbolic execution, i.e., injects a fresh symbolic input value
+  in dynamic test generation.  The variable is expected to match the
+  structure described by the onion object.
+%
+\item \codebit{reconstruct(var, val)} applies an assignment of value \codebit{val} to variable \codebit{var} that is demanded by the satisfying assignment representing a new path. In doing the assignment, the function performs the necessary modifications to other variables to respect the cross-layer invariants.
+%
+\item \codebit{getDefault()} returns a default value for the object node. It is used for generating the initial test case or any padding values required by invariants (e.g., changing the content length field of an HTTP request requires to extend the actual contents).
+\end{itemize}
+
+For example, applying the \codebit{instrument} method of a string onion object on a string variable in Python marks as symbolic the string length and the contents of the character buffer.  Then, during symbolic execution, the alternate path constraint yields new values for the length and for the buffer.  The \codebit{reconstruct} method takes both values and creates a new Python string object.
+
+The reconstruction method is essential for enforcing the object and cross-layer invariants of the input structure.  For instance, the length of the reconstructed string would always match the size of its buffer (and avoid spurious overflows); the Content-length HTTP header would always match the size of the new request body, and so on.
+
+\paragraph{LSE Algorithm}
+
+LSE allows the test runner to focus on exploring paths inside inner application layers. Conceptually, LSE decouples the input layers to give the test runner the flexibility to freely explore an individual layer. When constructing a new application input, LSE reconnects the layers, taking care to respect cross-layer invariants (e.g., the value of a JSON field has to be present also in the HTTP packet).
+%
+The LSE algorithm proceeds along the following steps:
+\begin{enumerate}
+\item Generate an initial valid input (i.e., a web request) using the
+  \codebit{getDefault} call on the root node.  The LPT can read this
+  input by calling \codebit{getInput}.
+%
+\item Symbolically execute the program through the test (the
+  \codebit{runTest} method), using symbolic inputs created by calling
+  the \codebit{instrument} method on the onion object nodes
+  corresponding to the layer of interest.  
+%
+  Any existing symbolic expressions for these variables (which
+  implicitly encode the parsing logic) are overwritten in this step,
+  effectively decoupling the input at the current layer from the
+  previous ones.  This permits the symbolic execution engine to negate
+  constraints inside the current layer without being constrained
+  by the previous layers.
+%
+\item When the execution completes, negate a constraint in the path
+  condition to obtain new values for the onion nodes.
+%
+\item Using the $\codebit{reconstruct}$ function of the onion object
+  node, assemble the new values back into a new complete program input
+  (e.g., the HTTP request) for the next iteration.
+\end{enumerate}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=2.4in]{paas/figures/layered-tree}
+  \caption{Exploring an execution tree using layered symbolic
+    execution.}
+  \label{fig:layered-tree}
+\end{figure}
+
+Figure~\ref{fig:layered-tree} illustrates an execution tree explored in an iteration of LSE. Consider an initial input for the example in Figure~\ref{fig:test-lpt}, where the value of the $\codebit{size}$ field in the JSON request payload is $8$ (Path $A$ in the figure).
+%
+At step 2 of the algorithm, a symbolic value is injected for $\codebit{size}$, together with the rest of the onion object wildcard fields (the highlighted segment of Path $A$).  Now, if the tested path contains the conditional statement \codebit{if payload.size < 16}, the \codebit{then} branch of the statement is taken and the $\mathit{size} < 16$ constraint is recorded.  At the end of the execution (step 3), if this constraint is negated to $\mathit{size} \geq 16$, a new value for $\codebit{size}$ is generated, say $20$ (the alternate potential Path $A'$).  Then, at step 4, the \codebit{reconstruct} functions assembles the new values of all leaves into a new HTTP packet to be sent to the app, which will cause the \codebit{else} branch of the \codebit{if} statement to be taken in the next execution (Path $B$).  Note that Path $A'$ is not globally feasible and never explored, but only transiently used to produce the feasible Path $B$.
+
+Compared to a solution that only marks the variables at the layers of interest as symbolic, LSE is superior in two ways: (1)~By obtaining the root input, it is able to run integration tests for a fully deployed application; (2)~LSE supports data structures of variable sizes, e.g., arrays whose lengths are symbolic values, by regenerating the input structure at each new iteration.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
