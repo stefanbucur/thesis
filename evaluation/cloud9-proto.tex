@@ -2,7 +2,9 @@ We developed a \cnine prototype on top of the \klee~\cite{klee} symbolic executi
 %
 The \klee modifications to support the symbolic OS abstractions amount to roughly 2 \kloc, while the rest consists of the POSIX model built on top of the abstractions.
 %
-In addition, we implemented support for parallelizing symbolic execution on a cluster of nodes (Section~\ref{sec:paas:parsymbex}).
+We also implemented support for parallelizing symbolic execution on a cluster of nodes (Section~\ref{sec:paas:parsymbex}), which we use to demonstrate the scalability of the parallelization algorithm (Section~\ref{sec:eval:cnine-efficiency}).
+%
+The \cnine prototype is available at {\urlstyle{same}\url{http://cloud9.epfl.ch}}.
 
 \begin{figure}
   \centering

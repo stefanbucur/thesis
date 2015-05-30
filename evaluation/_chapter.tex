@@ -1,10 +1,13 @@
-The goal of \chef and \cnine is to perform efficient and effective symbolic execution on real-world software targets with complex environment interfaces.
+In this chapter, we evaluate the research ideas described in the thesis.
 %
-In this chapter, after presenting the prototypes for \cnine (Section~\ref{sec:eval:cnine-proto}) and \chef (Section~\ref{sec:eval:chef-proto}), we present our methodology (Section~\ref{sec:eval:methodology}) and answer the following questions:
+We built prototypes for \cnine (Section~\ref{sec:eval:cnine-proto}) and \chef (Section~\ref{sec:eval:chef-proto}), which we use to demonstrate the effectiveness and efficiency of their techniques.
+%
+After presenting our methodology (Section~\ref{sec:eval:methodology}), we structure the evaluation by answering the following questions:
 \begin{enumerate}
 \item Can \chef and \cnine symbolically execute real-world software (Section~\ref{sec:eval:targets})?
 \item Are the symbolic execution engines effective for bug finding and test suite generation (Section~\ref{sec:eval:bug-finding})?
 \item Given the overhead of using the language interpreter, how efficient is \chef's test suite generation (Section~\ref{sec:eval:chef-efficiency})?
+\item Does parallel symbolic execution, which our testing service builds upon, scale on commodity clusters (Section~\ref{sec:eval:cnine-efficiency})?
 \end{enumerate}
 
 \section{The \cnine Prototype}
