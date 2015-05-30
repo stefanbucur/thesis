@@ -13,15 +13,6 @@ In addition, we implemented support for parallelizing symbolic execution on a cl
 
 \cnine builds upon the \klee symbolic execution engine, and so it inherits from \klee the mechanism for replacing parts of the C Library with model code; it also inherits the external calls mechanism.  \cnine adds the symbolic system call interface and replaces parts of the C Library with the POSIX model.  The resulting architecture is shown in Figure~\ref{fig:cloud9:posixmodel}.
 
-\newcommand{\cI}{\!{\raisebox{-0.2ex}{\large\ding{192}}}\xspace}
-\newcommand{\cII}{\!{\raisebox{-0.2ex}{\large\ding{193}}}\xspace}
-\newcommand{\cIII}{\!{\raisebox{-0.2ex}{\large\ding{194}}}\xspace}
-\newcommand{\cIV}{\!{\raisebox{-0.2ex}{\large\ding{195}}}\xspace}
-\newcommand{\cV}{\!{\raisebox{-0.2ex}{\large\ding{196}}}\xspace}
-\newcommand{\cVI}{\!{\raisebox{-0.2ex}{\large\ding{197}}}\xspace}
-\newcommand{\cVII}{\!{\raisebox{-0.2ex}{\large\ding{198}}}\xspace}
-\newcommand{\cVIII}{\!{\raisebox{-0.2ex}{\large\ding{199}}}\xspace}
-
 Before symbolic execution starts, the \cnine system links the program under test with a special symbolic C Library.
 %
 We built this library by replacing parts of the existing uClibc library in \klee with the POSIX model code.  Developers do not need to modify the code of to-be-tested programs in any way to make it run on \cnine.  
