@@ -32,7 +32,7 @@ Recent progress in automated test case generation~\cite{klee,godefroid:fuzz,till
 %
 \begin{figure}
   \centering
-  \includegraphics[width=3.1in]{figures/paas/web-flow}
+  \includegraphics[width=3.1in]{paas/figures/web-flow}
   \caption{A sample cloud application.  Clients communicate with the server through web requests that traverse several layers inside the server before reaching the request handler logic.  From the total input space, most possible requests trigger errors in one of the processing layers (light arrows).  Only a small fraction of requests successfully traverses all layers and is handled inside the app (dark arrow).}
   \label{fig:running-example}
   \vspace{5pt}
@@ -55,7 +55,7 @@ We propose an automated testing service integrated in PaaS.  Developers write la
 
 \begin{figure}
   \centering
-  \includegraphics[width=3.1in]{figures/paas/developer-flow}
+  \includegraphics[width=3.1in]{paas/figures/developer-flow}
   \caption{Development flow for using a PaaS-integrated testing
     service.}
   \label{fig:development-flow}
@@ -77,7 +77,7 @@ The specified family of executions can be large or even infinite; still, the tes
 
 \begin{figure}
   \centering
-  \includegraphics[width=3.2in]{figures/paas/overlay}
+  \includegraphics[width=3.2in]{paas/figures/overlay}
   \caption{An LPT example in Python for a photo management application.  Highlighted code is the test code written by developers.  Names in bold denote the LPT-specific API added to the standard Python unit test framework.}
   \label{fig:test-lpt}
 \end{figure}
@@ -92,7 +92,7 @@ The \codebit{TestUpload} LPT checks that, for arbitrary upload requests, the ser
 
 \begin{figure}
   \centering
-  \includegraphics[width=3in]{figures/paas/http-packet}
+  \includegraphics[width=3in]{paas/figures/http-packet}
   \caption{An example HTTP request for the upload feature of the photo
     management application.  The text in bold denotes input processed
     by the application at various layers.}
@@ -229,7 +229,7 @@ The LSE algorithm proceeds along the following steps:
 
 \begin{figure}
   \centering
-  \includegraphics[width=2.4in]{figures/paas/layered-tree}
+  \includegraphics[width=2.4in]{paas/figures/layered-tree}
   \caption{Exploring an execution tree using layered symbolic
     execution.}
   \label{fig:layered-tree}
@@ -266,7 +266,7 @@ From the perspective of the PaaS provider, the test runner service consists of a
 
 \begin{figure}
   \centering
-  \includegraphics[width=3.1in]{figures/paas/symbolic-vm}
+  \includegraphics[width=3.1in]{paas/figures/symbolic-vm}
   \caption{The PaaS test runner service.}
   \label{fig:fse}
 \end{figure}
@@ -319,7 +319,7 @@ of the exploration (see Fig.~\ref{fig:architecture}) are ensured by the load bal
 
 \begin{figure}[h!]
   \centering
-  \epsfig{file=figures/parsymbex/architecture-parsymbex, height=1.7in}
+  \epsfig{file=paas/figures/architecture-parsymbex, height=1.7in}
   \caption{Dynamic partitioning of exploration in \cnine.}
  \label{fig:architecture}
 \end{figure}
@@ -352,7 +352,7 @@ so in \cnine we chose to encode jobs as the path from the root to the \candidate
 \vspace{-5mm}
 %
 %\includegraphics[height=50mm]{new-diagrams/worker-tree-thumb}
-\hspace{-10mm}\includegraphics[height=50mm]{figures/parsymbex/worker-tree-thumb}
+\hspace{-10mm}\includegraphics[height=50mm]{paas/figures/worker-tree-thumb}
 %\caption{Example of a local worker tree.}
 \vspace{-8mm}
 \end{wrapfigure}
@@ -370,7 +370,7 @@ A node $N$ in $W_i$'s subtree has two attributes, $N^{\status} \in$\{\materializ
 
 \begin{figure}[h!]
   \centering
-  \hspace{-4mm}\epsfig{file=figures/parsymbex/node-transitions, width=3.4in}
+  \hspace{-4mm}\epsfig{file=paas/figures/node-transitions, width=3.4in}
   \caption{Transition diagram for nodes in a worker's subtree.}
  \label{fig:transitions}
 \end{figure}
