@@ -26,7 +26,7 @@ This thesis addresses two instances of the environment problem in symbolic execu
 %
 The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the exact details of dynamic languages are left to implementations and continuously evolving.
 
-To address the environment problem for stable operating system interfaces, this thesis introduces the idea of splitting an operating system model into a core set of primitives built into the engine, and the full operating system interface emulated on top in the guest.
+To address the environment problem for stable operating system interfaces, this thesis introduces the idea of splitting an operating system model into a core set of primitives built into the engine and, on top, the full operating system interface emulated inside the guest.
 %
 As few as three primitives are sufficient to support a complex interface such as POSIX: threads and processes, synchronization, and address spaces with shared memory.
 %
@@ -36,7 +36,7 @@ We prototyped this idea in \emph{\cnine}, a symbolic execution platform that pro
 
 For programs written in dynamic languages, this thesis introduces the idea of using the language interpreter as an ``executable language specification''.  The interpreter runs inside a low-level (e.g., x86) symbolic execution engine, while it executes the target program.  The aggregate system acts as a language-level symbolic execution engine for the program.
 %
-To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
+To manage the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
 %
 We prototyped this idea in the \emph{\chef} symbolic execution platform for interpreted languages, available at {\urlstyle{same}\url{http://dslab.epfl.ch/proj/chef/}}.
 
