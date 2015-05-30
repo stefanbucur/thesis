@@ -1,3 +1,5 @@
+In this section, we present our \chef prototype, along with our experience preparing two symbolic execution engines, one for Python and the other for Lua.
+
 \begin{figure}
   \centering
   \includegraphics[width=0.7\textwidth]{evaluation/figures/chef-implem-stack}
@@ -7,7 +9,7 @@
 
 \paragraph{Implementation}
 
-We implemented \chef on top of the S2E analysis platform~\cite{s2eSystem}, which symbolically executes entire virtual machines.
+We implemented \chef on top of the S2E analysis platform~\cite{s2eSystem}, which is a symbolic virtual machine that executes symbolically entire guests.
 %
 The implementation consists of a stack of dynamic analysis modules that refine the raw stream of x86 instructions at the CPU level into high-level program statements forming a symbolic execution tree (Figure~\ref{fig:eval:chef-implem-stack}).
 
@@ -28,7 +30,7 @@ Finally, the top High-level Executor module aggregates the HLPC information from
 
 \paragraph{Case Studies}
 
-We used \chef to generate symbolic execution engines for Python (Section~\ref{sec:eval:python-proto}) and Lua (Section~\ref{sec:eval:lua-proto}). Table~\ref{tab:pychanges} summarizes the effort to set up the two interpreters for \chef.  The necessary changes to the interpreter amount to 321 lines of code for Python and 277 for Lua.
+We used \chef to generate symbolic execution engines for Python (Section~\ref{sec:eval:python-proto}) and Lua (Section~\ref{sec:eval:lua-proto}). Table~\ref{tab:pychanges} summarizes the effort to set up the two interpreters for \chef.  The necessary changes to the interpreter amount to 274 lines of code for Python and 233 for Lua.
 %
 The total developer time was 5 person-days for Python and 3 person-days for Lua, which is orders of magnitude smaller than the effort required for building a complete symbolic execution engine from scratch.  
 
@@ -43,7 +45,7 @@ Interpreter core size (C LoC) & 427,435 & 14,553 \\
 \hline
 \hline
 %% HLPC instrumentation (C LoC) & 47 (0.01\%) & 44 (0.30\%) \\
-Sym. optimizations (C LoC) & 274 (0.06\%) & 233 (1.58\%) \\
+Symbolic optimizations (C LoC) & 274 (0.06\%) & 233 (1.58\%) \\
 Native extensions (C LoC) & 1,320 (0.31\%) & 154 (1.06\%) \\
 Test library (Python/Lua LoC) & 103 & 87 \\
 \hline
@@ -51,7 +53,7 @@ Test library (Python/Lua LoC) & 103 & 87 \\
 Developer time (person-days) & 5 & 3 \\
 \hline
 \end{tabular}
-\caption{Summary of the effort required to support Python and Lua in \chef.  The first row is the interpreter size without the standard language library. The next row shows changes in the interpreter core, while the following two constitute the symbolic test library.  The last item indicates total developer effort.}
+\caption{Summary of the effort required to support Python and Lua in \chef.  The first row is the interpreter size without the standard language library. The next row shows changes in the interpreter core, while the following two constitute the symbolic test library.  The last row indicates total developer effort.}
 \label{tab:pychanges}
 \end{table}
 
@@ -60,14 +62,14 @@ Developer time (person-days) & 5 & 3 \\
 
 \paragraph{Interpreter Preparation}
 
-We instrumented the CPython interpreter 2.7.3 for use with \chef, according to the guidelines presented in Section~\ref{sec:chef:recipe}.
+We instrumented the CPython interpreter 2.7.3 for use with \chef, according to the guidelines presented in Section~\ref{sec:chef:optimizeforsymbex}.
 
-Python programs are composed of modules, corresponding to Python source files.  Each source file is compiled into an interpreter-specific bytecode format, i.e., each source statement is translated into one or more lower-level primitive instructions.  The instructions are grouped into blocks, corresponding to a single loop nesting, function, method, class, or global module definition.
+Python programs are composed of modules, corresponding to Python source files.  Before executing a module, the interpreter compiles its source into an interpreter-specific bytecode format, i.e., each source statement is translated into one or more lower-level primitive instructions.  The instructions are grouped into blocks, corresponding to a single loop nesting, function, method, class, or global module definition.
 %
-We automatically detect the HLPC variable pointing to the bytecode blocks, by applying the HLPC slice reconstruction procedure in Section~\ref{sec:chef:hlcf}.  We cross-checked the correctness of the obtained slice by looking it up in the interpreter source code, via the debug symbols in the binary.
+\chef automatically detects the HLPC variable pointing to the bytecode blocks, by using the HLPC slice reconstruction procedure in Section~\ref{sec:chef:hlcf}.  We cross-checked the correctness of the obtained slice by looking it up in the interpreter source code, via the debug symbols in the binary.
 %% We define an \hlpc as the concatenation of the unique block address of the top frame on the stack and the current instruction offset inside the block. We instrumented the Python interpreter to pass this program location to \chef; this required adding less than 50 LoC to the main interpreter loop.
 
-We performed several optimizations on the Python interpreter: we neutralized the hash functions of strings and integers, which are the most common objects; we concretized the memory sizes passed to the garbage-collected memory allocator; and we eliminated interning for small integers and strings.    
+We performed several optimizations on the Python interpreter (Section~\ref{sec:chef:optimizeforsymbex}): we neutralized the hash functions of strings and integers, which are the most common objects; we concretized the memory sizes passed to the garbage-collected memory allocator; and we eliminated interning for small integers and strings.    
 %
 Most optimizations involved only adding preprocessor directives for conditional compilation of blocks of code.
 %
@@ -78,6 +80,8 @@ We gathered the optimizations under a new \codebit{--with-symbex} flag of the in
 To validate the usefulness of the resulting symbolic execution engine, we use it as a test case generation tool.  To this end, we implemented a symbolic test library as a separate Python package, used both inside the guest virtual machine, and outside, during test replay.
 %
 Figure~\ref{fig:sample-test} is an example of a symbolic test class for the \codebit{argparse} command-line interface generator. It sets up a total of 12 symbolic characters of input: two 3-character symbolic arguments to configure the command-line parser plus another two to exercise the parsing functionality.
+%
+We choose three characters for each command line argument to minimally cover the three types of arguments: short option (e.g., \codebit{-h}), long option (e.g., \codebit{-{}-x}), and positional (e.g., \codebit{xyz}).
 
 The test class derives from the library's \codebit{SymbolicTest} class, which provides two methods to be overridden: \codebit{setUp}, which is run once before the symbolic test starts, and \codebit{runTest}, which creates the symbolic input and can check properties.  The symbolic inputs are created by calling the \codebit{getString} and \codebit{getInt} methods in the \codebit{SymbolicTest} API.
 

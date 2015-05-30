@@ -7,7 +7,7 @@ We compare the results obtained in 4 different configurations: (1) the baseline,
 
 \paragraph{Test Case Generation}
 
-Figure~\ref{fig:tc-improv} compares the number of test cases generated with each of the 4 \chef configurations, using the path-optimized CUPA~(Section~\ref{sec:chef:cupa-paths}).  We only count the \textit{relevant} high-level test cases, that is, each test case exercises a unique high-level path in the target Python program.
+Figure~\ref{fig:tc-improv} compares the number of test cases generated with each of the four \chef configurations, using the path-optimized CUPA~(Section~\ref{sec:chef:cupa-paths}).  We only count the \textit{relevant} high-level test cases, that is, each test case exercises a unique high-level path in the target Python program.
 
 \begin{figure}
   \centering
@@ -69,7 +69,7 @@ We perform our comparison along three aspects: language features supported, impl
 
 \paragraph{Language Feature Support}
 
-Table~\ref{tab:langfeats} summarizes the language feature support for \chef, \nicese, \cutiepy, and \commuterse, as implemented at the moment of writing.  We relied on information from the respective papers in all cases and additionally on the implementation in the cases of \nicese and \commuterse, which are available as open source.
+Table~\ref{tab:langfeats} summarizes the language feature support for \chef, \nicese, \cutiepy, and \commuterse\footnote{We consider the features available at the moment of performing this evaluation (early 2014).}.  We relied on information from the respective papers in all cases and additionally on the implementation in the cases of \nicese and \commuterse, which are available as open source.
 
 We distinguish engines designed to support arbitrary Python code (the ``Vanilla'' label) and those where the symbolic data types are an API used by model code (the ``Model'' label).  Engines in the ``Model'' category essentially offer a ``symbolic domain-specific language'' on top of the interpreted language.  \chef, \cutiepy, and \nicese are ``vanilla'' engines, since their testing targets do not have to be aware that they are being symbolically executed.  \commuterse is a model-based engine, since its testing targets are bound to the symbolic API offered by the engine.
 
