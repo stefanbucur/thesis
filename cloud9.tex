@@ -138,7 +138,7 @@ However, the POSIX standard mandates additional information, such as open file d
 
 Modeling synchronization routines is simplified by the cooperative scheduling policy:
 %
-no locks are necessary, and all synchronization can be done using the sleep/notify symbolic system calls, together with reference counters.  Fig.~\ref{fig:mutexcode} illustrates the simplicity this engenders in the implementation of pthread mutex lock and unlock.
+no locks are necessary, and all synchronization can be done using the sleep/notify symbolic system calls, together with reference counters.  Figure~\ref{fig:mutexcode} illustrates the simplicity this engenders in the implementation of pthread mutex lock and unlock.
 
 \begin{figure}
   \centering
@@ -160,7 +160,7 @@ In particular, one can either open a symbolic file (its contents comes from a sy
 
 In addition to file objects, the \cnine POSIX model adds support for networking and pipes.
 %
-Currently, the TCP and UDP protocols are supported over IP and UNIX network types. Since no actual hardware is involved in the packet transmission, we can collapse the entire networking stack into a simple scheme based on two stream buffers (Fig.~\ref{fig:networkmodel}). The network is modeled as a single-IP network with multiple available ports---this configuration is sufficient to connect multiple processes to each other, in order to simulate and test distributed systems. The model also supports pipes through the use of a single stream buffer, similar to sockets.
+Currently, the TCP and UDP protocols are supported over IP and UNIX network types. Since no actual hardware is involved in the packet transmission, we can collapse the entire networking stack into a simple scheme based on two stream buffers (Figure~\ref{fig:networkmodel}). The network is modeled as a single-IP network with multiple available ports---this configuration is sufficient to connect multiple processes to each other, in order to simulate and test distributed systems. The model also supports pipes through the use of a single stream buffer, similar to sockets.
 
 The \cnine POSIX model supports polling through the \codebit{select()} interface.
 %
