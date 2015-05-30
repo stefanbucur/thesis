@@ -24,7 +24,7 @@ Recent commercial test automation systems (CloudBees, Skytap, SOASTA, etc.) reli
 %
 Just as modern PaaS APIs spare developers from having to manage the building blocks of their applications, so should they spare developers from manually writing test cases, and instead offer means to automatically test apps based on only minimal input from developers.
 
-Recent progress in automated test case generation~\cite{klee,godefroid:fuzz,tillmann-pex} takes an important step in this direction.  For a typical PaaS application like the example in Figure~\ref{fig:running-example}, a test case generator could use \textit{symbolic execution} (a path-based program analysis) to automatically find HTTP packets that drive the execution to different parts of the code.
+The recent progress in automated test case generation and, in particular, symbolic execution takes an important step in this direction.  For a typical PaaS application like the example in Figure~\ref{fig:running-example}, a test case generator could use symbolic execution to automatically find HTTP packets that drive the execution to different parts of the code.
 %
 \begin{figure}
   \centering
@@ -34,13 +34,15 @@ Recent progress in automated test case generation~\cite{klee,godefroid:fuzz,till
   \vspace{5pt}
 \end{figure}
 %
-Unfortunately, these tools are not (yet) a good fit for cloud apps: the number of execution paths successfully crossing all application layers is dwarfed by the vast number of possible error paths (dark vs.~light arrows in Figure~\ref{fig:running-example}).  Yet, most error paths are irrelevant to testing the high-level logic of the app itself (i.e., the innermost layer), because they test code that is part of the PaaS.
+Unfortunately, these tools are challenging to apply to cloud apps: the number of execution paths successfully crossing all application layers is dwarfed by the vast number of possible error paths (dark vs.~light arrows in Figure~\ref{fig:running-example}).  Yet, most error paths are irrelevant to testing the high-level logic of the app itself (i.e., the innermost layer), because they test code that is part of the PaaS.
 
-We propose \textit{layered parameterized tests} (LPTs) for integration testing of PaaS-based cloud applications (Section~\ref{sec:paas:abstractions}). LPTs describe families of integration tests (in the spirit of parameterized unit tests~\cite{tillmann-puts}) across several application layers. We rely on developer-provided \textit{onion objects} to describe the layering of the data abstractions in the application; onion objects encode the multiple interpretations of input data as, e.g., an HTTP request, a JSON object, etc.
-%
+We introduce \textit{layered parameterized tests} (LPTs) for integration testing of PaaS-based cloud applications (Section~\ref{sec:paas:abstractions}). LPTs describe families of integration tests (in the spirit of parameterized unit tests~\cite{tillmann-puts}) across several application layers. We rely on developer-provided \textit{onion objects} to describe the layering of the data abstractions in the application; onion objects encode the multiple interpretations of input data as, e.g., an HTTP request, a JSON object, etc.
+
 For the automatic generation of thorough test cases from LPTs, we introduce \emph{layered symbolic execution} (LSE), an automated program analysis that is tailored for the layered structure of cloud applications (Section~\ref{sec:paas:layeredsymbex}).
-%
-Finally, we present a design and early prototype for a PaaS-integrated testing service based on LSE~(Section~\ref{sec:paas:fedsymbex}).
+
+Symbolic execution is a resource-intensive task, so we horizontally scale it in the cloud by introducing the first symbolic execution parallelization algorithm to demonstrate linear scalability in the number of nodes (Section~\ref{sec:paas:parsymbex}).
+
+Finally, we present a design and early prototype for a PaaS-integrated parallel testing service based on LSE~(Section~\ref{sec:paas:fedsymbex}).
 
 %%% Local Variables: 
 %%% mode: latex

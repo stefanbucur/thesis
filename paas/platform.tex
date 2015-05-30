@@ -1,12 +1,16 @@
-We deploy LSE inside a symbolic execution-aware virtual machine (the symbolic VM) that encapsulates the ``entire universe'' of the application, including the framework and even the language interpreter and operating system, enabling integration testing of the entire application stack.
+We deploy layered symbolic execution on a cluster of symbolic execution-aware virtual machines (the symbolic VMs).
 %
+Unlike a regular (e.g., x86) virtual machine, a symbolic virtual machine can mark parts of its memory as symbolic and fork its state (CPU registers, memory, etc.) at symbolic branch instructions.
+%
+A symbolic VM encapsulates the ``entire universe'' of the application, including the framework and even the language interpreter and operating system, enabling integration testing of the entire application stack.
+
 The test-mode deployment then requires just the push of a button for the system to execute the layered parameterized tests, generate coverage statistics, and highlight any failing test cases.
 
 This deployment model leverages the properties of PaaS in several ways:
 %
 (1)~By hiding the testing VMs behind a service interface, the PaaS system can faithfully reproduce the exact environment of production VMs inside the testing VMs without exposing its internals.
 %
-(2)~The testing task can be transparently scaled across multiple VMs by using parallel symbolic execution~\cite{cloud9}.
+(2)~The testing task can be transparently scaled across multiple VMs by using parallel symbolic execution.
 %
 (3)~Since the application uses standard interfaces for accessing the PaaS components (storage, networking, etc.), the provider is able to substitute production-optimized implementations with testing-optimized stubs that offer a simplified behavior that is better suited to automated program analysis.
 
