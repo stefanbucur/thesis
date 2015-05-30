@@ -140,7 +140,7 @@ Modeling synchronization routines is simplified by the cooperative scheduling po
 %
 no locks are necessary, and all synchronization can be done using the sleep/notify symbolic system calls, together with reference counters.  Fig.~\ref{fig:mutexcode} illustrates the simplicity this engenders in the implementation of pthread mutex lock and unlock.
 
-\begin{figure}[h!]
+\begin{figure}
   \centering
   \epsfig{file=figures/cloud9/mutex-model.eps, width=3.2in}
   \caption{Example implementation of pthread mutex operations in \cnine's POSIX environment model.}
@@ -151,7 +151,7 @@ no locks are necessary, and all synchronization can be done using the sleep/noti
 %
 In particular, one can either open a symbolic file (its contents comes from a symbolic block buffer), or a concrete file, in which case a concrete file descriptor is associated with the symbolic one, and all operations on the file are forwarded as external calls on the concrete descriptor. 
 
-\begin{figure}[h!]
+\begin{figure}
   \centering
   \epsfig{file=figures/cloud9/network-model.eps, width=4.0in}
   \caption{A TCP network connection is modeled in \cnine using TX and RX buffers implemented as stream buffers.}

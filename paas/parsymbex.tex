@@ -18,9 +18,9 @@ The goal is to dynamically partition the execution tree such that the parts are 
 A worker's visibility is limited to the subtree it is exploring locally.  As $W_i$ explores and reveals the content of its local subtree, it has no knowledge of what $W_j$'s ($i\ne j$) subtree looks like.  No element in the system---not even the load balancer---maintains a global execution tree.  Disjointness and completeness 
 of the exploration (see Fig.~\ref{fig:architecture}) are ensured by the load balancing algorithm.
 
-\begin{figure}[h!]
+\begin{figure}
   \centering
-  \epsfig{file=paas/figures/architecture-parsymbex, height=1.7in}
+  \includegraphics[width=0.6\textwidth]{paas/figures/architecture-parsymbex}
   \caption{Dynamic partitioning of exploration in \cnine.}
  \label{fig:architecture}
 \end{figure}
@@ -49,16 +49,14 @@ When the global exploration frontier becomes poorly balanced across workers, the
 A job can be sent in at least two ways: (1) serialize the content of the chosen node and send it to \wdst, or (2) send to \wdst the path from the tree root to the node, and rely on \wdst to ``replay'' that path and obtain the contents of the node.  Choosing one vs. the other is a trade-off between time to encode/decode and network bandwidth: option (1) requires little work to decode, but consumes bandwidth (the state of a real program is typically at least several megabytes), while encoding a job as a path requires replay on \wdst.  We assume that large commodity clusters have abundant CPU but meager bisection bandwidth,
 so in \cnine we chose to encode jobs as the path from the root to the \candidate node.  As an optimization, we exploit common path prefixes: jobs are not encoded separately, but rather the corresponding paths are aggregated into a job tree and sent as such.
 
-\begin{wrapfigure}{r}{1in}
-\vspace{-5mm}
-%
-%\includegraphics[height=50mm]{new-diagrams/worker-tree-thumb}
-\hspace{-10mm}\includegraphics[height=50mm]{paas/figures/worker-tree-thumb}
-%\caption{Example of a local worker tree.}
-\vspace{-8mm}
-\end{wrapfigure}
+\begin{figure}
+  \centering
+  \includegraphics[width=0.3\textwidth]{paas/figures/worker-tree-thumb}
+  \caption{Example of a local worker tree.}
+  \label{fig:parsymbex:localtree}
+\end{figure}
 
-When the job tree arrives at \wdst, it is imported into \wdst's own subtree, and the leaves of the job tree become part of \wdst's frontier (at the time of arrival, these nodes may lie ``ahead'' of \wdst's frontier).  \wdst keeps the nodes in the incoming jobs as {\em \virtual} nodes, as opposed to {\em \materialized} nodes that reside in the local subtree, and replays paths only lazily.  A \materialized node is one that contains the corresponding program state, whereas a \virtual node is an ``empty shell'' without corresponding program state.  In the common case, the frontier of a worker's local subtree contains a mix of \materialized and \virtual nodes, as shown in the diagram above.
+When the job tree arrives at \wdst, it is imported into \wdst's own subtree, and the leaves of the job tree become part of \wdst's frontier (at the time of arrival, these nodes may lie ``ahead'' of \wdst's frontier).  \wdst keeps the nodes in the incoming jobs as {\em \virtual} nodes, as opposed to {\em \materialized} nodes that reside in the local subtree, and replays paths only lazily.  A \materialized node is one that contains the corresponding program state, whereas a \virtual node is an ``empty shell'' without corresponding program state.  In the common case, the frontier of a worker's local subtree contains a mix of \materialized and \virtual nodes, as shown in Figure~\ref{fig:parsymbex:localtree}.
 
 As mentioned earlier, a worker must choose at each step which \candidate node to explore next---this choice is guided by a {\em strategy}.  Since the set of \candidate nodes now contains both \materialized and \virtual nodes, it is possible for the strategy to choose a \virtual node as the next one to explore.  When this happens, the corresponding path in the job tree is replayed (i.e., the symbolic execution engine executes that path); at the end of this replay, all nodes along the path are \dead, except the leaf node, which has converted from \virtual to \materialized and is now ready to be explored.  Note that, while exploring the chosen job path, each branch produces child program states; any such state that is not part of the path is marked as a \fence node, because it represents a node that is being explored elsewhere, so \wdst should not pursue it.
 
@@ -69,9 +67,9 @@ As mentioned earlier, a worker must choose at each step which \candidate node to
 
 A node $N$ in $W_i$'s subtree has two attributes, $N^{\status} \in$\{\materialized, \virtual\!\} and $N^{\alive} \in$\{\candidate, \fence, \dead\!\}.  A worker's frontier $F_i$ is the set of all \candidate nodes on worker $W_i$.  The worker can only explore nodes in $F_i$, i.e., \dead nodes are off-limits and so are \fence nodes, except if a \fence node needs to be explored during the replay of a job path.  The union $\cup F_i$ equals the frontier of the global execution tree, ensuring that the aggregation of worker-level explorations is complete.  The intersection $\cap F_i = \emptyset$, thus avoiding redundancy by ensuring that workers explore disjoint subtrees.  Fig.~\ref{fig:transitions} summarizes the life cycle of a node.
 
-\begin{figure}[h!]
+\begin{figure}
   \centering
-  \hspace{-4mm}\epsfig{file=paas/figures/node-transitions, width=3.4in}
+  \includegraphics[width=0.7\textwidth]{paas/figures/node-transitions}
   \caption{Transition diagram for nodes in a worker's subtree.}
  \label{fig:transitions}
 \end{figure}
