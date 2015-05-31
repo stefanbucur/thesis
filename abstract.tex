@@ -14,29 +14,29 @@ Für den Fall der partiellen und unbeständigen Spezifikationen von dynamischen 
 
 Manual software testing is laborious, time-consuming, and subject to human error, yet it is the most common quality assurance method used in practice.
 %
-Automating the test case generation promises better effectiveness, especially for exposing corner-case bugs prone to oversight.
+Automating the test case generation promises better effectiveness, especially for exposing corner-case bugs.
 %
-Symbolic execution is the most popular such technique to be applied on real-world software, as it has no false positives, it eventually enumerates all program executions, and can focus on parts of larger systems.
+Symbolic execution is the most popular automated testing technique to be applied on real-world software, as it has no false positives, it eventually enumerates all program executions that are feasible, and none other, and can focus on parts of larger systems.
 %
-However, its scalability is limited by the \emph{environment problem}: to execute a program that relies on external functionality---its environment---the symbolic execution engine needs to efficiently support the environment interface.
+However, its scalability is limited by the \emph{environment problem}: to execute a program that relies on external functionality---its environment---the symbolic execution engine needs to efficiently provide the environment interface.
 %
-Systematically addressing the environment problem is challenging, as its instances depend on the nature of the environment and its interface.
+Systematically addressing the environment problem is challenging, as its instantiation depends on the nature of the environment and its interface.
 
 This thesis addresses two instances of the environment problem in symbolic execution, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.
 %
-The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the exact details of dynamic languages are left to implementations and continuously evolving.
+The two instances exhibit opposite characteristics: on the one hand, operating system interfaces and semantics are typically stable and well documented (e.g., POSIX), while on the other hand modern interpreted languages have semantics and interfaces that are continuously evolving.
 
 To address the environment problem for stable operating system interfaces, this thesis introduces the idea of splitting an operating system model into a core set of primitives built into the engine and, on top, the full operating system interface emulated inside the guest.
 %
 As few as three primitives are sufficient to support a complex interface such as POSIX: threads and processes, synchronization, and address spaces with shared memory.
 %
-We prototyped this idea in \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by system such as utilities, web servers, and distributed systems.
+We prototyped this idea in the \emph{\cnine} symbolic execution platform. \cnine provides an accurate and efficient model of the POSIX interface, as used by system such as UNIX utilities, web servers, and distributed systems.
 %
 \cnine is available at {\urlstyle{same}\url{http://cloud9.epfl.ch}}.
 
-For programs written in dynamic languages, this thesis introduces the idea of using the language interpreter as an ``executable language specification''.  The interpreter runs inside a low-level (e.g., x86) symbolic execution engine, while it executes the target program.  The aggregate system acts as a language-level symbolic execution engine for the program.
+For programs written in high-level interpreted languages, this thesis introduces the idea of using the language interpreter as an ``executable language specification''.  The interpreter runs inside a low-level (e.g., x86) symbolic execution engine, while it executes the target program.  The aggregate system acts as a high-level symbolic execution engine for the program.
 %
-To manage the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
+To manage the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), a heuristic for prioritizing paths that groups paths into equivalence classes according to a coverage goal.
 %
 We prototyped this idea in the \emph{\chef} symbolic execution platform for interpreted languages, available at {\urlstyle{same}\url{http://dslab.epfl.ch/proj/chef/}}.
 
