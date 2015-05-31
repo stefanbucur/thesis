@@ -1,8 +1,3 @@
-
-To efficiently handle real-world programs, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
-%
-Existing approaches roughly fall into three categories, according to the degree of completeness in handling symbolic data going to the environment: (1) concretizing the calls to the environment (no symbolic support at all), (2) abstracting away the environment complexity through models, and (3) ``inlining'' the environment with the program.
-
 \begin{figure}
   \centering
   \includegraphics[width=0.8\textwidth]{relatedwork/figures/relwork-positioning}
@@ -10,6 +5,9 @@ Existing approaches roughly fall into three categories, according to the degree 
   \label{fig:relwork:positioning}
 \end{figure}
 
+To efficiently handle real-world programs, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
+%
+Existing approaches roughly fall into three categories, according to the degree of completeness in handling symbolic data going to the environment: (1) concretizing the calls to the environment (no symbolic support at all), (2) abstracting away the environment complexity through models, and (3) ``inlining'' the environment with the program.
 
 Figure~\ref{fig:relwork:positioning} positions the existing work with respect to this classification, while qualitatively indicating the size of the environment interface targeted by the engine and the relative performance attained by each engine in its class.
 %
@@ -17,7 +15,7 @@ There are several patterns emerging from this classification.
 
 First, the less complete the environment support, the higher the engine performance tends to be.
 %
-A simpler environment creates fewer execution paths and leads to simpler expressions in the program state.  In turn, the path throughput in the target program increases.
+A simpler environment creates fewer execution paths and leads to simpler symbolic expressions in the program state.  In turn, the path throughput in the target program increases.
 %
 This effect is most visible in symbolic execution engines that resort to concretization or employ simple models, such as EXE~\cite{exe}, Mayhem~\cite{mayhem}, or KLEE~\cite{klee}.
 
@@ -41,7 +39,7 @@ Chef benefits from the completeness of inlining the environment---the language i
 
 In the rest of this section, we discuss in more detail each of the three environment approaches.
 %
-We will use the program in Figure~\ref{fig:relwork:example} as a running example to illustrate the tradeoffs made by each approach.
+We use the program in Figure~\ref{fig:relwork:example} as a running example to illustrate the tradeoffs made by each approach.
 
 \begin{figure}
   \centering
