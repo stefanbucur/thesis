@@ -6,30 +6,30 @@ Symbolic execution was introduced almost four decades ago as a test case generat
 
 The exponential increase in hardware performance and the availability of fast off-the-shelf constraint solvers~\cite{chaff,minisat,stp,Z3,cvc} amplified the research in symbolic execution.  Over the past decade, the new generation of symbolic execution engines produced test suites and found bugs on real-world software, ranging from small system utilities to large application suites.
 
-In this section, we highlight the most important tools and discuss the techniques that expanded the applicability of symbolic execution on real-world software.  Whenever appropriate, we touch on the environment problem; however, we cover it extensively later on, in Section~\ref{sec:relwork:envproblem}.
+In this section, we highlight some of the most important tools and discuss the techniques that expanded the applicability of symbolic execution to real-world software.  Whenever appropriate, we touch on the environment problem; however, we cover it extensively later on, in Section~\ref{sec:relwork:envproblem}.
 
 \paragraph{Concrete + Symbolic Execution}
 
-To support real-world programs, a symbolic execution engine must be prepared to deal with all language features and calls into the environment.
+To run a real-world program, a symbolic execution engine must provide the interface of its environment and the semantics of the language features it uses.
 %
-A first solution introduced by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, is to execute the program normally, using concrete inputs, while maintaining the symbolic execution state in the areas of interest.
+A first solution introduced by early engines, such as DART~\cite{dart} and CUTE~\cite{cute}, is to execute the program normally, using concrete inputs, while maintaining the symbolic execution state only during the execution of the program code itself.
 %
 When the symbolic semantics are not available, such as inside external library calls, the program execution would still be able proceed.
 %
-By using this approach, these tools found crashes in small-to-moderate C programs, such as protocol implementations and data structure libraries.
+By using this approach, DART and CUTE found crashes in small-to-moderate C programs, such as protocol implementations and data structure libraries.
 
-This form of execution is also called concolic (\emph{conc}rete + symb\emph{olic}), or ``whitebox fuzzing''.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
+This form of execution is also called concolic (\emph{conc}rete + symb\emph{olic})~\cite{cute}, or ``whitebox fuzzing''~\cite{godefroid:fuzz}.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
 
 
 \paragraph{Specialized Solver Support}
 
-%% In addition, real-world software generates constraints that are hard to reason about, containing expressions such as memory accesses from symbolic addresses, or complex arithmetic operations such as bit-wise multiplication and division.  Without solver support, a symbolic execution engine ends up concretizing the state or abandoning the path, hence losing completeness.
-
-While the concolic approach helps engines avoid stumbling upon unsupported parts of the execution, it does not solve the problem of providing symbolic semantics for the target program.
+While concolic execution completes each execution path, it can miss \emph{other} feasible paths in the symbolic execution tree when the symbolic semantics of the program are not available.
 %
-In particular, a major limitation of the early symbolic execution engines was the lack of support for reasoning precisely and efficiently about common expressions involving binary arithmetic and memory access.  For instance, DART and CUTE used a solver only for linear integer constraints, which limited the scope of the symbolic analysis.
+In particular, a major limitation of the early symbolic execution engines was the lack of support for reasoning precisely and efficiently about common expressions involving bitwise arithmetic and memory access.
+%
+For instance, DART and CUTE used a solver only for linear integer constraints, which limited the scope of the symbolic analysis, because the solver theory did not capture the peculiarities of bitwise arithmetic (e.g., overflows), nor supported pointer arithmetic.
 
-Subsequent symbolic execution engines took advantage of new breakthroughs in constraint solving and employed high-performance off-the-shelf solvers, such as Z3~\cite{Z3}, STP~\cite{stp}, or CVC~\cite{cvc}.  These solvers can reason efficiently about a large set of operations commonly encountered in program execution.
+Subsequent symbolic execution engines took advantage of new breakthroughs in constraint solving and employed high performance off-the-shelf solvers, such as Z3~\cite{Z3}, STP~\cite{stp}, or CVC~\cite{cvc}.  These solvers can reason efficiently about a large set of operations commonly encountered in program execution.
 %
 For example, the EXE~\cite{exe} symbolic execution engine was among the first to employ such a solver (STP), which was co-designed with EXE to accurately express machine operations in low-level languages such as C.
 %
@@ -39,19 +39,17 @@ As a result, EXE targeted and found bugs in larger system software such as the \
 
 \paragraph{Low-level Symbolic Interpretation}
 
-DART, CUTE, and EXE implemented symbolic execution at the C source code level, by using CIL~\cite{cil} to instrument the code with additional statements that maintain the symbolic state as the program executes.
+DART, CUTE, and EXE implement symbolic execution at the C source code level, by using CIL~\cite{cil} to instrument the code with additional statements that maintain the symbolic state as the program executes.
 %
-However, this approach is tedious.  Even for a low-level language like C, the size of the language specification is about 200 pages\footnote{This figure refers to the C99 standard ISO/IEC 9899:1990 -- {\urlstyle{same}\url{http://www.iso.org/iso/iso_catalogue/catalogue_ics/catalogue_detail_ics.htm?csnumber=17782}}.}, so supporting all language features symbolically is an extensive engineering effort.  Moreover, the engineering cost would increase for more complex languages, such as C++.
+However, this approach is tedious.  Even for a low-level language like C, the size of the language specification is about 200 pages\footnote{This figure refers to the C90 standard~\cite{c90-standard}.}, so supporting all language features symbolically is an extensive engineering effort.  Moreover, the engineering cost would increase for languages with more features and richer data types, such as C++.
 
-%% Instead, the current state-of-the-art symbolic execution engines target lower-level compiled representations of programs, , which consist of a smaller set of simpler instructions, with an extensive and stable specification.
-
-Instead, the current state-of-the-art symbolic execution engines take advantage of the fact that C, C++, and other languages are compiled to a lower-level representation, such as x86 binary or LLVM~\cite{llvm} bytecode, which is simpler to reason about~\cite{godefroid:fuzz,klee,bitBlaze,s2eSystem,mayhem}.  Two prominent examples are SAGE and KLEE.
+Instead, current state-of-the-art symbolic execution engines~\cite{godefroid:fuzz,klee,bitBlaze,s2eSystem,mayhem} take advantage of the fact that C, C++, and other languages are compiled to a lower-level representation, such as x86 binary or LLVM~\cite{llvm} bytecode, which is simpler to reason about.  Two prominent examples are SAGE and KLEE.
 
 SAGE~\cite{sage2012,godefroid:fuzz}---the best known use of symbolic execution in production---performs concolic execution at binary level.
 %
 This enables SAGE to target large applications with deep execution paths, such as Windows format parsers and Microsoft Office applications.
 %
-SAGE found thousands of Windows vulnerabilities at development time.
+SAGE found thousands of Windows vulnerabilities at development time~\cite{sage2012,Godefroid:2012}.
 
 %% To target systems of increasing complexity, symbolic execution engines needed to address the environment problem.
 %% %
@@ -63,17 +61,17 @@ SAGE found thousands of Windows vulnerabilities at development time.
 %% %
 %% Our Cloud9 system builds on top of KLEE, providing symbolic primitives for a large fraction of the POSIX interface, as well as adding support for parallel symbolic execution.
 
-KLEE~\cite{klee} is arguably the most popular symbolic execution engine, having served as a foundation for a wide range of other tools.
+KLEE~\cite{klee} is arguably the most popular symbolic execution engine used in research, having served as a foundation for a wide range of other tools.
 %
 KLEE works as a symbolic interpreter for LLVM IR bytecode, obtained by compiling source programs using an LLVM-based compiler such as Clang.
 %
-KLEE was designed to target systems code, such as command line utilities (e.g., the popular \codebit{ls} or \codebit{echo}).  Since these systems call into the operating system, which is not available as LLVM IR, KLEE employs \emph{models} that approximate the real OS interface.
+KLEE was designed to target systems code, such as command line utilities (e.g., \codebit{ls} or \codebit{echo}).  Since these programs call into the operating system, which is not available as LLVM IR, KLEE employs \emph{models} that approximate the real operating system.
 %
 The KLEE models replaced parts of the standard C library and were linked with the target program, providing basic support for file operations---the most common dependency among the targeted utilities.
 %
 Unmodeled system calls were still allowed, by passing them to the host environment, executed concretely on behalf of the KLEE process.
 %
-KLEE found bugs and generated test suites with over 90\% statement coverage on average in the Coreutils suite.  It also found bugs in other systems software, such as Busybox and the HiStar kernel.
+KLEE found bugs and generated test suites with over 90\% statement coverage on average in the Coreutils suite~\cite{klee}.  It also found bugs in other systems software, such as Busybox and the HiStar kernel.
 
 \paragraph{``In-vivo'' Symbolic Execution}
 
