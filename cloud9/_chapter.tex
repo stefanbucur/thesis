@@ -6,7 +6,7 @@ In this chapter, we introduce \cnine, a symbolic execution platform for system p
 %
 We report on our experience modeling these abstractions for the standard POSIX interface (Section~\ref{sec:cloud9:posix}).
 %
-Our symbolic POSIX environment is configurable per symbolic test to simulate nondeterministic events, such as network fragmentation, system call failures, or thread scheduling (Section~\ref{sec:cloud9:symtests}).
+Our POSIX model includes extensions that developers can use in \emph{symbolic tests}.  The extensions control non-deterministic operating system events, such as thread scheduling and network flow control, to help increase coverage in the target programs (Section~\ref{sec:cloud9:symtests}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -306,6 +306,22 @@ To test how the web server handles failures in the environment, we can ask \cnin
    ioctl(ssock, SIO_FAULT_INJ, RD | WR);
 \end{verbatim}
 \cnine can also enable/disable fault injection globally for all file descriptors within a certain region of the code using calls to \codebit{\cninesuffix\_fi\_\allowbreak{}enable} and \codebit{\cninesuffix\_fi\_\allowbreak{}disable}. For simulating low-memory conditions, \cnine provides a \codebit{\cninesuffix\_set\_\allowbreak{}max\_heap} primitive, which can be used to test the web server with different maximum heap sizes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Summary}
+
+Operating systems expose a complex stateful interface to user programs.
+%
+In this chapter, we showed a way to provide an operating system environment for symbolic execution by employing a split operating system model.  A core set of primitives built into the symbolic execution engine serves as a base, on top of which a full operating system interface is emulated inside the guest.
+%
+As few as three primitives are sufficient to support complex operating system interfaces: threads and processes, synchronization, and address spaces with shared memory.
+%
+%% Additionally, these primitives can be implemented efficiently in a symbolic execution engine, by reusing existing symbolic execution components.
+%
+We showed how to use the core primitives to provide an accurate model of the POSIX interface.
+%
+Our POSIX model includes extensions that developers can use to control non-deterministic operating system events, such as thread scheduling and network flow control, in order to increase the coverage in the target programs.
 
 %%% Local Variables: 
 %%% mode: latex
