@@ -133,27 +133,34 @@ In practice, given a limited time budget, most symbolic execution engines resort
 The environment problem in symbolic execution is closely related to the notion of \emph{real-world} software, which we define first below.
 
 \begin{framed}
-  In this thesis, we define \textbf{real-world software} as programs that use external functionality---e.g., libraries or the operating system---to perform their function.
+  In this thesis, we define \textbf{real-world software} as programs whose logic \emph{depends} on external functionality, such as libraries or the operating system.
   %
   We call this external functionality the \emph{environment} of the program, with which the program interacts through an environment \emph{interface}.
 \end{framed}
 
-The size of the environment---code and state---is typically much larger than the size of the program itself.
+The size of the environment---code and state---may be much larger than the size of the program itself.
 %
 For instance, consider a 50 lines of code system utility that prints on the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen, implemented in tens of thousands of lines of kernel and library code.
 
+
+%% The program dependency on its environment manifests as the program reliance on the environment interface contracts (pre- and post-conditions), as well as a relationship between the program state and the environment state.
+%
 The environment interface is often stateful and its state is closely coupled with the program state.
 %
-In our example, the kernel keeps the open file and the terminal in a file table, and the program keeps file descriptors that index into the table.
+In our previous example, the kernel keeps the open file and the terminal in a file table, whereas the program keeps file descriptors that index into the file table.
+
+More sophisticated systems maintain even stronger relationships with their environments.
+%
+For instance, the functionality of a web server depends on the connection state and semantics of network sockets, on the memory management logic, the concurrency model, etc. as provided by the operating system and the C library.
 
 The existing path explosion mitigation techniques do not suffice for efficient symbolic execution of real-world software.
 %
 On the one hand, executing a real-world program soundly and completely involves running the program together with its environment.
 %
-On the other hand, the symbolic execution engine would get lost in the implementation details of the environment, and make little progress inside the target program.
+On the other hand, the symbolic execution engine would end up mostly executing the implementation details of the environment and make little progress inside the target program.
 
 \begin{framed}
-  This defines the \textbf{environment problem} in symbolic execution: to execute a program that relies on its environment, the symbolic execution engine needs to \emph{efficiently} support the environment interface, while maintaining as much as possible soundness and completeness in the target program.
+  This defines the \textbf{environment problem} in symbolic execution: to execute a program that relies on its environment, the symbolic execution engine needs to \emph{efficiently} provide the environment interface, while maintaining as much as possible soundness and completeness in the target program.
   %
   The environment problem is the main scalability issue of applying symbolic execution on real-world software.
 \end{framed}
