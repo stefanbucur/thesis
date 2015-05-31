@@ -75,19 +75,25 @@ KLEE found bugs and generated test suites with over 90\% statement coverage on a
 
 \paragraph{``In-vivo'' Symbolic Execution}
 
-Targeting low-level representations, such as x86, has an additional advantage: it blurs the line between the program and its environment.  A program, its libraries, and the entire operating system, all execute the same CPU instruction set, which would be targeted by the symbolic execution engine.
+The idea of targeting low-level representations, such as x86, in symbolic execution engendered a new approach to the environment problem, where the program and its environment are executed \emph{together} inside the symbolic execution engine.
 %
-This approach is particularly convenient when the target program is deeply integrated in the system, such that there is no clear separation between the program and its environment.
+%% This approach leverages the fact that a CPU executes the program, its libraries, and the entire operating system in the same way.
+%
+This approach is particularly convenient for cases where the interface between the program and its environment is broad and difficult to model.
 
-Full-VM symbolic execution engines, such as S2E~\cite{s2eSystem} and BitBlaze~\cite{bitBlaze}, leverage this approach in order to run symbolically any part of the software stack ``in-vivo'', without the need of the program source code, nor operating system models.
+Full-VM symbolic execution engines, such as S2E~\cite{s2eSystem} and BitBlaze~\cite{bitBlaze}, execute symbolically any part of the software stack ``in-vivo'', without the need of the program source code, nor operating system models.
 %
-The program state effectively is the CPU state (registers, flags, etc.) and the contents of the physical memory.
+The program state effectively is the CPU state (registers, flags, etc.) and the contents of the physical memory, and the environment is the perhiperal hardware.
 %
-I/O would still need to be modeled, as it constitutes the CPU environment; for instance, S2E provides symbolic models for devices, when testing their drivers running in a kernel.
+For instance, to address the environment problem, S2E provides symbolic models for devices, for testing their drivers running in a kernel.
 %
-Most notably, S2E discovered vulnerabilities in several Windows device drivers, some of whom were Microsoft-certified~\cite{ddt}.
+Most notably, S2E discovered vulnerabilities in several Windows device drivers, some of which were Microsoft-certified~\cite{ddt}.
 
-Symbolic execution also found use in security testing~\cite{aeg,mayhem,bitBlaze}.  For this task, reaching vulnerabilities is more important than achieving completeness, so engines in this space resort to simplifications to increase performance and reach deeper executions in larger programs, at the expense of losing completeness.
+Symbolic execution also found use in security testing~\cite{aeg,mayhem,bitBlaze}, as a more precise approach compared to random fuzzing.
+%
+Similarly to random fuzzing tools, symbolic execution-based security tools assume that bugs are more likely to be found in certain program parts, such as shallow parser components, or in code triggered by slight variations of valid inputs.
+%
+For these tools, reaching such bugs is more important than achieving completeness, so the symbolic execution engines resort to simplifications to increase test case throughput and reach deeper executions in larger programs, at the expense of losing completeness.
 %
 For example, the AEG~\cite{aeg} tool uses symbolic analysis to both find bugs and automatically generate exploits (get a shell) from the bugs.  AEG uses heuristics that prioritize buggy paths and employs simple operating system models that minimize path explosion.
 %
