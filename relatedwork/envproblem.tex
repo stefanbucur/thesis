@@ -1,3 +1,4 @@
+
 To efficiently handle real-world programs, symbolic execution engines need to minimize the time spent in the environment, while ensuring correct behavior in the program.
 %
 Existing approaches roughly fall into three categories, according to the degree of completeness in handling symbolic data going to the environment: (1) concretizing the calls to the environment (no symbolic support at all), (2) abstracting away the environment complexity through models, and (3) ``inlining'' the environment with the program.
@@ -12,17 +13,35 @@ Existing approaches roughly fall into three categories, according to the degree 
 
 Figure~\ref{fig:relwork:positioning} positions the existing work with respect to this classification, while qualitatively indicating the size of the environment interface targeted by the engine and the relative performance attained by each engine in its class.
 %
-In general, the less complete the environment support, the higher the engine performance is.  The engine performance is also influenced by the language level it targets: engines targeting complied code are typically faster than engines targeting high-level code.
+There are several patterns emerging from this classification.
 
-Figure~\ref{fig:relwork:positioning} also shows that Chef and Cloud9 advance the state of the art by providing a better tradeoff between environment completeness and engine performance.
+First, the less complete the environment support, the higher the engine performance tends to be.
+%
+A simpler environment creates fewer execution paths and leads to simpler expressions in the program state.  In turn, the path throughput in the target program increases.
+%
+This effect is most visible in symbolic execution engines that resort to concretization or employ simple models, such as EXE~\cite{exe}, Mayhem~\cite{mayhem}, or KLEE~\cite{klee}.
+
+Second, the completeness of the environment tends to be proportional to the complexity of the environment interface of the programs targeted.
+%
+For example, S2E~\cite{s2eSystem} executes device drivers together with the kernel, as modeling the latter would be too expensive.
+
+Third, the engine performance at a given environment completeness level (a vertical in Figure~\ref{fig:relwork:positioning}) depends on the targeted language and the constraint solver performance.
+%
+Engines targeting compiled code (e.g., KLEE~\cite{klee} or SAGE~\cite{godefroid:fuzz}) are typically faster than engines targeting high-level code (e.g., Kudzu~\cite{saxena-kudzu} or Java PathFinder~\cite{jpf-symbex}).
+%
+Similarly, newer engines that rely on faster solvers (e.g., EXE~\cite{exe}, SAGE~\cite{godefroid:fuzz}, or KLEE~\cite{klee}) fare better than the early engines (e.g., DART~\cite{dart} or CUTE~\cite{cute}).
+
+Finally, Figure~\ref{fig:relwork:positioning} shows that symbolic execution engines make a \emph{tradeoff} between the completeness of their environment and the performance they are willing to sacrifice.
+%
+From this perspective, our contributions, embodied in the \chef and \cnine symbolic execution engines, advance the state of the art by improving this tradeoff.
 %
 Cloud9 retains the performance of model-based environment handling, while providing an accurate operating system model that comes closer in completeness to an inlined approach.
 %
-On the other hand, Chef benefits from the completeness of inlining the environment---the language interpreter---with the interpreted program, while significantly improving performance over na\"{\i}ve symbolic execution.
+Chef benefits from the completeness of inlining the environment---the language interpreter---with the interpreted program, while significantly improving performance over na\"{\i}ve symbolic execution.
 
 In the rest of this section, we discuss in more detail each of the three environment approaches.
 %
-We will use the program in Figure~\ref{fig:relwork:example} as a running example to illustrate the tradeoffs in each approach to the environment problem.
+We will use the program in Figure~\ref{fig:relwork:example} as a running example to illustrate the tradeoffs made by each approach.
 
 \begin{figure}
   \centering
