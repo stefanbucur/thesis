@@ -44,25 +44,33 @@ We use the program in Figure~\ref{fig:relwork:example} as a running example to i
 \begin{figure}
   \centering
   \includegraphics[width=0.6\textwidth]{relatedwork/figures/environment-example}
-  \caption{Example of C program using the POSIX operating system interface to open and read a file.}
+  \caption{Example of C program using the POSIX operating system interface to open and read a file with a symbolic name.}
   \label{fig:relwork:example}
 \end{figure}
 
 \subsection{Over-approximation (Concretization)}
 
-A simple approach to simplifying the environment execution is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee,exe}.
+A simple approach to reducing the time spent in the environment is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee,exe}.
 %
-For instance, when a symbolic value $\mu$ is passed as a parameter to an external function, the symbolic execution engine replaces the symbolic expression with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
+For instance, when the symbolic file name, say $\mu$, is passed as argument to the \codebit{open} call in Figure~\ref{fig:relwork:example}, the symbolic execution engine replaces the argument with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
 
-For simple programs with limited interactions with their environment, this approach is sufficient.  However, for programs with stronger connections to the environment---e.g., maintaining open file descriptors---concretization may cause missed feasible paths and inconsistencies.
+%% For simple programs with limited interactions with their environment, this approach is sufficient.  However, for programs with stronger connections to the environment---e.g., maintaining open file descriptors---concretization may cause missed feasible paths and inconsistencies.
 
-Consider the example of an environment call with symbolic arguments.  Concretization affects both the return value and the input arguments.
+For programs that only send output to the environment (e.g., by calling \codebit{printf}), concretization works well.
 %
-First, the return value is always concrete, which may lead the symbolic execution engine to miss value-dependent paths in the program, such as error handling.
+However, for programs that share state with the environment (e.g., maintain open file descriptors), concretization causes missed feasible paths later in the program execution, or introduce inconsistencies in the program state.
+
+We illustrate these points on our example in Figure~\ref{fig:relwork:example}.
 %
-Second, in order to maintain soundness, concretization introduces constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).  This, too, restricts the possible executions on the paths following the external call.
+First, the returned file descriptor of the \codebit{open} system call is concrete, which causes the symbolic execution engine to exercise only one of the two possible outcomes---success or failure.
 %
-Avoiding the extra conditions might increase the coverage of the target program, at the expense of potentially introducing false executions.
+Second, in order to maintain soundness, concretization introduces constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).
+%
+This means the symbolic file name becomes concrete for the rest of the execution path, precluding any symbolic branching on its value.
+%
+Avoiding the extra constraint in the path condition would keep the file name symbolic, but introduces inconsistency in the program state: while the file descriptor returned by \codebit{open} is \emph{either} valid or failed, the unconstrained symbolic file name would represent \emph{both} vaild and invalid file names.
+%
+This may lead to test cases that increase the coverage in the program, at the expense of also introducing false positives.
 
 A concrete environment may also introduce inconsistencies if it is shared among all execution paths~\cite{klee}.
 %
