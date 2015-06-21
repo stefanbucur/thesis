@@ -1,0 +1,80 @@
+\newcommand{\true}{\ensuremath{\mathrm{true}}}
+\newcommand{\pc}{\ensuremath{\mathit{pc}}}
+\newcommand{\hlhlt}[1]{\textcolor{blue}{#1}}
+\newcommand{\concat}{\ensuremath{\oplus}}
+
+\begin{algorithm}
+  \SetCommentSty{textrm}
+  \KwIn{Initial location $\ell_0$.}
+  \KwData{Low-level state set $w$ and high-level tree $T$, represented as set of paths.}
+  \BlankLine
+  $w := \{ (\ell_0, \hlhlt{[L_0]}, \true, \lambda v .v) \}$\;
+  $\hlhlt{T := \{ [L_0] \}}$; $\hlhlt{W := \{ [L_0] \}}$\;
+  \While{$w \neq \varnothing$}{
+    $(\ell, \hlhlt{\overline{P}}, \pc, s) := \hlhlt{\mathit{pickNextLL}(w, T, W)}$;  $S := \varnothing$\;
+    \tcp{Symbolically execute the next instruction}
+    \Switch{$\mathit{instr}(\ell)$}{
+      \Case(\hfill// assignment\hspace*{4cm}){$v := e$}{
+        $S := \{(\mathit{succ}(\ell), \hlhlt{\overline{P}}, \pc, s[v \mapsto \mathbf{eval}(s, e)])\}$\;
+      }
+      \Case(\hfill// conditional jump\hspace*{4cm}){$\mathsf{if}(e) \; \mathsf{goto} \; \ell'$}{
+        \If{$\mathit{follow}(\pc \wedge s \wedge e)$}{
+          $S := \{ (\ell', \hlhlt{\overline{P}}, \pc \wedge e, s) \}$\;
+        }
+        \If{$\mathit{follow}(\pc \wedge s \wedge \neg e)$}{
+          $S := S \cup \{ (\mathit{succ}(\ell), \hlhlt{\overline{P}}, \pc \wedge \neg e, s) \}$\;
+        }
+      }
+      \hlhlt{\Case(\hfill// high-level program location\hspace*{4cm}){$\mathsf{hlpc}(L')$}{
+        $S := \{(\mathit{succ}(\ell), \overline{P} \concat [L'], \pc, s)\}$\;
+        \tcp{Merge path into the execution tree}  
+        $T := T \sqcup \overline{P}$\;
+      }}
+      \Case(\hfill// program halt\hspace*{4cm}){$\mathsf{halt}$}{
+        \hlhlt{\emph{Do nothing}}\;
+      }
+    }
+    $w := w \cup S$\;
+  }
+  \vskip 5.0pt
+  \caption{The low-level symbolic execution algorithm, as presented in~\cite{state-merging}, modified for maintaining high-level location information.}
+  \label{alg:chef:ll-symbex}
+\end{algorithm}
+
+
+\begin{algorithm}
+  \SetCommentSty{textrm}
+  \SetKwProg{Fn}{Function}{}{end}
+  \SetKwFunction{PickNext}{pickNextLL}
+  \SetKw{Break}{break}
+  \Fn{\PickNext{w, T}}{
+    \KwData{Low-level state set $w$, high-level execution tree $T$, and high-level state set $W$.}
+    \KwResult{Removes from $w$ a low-level state and returns it.}
+    \BlankLine
+    \While{$W \neq \varnothing$}{
+      $\overline{P} := \mathit{pickNextHL}(W)$\;
+      \If{$\neg canProgress(\overline{P})$}{
+        $W := W \cup \{\overline{P}\}$\;
+        \Break\;
+      }
+      \tcp{Add path successors in tree $T$}
+      $W := W \cup \mathit{succ}(\overline{P}, T)$\;
+    }
+    \If{$W = \varnothing$}{
+      \tcp{Pick low-level state aiming to discover new high-level path}
+      \Return{$\mathit{pickNextLLGlobal}(w)$}\;
+    }
+    \tcp{Pick low-level state to make progress on path $\overline{P}$}
+    \Return{$\mathit{pickNextLLLocal}(w, \overline{P})$}\;
+  }
+  \caption{The low-level state selection strategy, which implements the high-level symbolic execution algorithm.}
+  \label{alg:chef:ll-strategy}
+\end{algorithm}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
