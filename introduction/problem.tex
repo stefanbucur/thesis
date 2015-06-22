@@ -27,7 +27,7 @@ In other words, testing is a way to produce partial evidence of correctness, and
 Yet, test suites provide inadequate coverage of all the inputs a program could handle.
 %% Yet, due to the typically poor coverage one can get today, testing often turns into a mere hunt for bugs.
 %
-For instance, the test suite of the Chromium browser contains about one hundred thousands tests~\cite{chrome-tests}.  This suite is thoroughly comprehensive by industry standards, yet it represents only a small fraction of all possible inputs the browser may receive.
+For instance, the test suite of the Chromium browser contains about one hundred thousand tests~\cite{chrome-tests}.  This suite is thoroughly comprehensive by industry standards, yet it represents only a small fraction of all possible inputs the browser may receive.
 
 %% In practice, most software test harnesses consist of manually written tests that are run periodically; regression test suites provide an automated way of checking whether new bugs have entered the code~\cite{codeComplete}.
 %
@@ -37,7 +37,7 @@ The net result is that, despite the effort and resources invested in manual test
 %
 The industry average for bug density is a staggering 15 errors per 1000 lines of shipped code, while the most thorough quality assurance processes reach 0.1 errors per 1000 lines of code~\cite{codeComplete}.
 
-Today, this problem is amplified by having an increasing number of businesses online and hence vulnerable to remote attacks that exploit software vulnerabilities.  For instance, in 2014, there were 19 CVE vulnerabilities reported on average \emph{per day}~\cite{nvd}.
+Today, this problem is amplified by having an increasing number of businesses online and hence vulnerable to remote attacks that exploit software vulnerabilities.  For instance, in 2014, there were 19 vulnerabilities with CVEs reported on average \emph{per day}~\cite{nvd}.
 %
 These vulnerabilities are exploited to cause major disruptions~\cite{sony-hack} or leaks of sensitive data~\cite{sony-hack,psp-hack}.  On average, a data breach cost \$3.8 million in 2015~\cite{breach2015}, and the most prominent cases cost over \$100 million~\cite{target-hack}.
 
@@ -73,7 +73,7 @@ Despite their conceptual simplicity, fuzzers are effective at discovering  bugs~
 
 However, plain random fuzzers are ineffective at discovering corner-case bugs---bugs that manifest only under particular inputs in the program.
 %
-Consider the simple example in Figure~\ref{fig:intro:fuzzing}, where the program checks the input for the particular value 42 before performing a null-pointer access.  A random fuzzer has \emph{less than one in a billion} chance of hitting the bug with each input generated.
+Consider the simple example in Figure~\ref{fig:intro:fuzzing}, where the program checks the input for the particular value 42 before performing a null-pointer access.  A random fuzzer has \emph{less than a one in a billion} chance of hitting the bug with each input generated.
 %
 The vast majority of the generated inputs are therefore redundant.
 

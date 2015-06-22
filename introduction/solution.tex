@@ -4,7 +4,7 @@ Instead of attacking the entire range, this thesis addresses \emph{two} of the m
 %
 The operating system interface is used by virtually all systems software, as it is the only way for a process to access resources in a modern operating system.
 %
-For programs written in high-level dynamic languages, the environment is the language runtime---an interpreter or virtual machine.  Dynamic languages are increasignly popular for developing web applications and for system integration.  In January 2015, the top 4 languages used in open-source repositories on GitHub and on Stack Overflow were JavaScript, Java, PHP, and Python~\cite{lang-stats-2015}.
+For programs written in high-level dynamic languages, the environment is the language runtime---an interpreter or virtual machine.  Dynamic languages are increasingly popular for developing web applications and for system integration.  In January 2015, the top 4 languages used in open-source repositories on GitHub and on Stack Overflow were JavaScript, Java, PHP, and Python~\cite{lang-stats-2015}.
 
 While both interfaces provide deep abstractions and strong encapsulation, they exhibit opposite characteristics in terms of stability and size.
 
@@ -44,13 +44,11 @@ The language semantics are complex, partially specified, and change frequently. 
 
 This thesis introduces the idea of using the language interpreter---the de facto standard of the language semantics---as an ``executable language specification'': the interpreter runs in a lower-level (e.g., x86) symbolic execution engine, while it interprets the target program.  In turn, the aggregate system acts as a high-level symbolic execution engine for the target program.
 
-\chef automatically converts between the symbolic execution tree of the interpreter and that of the target program.
+The system automatically converts between the symbolic execution tree of the interpreter and that of the target program.
 %
 It does so by partitioning the interpreter paths into segments corresponding to the program statements executed on the path.  The interpreter paths with the same sequences of statements map to the same program path.
 
-Interpreters of popular dynamic languages, such as Python and JavaScript, have large implementations, ranging up to hundreds of thousands of lines of code.
-%
-To circumvent the path explosion arising by executing them directly, we introduce Class-Uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
+To circumvent the path explosion arising by executing the large interpreter implementations, which go up to hundreds of thousands of lines of code, we introduce Class-Uniform Path Analysis (CUPA), a family of path prioritization heuristics for maximizing a given coverage metric.
 %
 CUPA works by grouping paths into equivalence classes, according to a coverage goal.  The prioritization is done by uniformly choosing groups instead of paths.  Any path selection bias introduced by program locations with higher path explosion is contained within one equivalence class, with the net result that the execution of paths in the interpreter is distributed more uniformly.
 
