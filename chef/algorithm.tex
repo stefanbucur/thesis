@@ -3,10 +3,25 @@
 \newcommand{\hlhlt}[1]{\textcolor{blue}{#1}}
 \newcommand{\concat}{\ensuremath{\oplus}}
 
+A path $\overline{P}$ is a sequence of program locations.
+
+$\overline{P_1} \concat \overline{P_2}$ denotes the concatenation of paths $\overline{P_1}$ and $\overline{P_2}$.
+
+$\overline{P_1} \sqsubseteq \overline{P_2}$ denotes that path $\overline{P_1}$ is a prefix of path $\overline{P_2}$ ($\sqsubset$ is the strict form of the operator).
+
+$T \sqcup \overline{P}$ denotes the addition of path $\overline{P}$ to the tree $T$.  More precisely,
+\[
+T \sqcup \overline{P} = \begin{cases}
+  T & \quad \mathrm{if} \; \exists \overline{P'} \in T \,.\, \overline{P} \sqsubseteq \overline{P'} \\
+  T \cup \{ \overline{P} \} & \quad \mathrm{otherwise}
+                        \end{cases}
+\]
+
+
 \begin{algorithm}
   \SetCommentSty{textrm}
-  \KwIn{Initial location $\ell_0$.}
-  \KwData{Low-level state set $w$ and high-level tree $T$, represented as set of paths.}
+  \KwIn{Interpreter instrumented with $\mathsf{hlpc}(L)$ calls, starting execution from initial location $\ell_0$ and executing high-level program starting from initial location $L_0$.}
+  \KwData{Low-level state set $w$, high-level tree $T$, represented as set of paths, and abstract high-level state set $W$.}
   \BlankLine
   $w := \{ (\ell_0, \hlhlt{[L_0]}, \true, \lambda v .v) \}$\;
   $\hlhlt{T := \{ [L_0] \}}$; $\hlhlt{W := \{ [L_0] \}}$\;
@@ -37,7 +52,7 @@
     $w := w \cup S$\;
   }
   \vskip 5.0pt
-  \caption{The low-level symbolic execution algorithm, as presented in~\cite{state-merging}, modified for maintaining high-level location information.}
+  \caption{Low-level symbolic execution, adapted to maintain high-level location information.  The original algorithm was presented in~\cite{state-merging}, with changes highlighted in blue.}
   \label{alg:chef:ll-symbex}
 \end{algorithm}
 
@@ -47,10 +62,11 @@
   \SetKwProg{Fn}{Function}{}{end}
   \SetKwFunction{PickNext}{pickNextLL}
   \SetKw{Break}{break}
-  \Fn{\PickNext{w, T}}{
-    \KwData{Low-level state set $w$, high-level execution tree $T$, and high-level state set $W$.}
+  \Fn{\PickNext{w, T, W}}{
+    \KwIn{High-level strategy $\mathit{pickNextHL}$, completeness function $\mathit{canProgress}$, global and path-local low-level strategies $\mathit{pickNextLLGlobal}$ and $\mathit{pickNextLLLocal}$, low-level state set $w$, high-level execution tree $T$, and high-level state set $W$.}
     \KwResult{Removes from $w$ a low-level state and returns it.}
     \BlankLine
+    \tcp{Execute all high-level states that can progress}
     \While{$W \neq \varnothing$}{
       $\overline{P} := \mathit{pickNextHL}(W)$\;
       \If{$\neg canProgress(\overline{P})$}{
