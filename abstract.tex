@@ -12,33 +12,33 @@ Für Programme in dynamischen Sprachen stellt diese Arbeit die Idee vor, den Int
 
 \chapter*{Abstract}
 
-Manual software testing is laborious and prone to human error, yet it is the most common quality assurance method used in practice.  Automating the test case generation promises better effectiveness, especially for exposing corner-case bugs.
+Manual software testing is laborious and prone to human error.  Yet, among practitioners, it is the most popular method for quality assurance.  Automating the test case generation promises better effectiveness, especially for exposing corner-case bugs.
 %
 \emph{Symbolic execution} stands out as an automated testing technique that has no false positives, it eventually enumerates all feasible program executions, and can prioritize executions of interest.
 %
-However, path explosion---the number of program executions being exponential in the program size---hinders the applicability of symbolic execution in the real world, where software commonly reaches millions of lines of code.
+However, path explosion---the fact that the number of program executions is typically at least exponential in the size of the program---hinders the applicability of symbolic execution in the real world, where software commonly reaches millions of lines of code.
 
-In practice, large systems can be efficiently executed symbolically by exploiting their modularity.
+In practice, large systems can be efficiently executed symbolically by exploiting their modularity and thus symbolically execute the different parts of the system separately.
 %
-However, by separately executing a component that depends on its environment, a symbolic execution engine needs to provide an environment interface that is efficient, while maintaining accuracy and completeness, a conundrum known as the \emph{environment problem}.
+However, a component typically depends on its environment to perform its task.  Thus, a symbolic execution engine needs to provide an environment interface that is efficient, while maintaining accuracy and completeness.  This conundrum is known as the \emph{environment problem}.
 %
 Systematically addressing the environment problem is challenging, as its instantiation depends on the nature of the environment and its interface.
 
-This thesis addresses two instances of the environment problem in symbolic execution, which reside at opposite points on the \emph{interface stability} axis: (1) system software interacting with an operating system with stable and well-documented semantics (e.g., POSIX), and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript, whose semantics and interfaces are continuously evolving.
+This thesis addresses two instances of the environment problem in symbolic execution, which are at opposite ends of the spectrum of \emph{interface stability}: (1) system software interacting with an operating system with stable and well-documented semantics (e.g., POSIX), and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript, whose semantics and interfaces are continuously evolving.
 
-To address the environment problem for stable operating system interfaces, this thesis introduces the idea of splitting an operating system model into a core set of primitives built into the engine and, on top, the full operating system interface emulated inside the guest.
+To address the environment problem for stable operating system interfaces, this thesis introduces the idea of splitting an operating system model into a core set of primitives built into the engine at host level and, on top of it, the full operating system interface emulated inside the guest.
 %
 As few as two primitives are sufficient to support a complex interface such as POSIX: threads with synchronization and address spaces with shared memory.
 %
-We prototyped this idea in the \emph{\cnine} symbolic execution platform. \cnine's accurate and efficient POSIX model exposed hard-to-reproduce bugs in systems such as UNIX utilities, web servers, and distributed systems.
+We prototyped this idea in the \emph{\cnine} symbolic execution platform. \cnine's accurate and efficient POSIX model exposes hard-to-reproduce bugs in systems such as UNIX utilities, web servers, and distributed systems.
 %
 \cnine is available at {\urlstyle{same}\url{http://cloud9.epfl.ch}}.
 
-For programs written in high-level interpreted languages, this thesis introduces the idea of using the language interpreter as an ``executable language specification''.  The interpreter runs inside a low-level (e.g., x86) symbolic execution engine, while it executes the target program.  The aggregate system acts as a high-level symbolic execution engine for the program.
+For programs written in high-level interpreted languages, this thesis introduces the idea of using the language interpreter as an ``executable language specification''.  The interpreter runs inside a low-level (e.g., x86) symbolic execution engine while it executes the target program.  The aggregate system acts as a high-level symbolic execution engine for the program.
 %
-To manage the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), a heuristic for prioritizing paths that groups paths into equivalence classes according to a coverage goal.
+To manage the complexity of symbolically executing the entire interpreter, this thesis introduces Class-Uniform Path Analysis (CUPA), an algorithm for prioritizing paths that groups paths into equivalence classes according to a coverage goal.
 %
-We prototyped these ideas in the \emph{\chef} symbolic execution platform for interpreted languages, which generated up to 1000 times more tests in popular Python and Lua packages compared to a plain execution of the interpreters.
+We built a prototype of these ideas in the form of \emph{\chef}, a symbolic execution platform for interpreted languages that generates up to 1000 times more tests in popular Python and Lua packages compared to a plain execution of the interpreters.
 %
 \chef is available at {\urlstyle{same}\url{http://dslab.epfl.ch/proj/chef/}}.
 
