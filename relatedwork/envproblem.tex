@@ -33,9 +33,9 @@ Finally, Figure~\ref{fig:relwork:positioning} shows that symbolic execution engi
 %
 From this perspective, our contributions, embodied in the \chef and \cnine symbolic execution engines, advance the state of the art by improving this tradeoff.
 %
-Cloud9 retains the performance of model-based environment handling, while providing an accurate operating system model that comes closer in completeness to an inlined approach.
+\cnine retains the performance of model-based environment handling, while providing an accurate operating system model that comes closer in completeness to an inlined approach.
 %
-Chef benefits from the completeness of inlining the environment---the language interpreter---with the interpreted program, while significantly improving performance over na\"{\i}ve symbolic execution.
+\chef benefits from the completeness of inlining the environment---the language interpreter---with the interpreted program, while significantly improving performance over na\"{\i}ve symbolic execution.
 
 In the rest of this section, we discuss in more detail each of the three environment approaches.
 %
@@ -86,13 +86,13 @@ Symbolic execution engines implement models either by building them into the eng
 
 Although they are effective at reducing path explosion, models are expensive to write correctly and completely.  As a result, they tend to be employed only for simple or stable environment semantics, or when the model accuracy is less important (e.g., security testing~\cite{aeg}).
 
-Cloud9 takes the modeling approach to the environment problem, when symbolically executing programs interacting with the operating system.  Cloud9 is the first to provide an accurate and efficient model for an operating system interface as complex as POSIX.  Key to our approach is to divide the model code into built-in core primitives and guest code, which helps keep the implementation simple, while covering much of the most common operating system abstractions.
+%% \cnine takes the modeling approach to the environment problem, when symbolically executing programs interacting with the operating system.  \cnine is the first to provide an accurate and efficient model for an operating system interface as complex as POSIX.  Key to our approach is to divide the model code into built-in core primitives and guest code, which helps keep the implementation simple, while covering much of the most common operating system abstractions.
 
 \subsection{Inlining (Whole-system Analysis)}
 
 Concretizing environment calls or writing models is unfeasible when the environment interface is large or maintains a complex state, strongly coupled to the program state.
 %
-For example, once loaded, a device driver typically can interact with the entire operating system kernel.  Concretizing all kernel calls would drastically reduce the exploration space, while modeling all kernel features would be expensive, especially for kernels with high internal churn, such as Linux.
+For example, once loaded, a device driver typically can interact with the entire operating system kernel.  Concretizing all kernel calls would drastically reduce the exploration space, while modeling all kernel features would be expensive, especially for kernels whose internals change often, such as Linux.
 
 For these cases, an approach that preserves correctness and completeness is to bundle the environment with the program and execute it symbolically as one target.
 %
@@ -102,7 +102,7 @@ However, this approach reduces the effectiveness of symbolic execution on the or
 %
 To mitigate the path explosion, S2E introduces execution consistency models, which are principles of converting between symbolic and concrete values when crossing the program boundaries, in order to control the path explosion in the environment.
 
-Chef takes the inlining approach to the environment problem, when symbolically executing programs written in interpreted languages.  Chef is the first system to use a language interpreter as a semantics provider for symbolic execution.
+%% \chef takes the inlining approach to the environment problem, when symbolically executing programs written in interpreted languages.  \chef is the first system to use a language interpreter as a semantics provider for symbolic execution.
 
 
 \subsection{Developer Control of Symbolic Environments}
@@ -111,15 +111,15 @@ The developer interface to a symbolic execution engine plays an important role i
 %
 The best known sources of developer inputs are the search selection strategies and the injection of symbolic data in the system.
 %
-For example, KLEE runs command-line utilities with symbolic arguments defined using a special syntax, in line with the rest of the target arguments.  For instance, \codebit{ls -l --sym-arg 1 3} runs \codebit{ls} with the second argument symbolic, between 1 and 3 characters.  This syntax can be used to define symbolic arguments or symbolic files.
+For example, KLEE runs command-line utilities with symbolic arguments defined using a special syntax, in line with the rest of the target arguments.  For instance, \codebit{ls -l --sym-arg 1 3} runs \codebit{ls} with the second argument set as symbolic, between 1 and 3 characters.  This syntax can be used to define symbolic arguments or symbolic files.
 
 The developer control over the symbolic input was encapsulated in concepts such as parameterized unit tests~\cite{tillmann-puts}, which extend regular unit tests with parameters marked as symbolic inputs during symbolic execution.
 %
 Similarly, QuickCheck~\cite{quickcheck} allows writing input specifications in Haskell, which are used to instantiate inputs during random testing.
 
-However, systems software is influenced by many other external factors, such as environment variables, system call failures, thread schedules, signal dispatch timing, and so on.
-%
-To address this problem, Cloud9's symbolic test interface gives extensive control over the behavior of its operating system model, such as per-file descriptor symbolic fault injection or per-socket symbolic control flow.
+%% However, systems software is influenced by many other external factors, such as environment variables, system call failures, thread schedules, signal dispatch timing, and so on.
+%% %
+%% To address this problem, \cnine's symbolic test interface gives extensive control over the behavior of its operating system model, such as per-file descriptor symbolic fault injection or per-socket symbolic control flow.
 
 %%% Local Variables: 
 %%% mode: latex

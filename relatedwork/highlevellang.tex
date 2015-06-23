@@ -34,15 +34,15 @@ In certain applications, symbolic execution is used to execute a model of a larg
 %
 For example, the symbolic execution engine of the scalability testing tool Commuter~\cite{commuter} is entirely built in Python and offers an API for symbolically modeling operating system calls using the Python language.
 
-In contrast to the existing techniques, Chef is the first system to use symbolic execution on an interpreter to symbolically execute a program written in the target interpreted language.  The closest work related to our approach is PokeEMU~\cite{hifi-lofi}, which uses symbolic execution on a reference CPU emulator to generate a test suite for checking the correctness of another emulator.  The generated test suite captures the semantics of the CPU instruction set, as implemented by the reference emulator.  However, the goal of PokeEMU is to check the implementation of the emulator, while in the case of Chef, we target the programs running in the interpreter.
+%% In contrast to the existing techniques, \chef is the first system to use symbolic execution on an interpreter to symbolically execute a program written in the target interpreted language.  The closest work related to our approach is PokeEMU~\cite{hifi-lofi}, which uses symbolic execution on a reference CPU emulator to generate a test suite for checking the correctness of another emulator.  The generated test suite captures the semantics of the CPU instruction set, as implemented by the reference emulator.  However, the goal of PokeEMU is to check the implementation of the emulator, while in the case of \chef, we target the programs running in the interpreter.
 
 \paragraph{Effectiveness of Symbolic Execution for Interpreted Languages}
 
-Despite their shortcomings, the existing symbolic execution engines for interpreted languages have already shown promise for finding bugs, in areas where these languages are increasingly popular, such as web applications~\cite{saxena-kudzu,artzi-apollo, kiezun-ardilla}.
+The existing symbolic execution engines for interpreted languages have shown promise for finding bugs, in areas where these languages are increasingly popular, such as web applications~\cite{saxena-kudzu,artzi-apollo, kiezun-ardilla}.
 
 For instance, the Kudzu~\cite{saxena-kudzu} symbolic execution engine for JavaScript was used to detect code injection vulnerabilities.  The Apollo~\cite{artzi-apollo} engine targets PHP code to detect runtime and HTML errors, while Ardilla~\cite{kiezun-ardilla} discovered SQL injection and cross-site scripting vulnerabilities in PHP applications.
 %
-This potential is also confirmed by our findings with Chef, whose engines for Python and Lua discovered hangs and unexpected exceptions in popular packages (Section~\ref{sec:eval:bug-finding}).
+This potential is also confirmed by our findings with \chef, whose engines for Python and Lua discovered hangs and unexpected exceptions in popular packages (Section~\ref{sec:eval:bug-finding}).
 
 %%% Local Variables: 
 %%% mode: latex
