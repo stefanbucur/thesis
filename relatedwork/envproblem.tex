@@ -21,7 +21,7 @@ This effect is most visible in symbolic execution engines that resort to concret
 
 Second, the completeness of the environment tends to be proportional to the complexity of the environment interface of the programs targeted.
 %
-For example, S2E~\cite{s2eSystem} executes device drivers together with the kernel, as modeling the latter would be too expensive.
+For example, S2E~\cite{s2eSystem} executes device drivers together with the kernel, as modeling the latter would incur a significant engineering effort.
 
 Third, the engine performance at a given environment completeness level (a vertical in Figure~\ref{fig:relwork:positioning}) depends on the targeted language and the constraint solver performance.
 %
@@ -29,7 +29,7 @@ Engines targeting compiled code (e.g., KLEE~\cite{klee} or SAGE~\cite{godefroid:
 %
 Similarly, newer engines that rely on faster solvers (e.g., EXE~\cite{exe}, SAGE~\cite{godefroid:fuzz}, or KLEE~\cite{klee}) fare better than the early engines (e.g., DART~\cite{dart} or CUTE~\cite{cute}).
 
-Finally, Figure~\ref{fig:relwork:positioning} shows that symbolic execution engines make a \emph{tradeoff} between the completeness of their environment and the performance they are willing to sacrifice.
+Finally, Figure~\ref{fig:relwork:positioning} shows that symbolic execution engines make a \emph{trade-off} between the completeness of their environment and the performance they are willing to sacrifice.
 %
 From this perspective, our contributions, embodied in the \chef and \cnine symbolic execution engines, advance the state of the art by improving this tradeoff.
 %
@@ -48,17 +48,17 @@ We use the program in Figure~\ref{fig:relwork:example} as a running example to i
   \label{fig:relwork:example}
 \end{figure}
 
-\subsection{Over-approximation (Concretization)}
+\subsection{Under-approximation (Concretization)}
 
 A simple approach to reducing the time spent in the environment is to concretize the values that cross the program boundary~\cite{dart,godefroid:fuzz,klee,exe}.
 %
-For instance, when the symbolic file name, say $\mu$, is passed as argument to the \codebit{open} call in Figure~\ref{fig:relwork:example}, the symbolic execution engine replaces the argument with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
+For instance, when the symbolic file name, say $\mu$, is passed as an argument to the \codebit{open} call in Figure~\ref{fig:relwork:example}, the symbolic execution engine replaces the argument with a concrete example $m$.  This causes the execution to proceed linearly inside the environment.
 
 %% For simple programs with limited interactions with their environment, this approach is sufficient.  However, for programs with stronger connections to the environment---e.g., maintaining open file descriptors---concretization may cause missed feasible paths and inconsistencies.
 
 For programs that only send output to the environment (e.g., by calling \codebit{printf}), concretization works well.
 %
-However, for programs that share state with the environment (e.g., maintain open file descriptors), concretization causes missed feasible paths later in the program execution, or introduce inconsistencies in the program state.
+However, for programs that share state with the environment (e.g., maintain open file descriptors), concretization causes missed feasible paths later in the program execution, or introduces inconsistencies in the program state.
 
 We illustrate these points on our example in Figure~\ref{fig:relwork:example}.
 %
@@ -68,9 +68,9 @@ Second, in order to maintain soundness, concretization introduces constraints in
 %
 This means the symbolic file name becomes concrete for the rest of the execution path, precluding any symbolic branching on its value.
 %
-Avoiding the extra constraint in the path condition would keep the file name symbolic, but introduces inconsistency in the program state: while the file descriptor returned by \codebit{open} is \emph{either} valid or failed, the unconstrained symbolic file name would represent \emph{both} vaild and invalid file names.
+Avoiding the extra constraint in the path condition would keep the file name symbolic, but introduces inconsistency in the program state: while the file descriptor returned by \codebit{open} is \emph{either} valid or failed, the unconstrained symbolic file name would represent \emph{both} valid and invalid file names.
 %
-This may lead to test cases that increase the coverage in the program, at the expense of also introducing false positives.
+This may lead to test cases that increase the coverage in the program, at the expense of also introducing false positives, which manifest as duplicate test cases.
 
 A concrete environment may also introduce inconsistencies if it is shared among all execution paths~\cite{klee}.
 %

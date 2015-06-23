@@ -18,14 +18,14 @@ When the symbolic semantics are not available, such as inside external library c
 %
 By using this approach, DART and CUTE found crashes in small-to-moderate C programs, such as protocol implementations and data structure libraries.
 
-This form of execution is also called concolic (\emph{conc}rete + symb\emph{olic})~\cite{cute}, or ``whitebox fuzzing''~\cite{godefroid:fuzz}.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
+This form of execution is also called concolic (\emph{conc}rete + symb\emph{olic})~\cite{cute}, or ``whitebox fuz\-zing''~\cite{godefroid:fuzz}.  The symbolic execution space is explored through successive runs of the program with concrete inputs.  The symbolic constraints collected at each run are used to generate new inputs, which are used in subsequent executions.
 
 
 \paragraph{Specialized Solver Support}
 
 While concolic execution completes each execution path, it can miss \emph{other} feasible paths in the symbolic execution tree when the symbolic semantics of the program are not available.
 %
-In particular, a major limitation of the early symbolic execution engines was the lack of support for reasoning precisely and efficiently about common expressions involving bitwise arithmetic and memory access.
+In particular, a major limitation of the early symbolic execution engines was the lack of support for reasoning precisely and efficiently about common expressions involving bitwise arithmetic and memory accesses.
 %
 For instance, DART and CUTE used a solver only for linear integer constraints, which limited the scope of the symbolic analysis, because the solver theory did not capture the peculiarities of bitwise arithmetic (e.g., overflows), nor supported pointer arithmetic.
 
