@@ -7,18 +7,6 @@ Ideally, software would be written correctly by construction.  This was the way 
 However, the decades of software development experience that followed have painted a different picture.  As it turns out, the software complexity---up to hundreds of millions of lines of code---and rapid pace of feature development have precluded a formal, rigorous approach.
 %
 With the exception of a few safety-critical segments, such as avionics~\cite{Astree}, automotive~\cite{automotive}, or medical equipment, most of the software industry today relies on \emph{testing} for its quality assurance~\cite{softwareMetrics}.
-%% %
-%% In this thesis, we refer to such software as \emph{real-world software}, which we define more precisely as follows.
-
-%% \medskip
-
-%% \textbf{Definition:} We define \emph{real-world software} to be commodity software developed in industry in the form of products (e.g., browsers or CAD tools), services (e.g., web search or web-based email), building blocks (e.g., libraries), and developer support tools (compilers, benchmarks, etc.).
-%% %
-%% The development of real-world software is primarily governed by market and logistic constraints, such as budgets, shipping deadlines, and competition on features.
-%% %
-%% In this respect, real-world software distinguishes itself from safety-critical software developed in the automotive, avionics, or space industry.
-
-%% \medskip
 
 Testing a program consists of exercising multiple different paths through it and checking whether ``they do the right thing.''
 %
@@ -40,12 +28,6 @@ The industry average for bug density is a staggering 15 errors per 1000 lines of
 Today, this problem is amplified by having an increasing number of businesses online and hence vulnerable to remote attacks that exploit software vulnerabilities.  For instance, in 2014, there were 19 vulnerabilities with CVEs reported on average \emph{per day}~\cite{nvd}.
 %
 These vulnerabilities are exploited to cause major disruptions~\cite{sony-hack} or leaks of sensitive data~\cite{sony-hack,psp-hack}.  On average, a data breach cost \$3.8 million in 2015~\cite{breach2015}, and the most prominent cases cost over \$100 million~\cite{target-hack}.
-
-%% Software testing is resource-hungry, time-consuming, labor-intensive, and prone to human omission and error.  A lot of bugs escape quality assurance into production, where they cause disruptions and data loss. For instance, in 2014, there were 19 CVE vulnerabilities reported on average per day, and estimates show that software bugs cost the global economy more than \$300 billion in 2013.
-
-%% At the same time, resources invested in testing are peaking. In 2014, about a quarter of the entire IT budget in enterprises was allocated to software testing, which was the highest figure to that date.  On average, developer teams spend as much as half of their time doing testing and fixing bugs.
-
-%% Facing this situation, organizations recognize that software testing is cumbersome.  In a recent survey, more than two thirds of the organizations questioned admitted they have difficulties determining relevant tests for their software and pointed at the lack of adequate tools to support that.
 
 Alas, with a few exceptions---e.g., seL4~\cite{seL4}, a recent effort of formally verifying an operating system kernel---switching to a formal development model is not feasible for most of the software written today.
 %
@@ -121,7 +103,9 @@ The two properties make symbolic execution highly effective at automatically gen
 
 %% The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops making the problem even worse.  As any non-trivial software can have at least thousands of branches, the size of the tree quickly becomes too large to be exhaustively covered in a reasonable amount of time.  This is called the ``path explosion'' problem.
 
-Alas, symbolic execution is challenging to apply to non-trivial software.  The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops further amplifying the problem.  Even for moderately sized programs with hundreds of branches, the size of the execution tree becomes too large to be completely covered in a reasonable amount of time.
+Alas, symbolic execution is challenging to apply to non-trivial software.
+%
+The number of paths in the symbolic execution tree is roughly exponential in the number of program branches, with loops further amplifying the problem.  Even for moderately sized programs with hundreds of branches, the size of the execution tree becomes too large to be completely covered in a reasonable amount of time.
 %
 This is commonly known as the ``path explosion'' problem~\cite{burnim2008heuristics,klee,godefroid:compdyntest,rwset,state-merging}.
 %
@@ -130,7 +114,11 @@ In practice, given a limited time budget, most symbolic execution engines resort
 
 \subsection{The Environment Problem in Symbolic Execution}
 
-The environment problem in symbolic execution is closely related to the notion of \emph{real-world} software, which we define first below.
+In practice, large systems can be efficiently executed symbolically by exploiting their modularity and thus symbolically execute the different parts of the system separately.
+%
+However, a component typically depends on its environment to perform its task.
+%
+This aspect is commonly encountered in the real world, where programs interact with the operating system, web applications use libraries, and so on.  Thus, we refer to this software as \emph{real-world}:
 
 \begin{framed}
   In this thesis, we define \textbf{real-world software} as programs whose logic \emph{depends} on external functionality, such as libraries or the operating system.
@@ -138,14 +126,23 @@ The environment problem in symbolic execution is closely related to the notion o
   We call this external functionality the \emph{environment} of the program, with which the program interacts through an environment \emph{interface}.
 \end{framed}
 
-The size of the environment---code and state---may be much larger than the size of the program itself.
+To execute real-world software, a symbolic execution engine needs to provide the interface of its environment.
+%
+To reap the benefits of modularity, the engine should provide an interface that is more efficient than simply running the entire system symbolically.
+%
+At the same time, the engine should maintain accuracy and completeness, in order to avoid missing program paths or introducing false positives.  This conundrum is known as \emph{the environment problem}~\cite{klee}:
+
+\begin{framed}
+  The \textbf{environment problem} in symbolic execution is the trade-off between achieving \emph{efficiency} and maintaining soundness and completeness in the target program when providing its environment interface.
+\end{framed}
+
+While it affects other program analysis techniques, such as static analysis~\cite{slam-project} and software model checking~\cite{visser-jpf}, the environment problem is particularly challenging for symbolic execution~\cite{klee,unit-system}, because of the environment complexity and the accuracy and completeness requirements.
+
+First, the size of the environment---code and state---may be much larger than the size of the program itself.
 %
 For instance, consider a 50 lines of code system utility that prints on the terminal the contents of a file.  To perform this task, the program calls the operating system for accessing files and printing on the screen, implemented in tens of thousands of lines of kernel and library code.
 
-
-%% The program dependency on its environment manifests as the program reliance on the environment interface contracts (pre- and post-conditions), as well as a relationship between the program state and the environment state.
-%
-The environment interface is often stateful and its state is closely coupled with the program state.
+Second, the environment is often stateful and its state is closely coupled with the program state.
 %
 In our previous example, the kernel keeps the open file and the terminal in a file table, whereas the program keeps file descriptors that index into the file table.
 
@@ -153,17 +150,11 @@ More sophisticated systems maintain even stronger relationships with their envir
 %
 For instance, the functionality of a web server depends on the connection state and semantics of network sockets, on the memory management logic, the concurrency model, etc. as provided by the operating system and the C library.
 
-The existing path explosion mitigation techniques do not suffice for efficient symbolic execution of real-world software.
-%
-On the one hand, executing a real-world program soundly and completely involves running the program together with its environment.
-%
-On the other hand, the symbolic execution engine would end up mostly executing the implementation details of the environment and make little progress inside the target program.
-
-\begin{framed}
-  This defines the \textbf{environment problem} in symbolic execution: to execute a program that relies on its environment, the symbolic execution engine needs to \emph{efficiently} provide the environment interface, while maintaining as much as possible soundness and completeness in the target program.
-  %
-  The environment problem is the main scalability issue of applying symbolic execution on real-world software.
-\end{framed}
+%% The existing path explosion mitigation techniques do not suffice for efficient symbolic execution of real-world software.
+%% %
+%% On the one hand, executing a real-world program soundly and completely involves running the program together with its environment.
+%% %
+%% On the other hand, the symbolic execution engine would end up mostly executing the implementation details of the environment and make little progress inside the target program.
 
 One simple approach for dealing with the environment problem is to let the calls into the environment go through concretely.
 %
