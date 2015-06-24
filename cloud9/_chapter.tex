@@ -1,15 +1,19 @@
-%% Symbolically executing real-world software is challenging not only because of path explosion but also because real-world systems interact with their environment in varied and complex ways. This section describes our experience building \cnine's symbolic model of a POSIX environment, which supports most essential interfaces: threads, process management, sockets, pipes, polling, etc. We believe the described techniques are general enough to model other OSes and environments as well.
 
-Operating systems expose a complex stateful interface to user programs.
+Operating systems expose an interface that is typically stable and well documented.
 %
-In this chapter, we introduce \cnine, a symbolic execution platform for system programs that is based on a symbolic model of most essential operating system abstractions, including threads, process management, sockets, pipes, and polling. (Section~\ref{sec:cloud9:primitives}).
+This engenders a \emph{modeling} approach to the environment problem, which only involves the one-time effort to produce such a model.
 %
-We report on our experience modeling these abstractions for the standard POSIX interface (Section~\ref{sec:cloud9:posix}).
-%
-Our POSIX model includes extensions that developers can use in \emph{symbolic tests}.  The extensions control non-deterministic operating system events, such as thread scheduling and network flow control, to help increase coverage in the target programs (Section~\ref{sec:cloud9:symtests}).
+However, modern operating systems are complex and provide a wide set of abstractions to programs, such as processes and threads, IPC, networking, and files.  Modeling these abstractions is challenging.
 
-\section{Symbolic Execution Engine Primitives for System Programs}
-\label{sec:cloud9:primitives}
+In this chapter, we present an approach to modeling the operating system interface that relies on \emph{splitting} the model in a set of most primitive operating system abstractions, on top of which a full operating system model can be implemented with reasonable effort (Section~\ref{sec:cloud9:splitmodel}).
+%
+We leverage the operating system model to expose hard-to-reproduce scenarios in program execution by providing a \emph{symbolic test} interface for developers (Section~\ref{sec:cloud9:symtests}).
+%
+Finally, we report on our experience applying these principles in the \cnine symbolic execution platform for POSIX applications, with support for threads, processes, sockets, pipes, polling, and more (Section~\ref{sec:cloud9:posix}).
+
+
+\section{Splitting Operating System Environment in Built-in Primitives and Guest Model}
+\label{sec:cloud9:splitmodel}
 \input{cloud9/splitmodel}
 
 \section{Case Study: A Symbolic POSIX Interface Model}
