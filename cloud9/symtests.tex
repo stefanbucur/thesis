@@ -1,0 +1,128 @@
+Software products and systems typically have large ``hand-made'' test suites; writing and maintaining these suites requires substantial human effort.
+%
+\cnine aims to reduce this burden while improving the quality of testing, by offering an easy way to write ``symbolic test suites.''
+%
+First, a symbolic test case encompasses many similar concrete test cases into a single symbolic one---each symbolic test a developer writes is equivalent to many concrete ones.
+%
+Second, a symbolic test case explores conditions that are hard to produce reliably in a concrete test case, such as the occurrence of faults, concurrency side effects, or network packet reordering, dropping and delay.
+%
+Furthermore, symbolic test suites can easily cover unknown corner cases, as well as new, untested functionality.  In this section, we present the API for symbolic tests and illustrate it with a use case.
+
+\subsection{Testing Platform Interface}
+
+The \cnine symbolic testing API (Tables~\ref{table:globalapi} and~\ref{table:ioctlapi}) allows tests to programmatically control events in the environment of the program under test.
+%
+A test suite needs to simply include a \codebit{cloud9.h} header file and make the requisite calls.
+
+\begin{table}
+\addtolength{\tabcolsep}{-2.5pt}
+{
+\small
+\centering
+\begin{tabular}{|l|p{50mm}|}
+\hline
+\textbf{~~~~~Function Name} & \textbf{~~~~~~~~~~~~~~~~~~Description} \\
+\hline
+\cninesuffix\_make\_symbolic & Mark memory regions as symbolic \\
+\hline
+\cninesuffix\_fi\_enable & \multirow{2}{4cm}{Enable/disable the injection of faults} \\
+\cninesuffix\_fi\_disable & \\
+\hline
+\cninesuffix\_set\_max\_heap & Set heap size for symbolic \codebit{malloc} \\
+\hline
+\cninesuffix\_set\_scheduler & Set scheduler policy (e.g., round-robin)\\
+\hline
+\end{tabular}
+\vspace{-4pt}
+\caption{\cnine API for setting global behavior parameters.}
+\label{table:globalapi}
+}
+\end{table}
+
+\begin{table}
+\addtolength{\tabcolsep}{-2.5pt}
+{
+\small
+\centering
+\begin{tabular}{|l|p{4.8cm}|}
+\hline
+\textbf{~~Extended Ioctl Code} & \textbf{~~~~~~~~~~~~~~~~Description} \\
+\hline
+SIO\_SYMBOLIC & Turns this file or socket into a source of symbolic input \\
+\hline
+SIO\_PKT\_FRAGMENT & Enables packet fragmentation on this socket (must be a stream socket) \\
+\hline
+SIO\_FAULT\_INJ & Enables fault injection for operations on this descriptor \\
+\hline
+\end{tabular}
+\vspace{-4pt}
+\caption{\cnine extended \codebit{ioctl} codes to control environmental events on a per-file-descriptor basis.}
+\label{table:ioctlapi}
+}
+\end{table}
+
+\paragraph{Symbolic Data and Streams}
+
+The generality of a test case can be expanded by introducing bytes of symbolic data.
+%
+This is done by calling \codebit{\cninesuffix\_make\_symbolic} to mark data symbolic, a wrapper around the SEE's primitive for injecting fresh symbolic variables in the program state.
+%
+%% a wrapper around \codebit{klee\_\allowbreak{}make\_\allowbreak{}symbolic}, with an argument that points to a memory region. \codebit{klee\_make\_symbolic} is a primitive provided by \klee to mark data symbolic.
+%
+In addition to wrapping this call, we added several new primitives to the testing API (Table~\ref{table:globalapi}). In \cnine, symbolic data can be written/read to/from files, can be sent/received over the network, and can be passed via pipes. Furthermore, the \codebit{SIO\_SYMBOLIC} \codebit{ioctl} code (Table~\ref{table:ioctlapi}) turns on/off the reception of symbolic bytes from individual files or sockets.
+
+\paragraph{Network Conditions}
+
+Delay, reordering, or dropping of packets causes a network data stream to be fragmented.
+%
+Fragmentation can be turned on or off at the socket level using one of the \cnine \codebit{ioctl} extensions.  Section~\ref{sec:eval:lighttpd} presents a case where symbolic fragmentation enabled \cnine to prove that a bug fix for the lighttpd web server was incomplete. 
+
+\paragraph{Fault Injection}
+
+Calls in a POSIX system can return an error code when they fail.
+%
+Most programs can tolerate such failed calls, but even high-quality production software misses some~\cite{lfi}. Such error return codes are simulated by \cnine whenever fault injection is turned on. 
+
+\paragraph{Symbolic Scheduler}
+
+\cnine provides multiple scheduling policies that can be controlled for purposes of testing on a per-code-region basis.
+%
+Currently, \cnine supports a round-robin scheduler and two schedulers specialized for bug finding: a variant of the iterative context bounding scheduling algorithm~\cite{chess} and an exhaustive exploration of all possible scheduling decisions.  
+
+
+\subsection{Usage Example: Testing Custom Header Handling in Web Server}
+
+Consider a scenario in which we want to test the support for a new \codebit{X-NewExtension} HTTP header, just added to a web server.
+%
+We show how to write tests for this new feature.
+
+A symbolic test suite typically starts off as an augmentation of an existing test suite;
+%
+in our scenario, we reuse the existing boilerplate setup code and write a symbolic test case that marks the extension header symbolic. Whenever the code that processes the header data is executed, \cnine forks at all the branches that depend on the header content. Similarly, the request payload can be marked symbolic to test the payload-processing part of the system:
+
+\begin{verbatim}
+   char hData[10];
+   cloud9_make_symbolic(hData);
+   strcat(req, "X-NewExtension: ");
+   strcat(req, hData);
+\end{verbatim}
+
+The web server may receive HTTP requests fragmented in a number of chunks, returned by individual invocations of the \codebit{read()} system call---the web server should run correctly regardless of the fragmentation pattern.
+%
+To test different fragmentation patterns with \cnine, one simply enables symbolic packet fragmentation on the client socket:
+\begin{verbatim}
+   ioctl(ssock, SIO_PKT_FRAGMENT, RD);
+\end{verbatim}
+
+To test how the web server handles failures in the environment, we can ask \cnine to selectively inject faults when the server reads or sends data on a socket by placing in the symbolic test suite calls of the form:
+\begin{verbatim}
+   ioctl(ssock, SIO_FAULT_INJ, RD | WR);
+\end{verbatim}
+\cnine can also enable/disable fault injection globally for all file descriptors within a certain region of the code using calls to \codebit{\cninesuffix\_fi\_\allowbreak{}enable} and \codebit{\cninesuffix\_fi\_\allowbreak{}disable}. For simulating low-memory conditions, \cnine provides a \codebit{\cninesuffix\_set\_\allowbreak{}max\_heap} primitive, which can be used to test the web server with different maximum heap sizes.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:

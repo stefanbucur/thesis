@@ -1,0 +1,109 @@
+The goal of a symbolic model is to simulate the behavior of a real execution environment, while maintaining the necessary symbolic state behind the environment interface.
+%
+The symbolic execution engine (SEE) can then seamlessly transition back and forth between the program and the environment.
+
+While writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}, for operating system interfaces, a model provides distinct advantages.
+%
+First, symbolic execution with a model can be substantially faster than without.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc. Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
+%
+Second, when an interface is as stable as POSIX, investing the time to model it becomes worthwhile.
+
+Ideally, a symbolic model would be implemented as guest code and be directly run by the SEE.
+%
+With this approach, the model would handle symbolic data implicitly, as opposed to explicitly build symbolic expressions using the internal engine API.
+%
+As a result, the resulting implementation would be significantly shorter and less prone to errors.
+
+However, modeling an operating system interface as guest code is challenging.
+%
+On the one hand, the operating system provides abstractions that cannot be expressed in the guest, such as threads and synchronization.
+%
+On the other hand, implementing the model inside the symbolic execution engine constitutes a significant engineering effort.
+
+Our approach takes the best from both worlds.
+%
+We provide a general ``symbolic system call'' interface to the SEE, which provides built-in building blocks for thread context switching, address space isolation, memory sharing, and sleep operations (Table~\ref{table:cloud9:primitives}).
+%
+These are the minimal set of primitives that could not be easily emulated by guest code.
+%
+On top of this interface, we build as guest code models for complete operating system interfaces, such as POSIX.
+
+The symbolic system call primitives can be implemented with little effort in an existing symbolic execution engine, by reusing existing functionality, as shown next.
+
+\begin{table}
+\renewcommand{\arraystretch}{1.1}
+\addtolength{\tabcolsep}{-2pt}
+{\small
+\centering
+\begin{tabular}{|l|l|}
+\hline
+~~~~~\textbf{Primitive Name} & ~~~~~~~~~~~~~~~~\textbf{Description} \\
+\hline
+ \cninesuffix\_make\_shared & Share memory across address spaces \\
+\hline
+\hline
+  \cninesuffix\_thread\_create & \multirow{2}{4cm}{Create and destroy threads}\\
+  \cninesuffix\_thread\_terminate & \\
+  \cline{1-2}
+   \cninesuffix\_process\_fork & \multirow{2}{4cm}{Fork and terminate the current process}\\
+  \cninesuffix\_process\_terminate & \\
+  \cline{1-2}
+   \cninesuffix\_get\_context & Get the current context (pid and tid) \\
+\hline
+\hline
+ \cninesuffix\_thread\_preempt & Preempt a thread  \\
+ \hline 
+ \cninesuffix\_thread\_sleep & Thread sleep on waiting queue \\
+ \hline
+ \cninesuffix\_thread\_notify & Wake threads from waiting queue \\
+ \hline
+ \cninesuffix\_get\_wlist & Create a new waiting queue \\
+\hline
+\end{tabular}
+\caption{\cnine  primitives used to build the POSIX model.}
+\label{table:cloud9:primitives}
+}
+\vspace{-3mm}
+\end{table}
+
+\paragraph{Address Spaces}
+
+An SEE already supports cloning a program execution state at a symbolic branch.
+%
+We reuse this functionality to provide multiple address spaces within the same execution state.  Cloning the current address space is available to the guest through the \codebit{\cninesuffix\_process\_fork} primitive, which is used, for instance, to model the POSIX \codebit{fork()} call.
+
+The address space in an execution state is typically represented as a mapping from memory locations (variables) to slots holding symbolic values.
+%
+We extend this functionality to allow locations from different mappings to point to the same slots.  This permits memory sharing between processes.
+%
+A memory location can be marked as shared by calling \codebit{\cninesuffix\_\allowbreak{}make\_\allowbreak{}shared}; it is then automatically mapped in the address spaces of the other processes in the execution state.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the others.  The shared memory objects can then be used by the model as global memory for inter-process communication.
+
+\paragraph{Multithreading and Scheduling}
+
+The symbolic execution state of a program contains a stack holding the call chain and the local variables.
+%
+We implement support for multiple threads by maintaining multiple stacks within a state, each associated to an address space.
+%
+Threads are created in the currently executing process by calling \codebit{\cninesuffix\_\allowbreak{}thread\_\allowbreak{}create}.  \cnine's POSIX threads (pthreads) model makes use of this primitive in its own \codebit{pthread\_create()} routine.
+
+To simplify synchronization inside the model, \cnine implements a cooperative scheduler.
+%
+An enabled thread runs uninterrupted (atomically), until either (a) the thread goes to sleep; (b) the thread is explicitly preempted by a \codebit{\cninesuffix\_\allowbreak{}thread\_\allowbreak{}preempt} call; or (c) the thread is terminated via symbolic system calls for process/thread termination. Preemption occurs at explicit points in the model code, but it is straightforward to extend \cnine to automatically insert preemptions calls at instruction level (as would be necessary, for instance, when testing for race conditions).
+
+When \codebit{\cninesuffix\_\allowbreak{}thread\_sleep} is called, the SEE places the current thread on a specified waiting queue, and an enabled thread is selected for execution.
+%
+Another thread may call \codebit{\cninesuffix\_thread\_\allowbreak{}notify} on the waiting queue and wake up one or all of the queued threads.
+
+\cnine can be configured to schedule the next thread deterministically, or to fork the execution state for each possible next thread.
+%
+The latter case is useful when looking for concurrency bugs, but it can be a significant source of path explosion, so it should be disabled when not needed.
+
+If no thread can be scheduled when the current thread goes to sleep, then a hang is detected, the execution state is terminated,  and a corresponding test case is generated.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% eval: (visual-line-mode)
+%%% fill-column: 1000000
+%%% TeX-master: "main"
+%%% End:
