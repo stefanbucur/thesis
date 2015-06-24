@@ -135,11 +135,21 @@ For example, once loaded, a device driver typically can interact with the entire
 
 For these cases, an approach that preserves correctness and completeness is to bundle the environment with the program and execute it symbolically as one target.
 %
-Full-VM symbolic execution engines provide this approach~\cite{s2e,bitBlaze}.
+Full-VM symbolic execution engines implicitly provide this approach~\cite{s2e,bitBlaze}.
+%
+For symbolic execution engines that execute programs in isolation~\cite{klee,godefroid:fuzz}, the environment is explicitly compiled in the target format and linked with the program.
 
 However, this approach reduces the effectiveness of symbolic execution on the original target program, due to the path explosion in the entire system, which may be orders of magnitude larger than the program.
 %
-To mitigate the path explosion, S2E introduces execution consistency models, which are principles of converting between symbolic and concrete values when crossing the program boundaries, in order to control the path explosion in the environment.
+Existing work employs several techniques to mitigate path explosion in the environment.
+%
+For example, S2E~\cite{s2e} introduces execution consistency models, which are principles of converting between symbolic and concrete values when crossing the program boundaries, in order to control the path explosion in the environment.
+
+Another approach is to manually or automatically change the environment implementation to reduce its complexity.
+%
+For example, the KLOVER symbolic execution engine for C++ programs~\cite{klover} alters the implementation of the \codebit{std::string} STL class to avoid branching inside operators such as equality.
+%
+In general, the environment code can also be automatically compiled in a form sensible to symbolic execution~\cite{overify}.
 
 %% \chef takes the inlining approach to the environment problem, when symbolically executing programs written in interpreted languages.  \chef is the first system to use a language interpreter as a semantics provider for symbolic execution.
 
