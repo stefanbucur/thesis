@@ -40,6 +40,8 @@ From this perspective, our contributions, embodied in the \chef and \cnine symbo
 In the rest of this section, we discuss in more detail each of the three environment approaches.
 %
 We use the program in Figure~\ref{fig:relwork:example} as a running example to illustrate the tradeoffs made by each approach.
+%
+The program opens a file using a symbolic name, reads data from it, then closes it and terminates.  Despite being simple, this example exposes the challenges of the environment problem.
 
 \begin{figure}
   \centering
@@ -62,9 +64,9 @@ However, for programs that share state with the environment (e.g., maintain open
 
 We illustrate these points on our example in Figure~\ref{fig:relwork:example}.
 %
-First, the returned file descriptor of the \codebit{open} system call is concrete, which causes the symbolic execution engine to exercise only one of the two possible outcomes---success or failure.
+First, the returned file descriptor of the concretized \codebit{open} system call is concrete, which causes the symbolic execution engine to exercise only one of the two possible outcomes---success or failure.
 %
-Second, in order to maintain soundness, concretization introduces constraints in the path condition that bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).
+Second, in order to maintain soundness, concretization introduces constraints in the path condition, which bind the symbolic arguments to concrete examples (in our case, $pc_{new} := pc_{old} \wedge (\mu = m)$).
 %
 This means the symbolic file name becomes concrete for the rest of the execution path, precluding any symbolic branching on its value.
 %
@@ -80,9 +82,46 @@ This is commonly the case with non-concolic (``purely-symbolic'') execution, whe
 
 An alternative approach to simplifying the environment is to replace its concrete implementation with a simpler one---a model---that captures its essential behavior~\cite{klee,mayhem,aeg}.
 %
-The model is smaller---often by orders of magnitude---than the original implementation, as it drops non-functional requirements, such as performance or fault-tolerance.  For example a key-value store database dependency of a web application could be replaced with a plain dictionary when symbolically executing it.
+In our running example, a model of the \codebit{open} and \codebit{read} system calls should capture only the two traits used by the program: the ability to read data from the file and the failure when the file is not found.
+%
+The former can be modeled as an in-memory buffer that is allocated when the file is open and copied to the user buffer in the \codebit{read} system call.
+%
+The latter can be simulated in the model by branching the symbolic execution state and returning $-1$ in one path.
+%
+For larger and more realistic programs, an accurate and complete model is significantly larger.  Nonetheness, a model is still smaller than the original implementation---often by orders of magnitude~\cite{klee}---as it drops non-functional requirements, such as performance and fault tolerance.
 
-Symbolic execution engines implement models either by building them into the engine implementation (e.g., symbolic hardware models in S2E~\cite{s2eSystem}), or as guest code running together with the target program (e.g., the file system models in KLEE~\cite{klee}).
+\paragraph{Executable Models}
+
+The example model we described is \emph{executable code} that runs together with the target program inside the symbolic execution engine, as guest code~\cite{klee}.
+%
+This approach benefits from the features available in the symbolic execution runtime.  The model can directly access the program state, such as reading and manipulating call arguments using their native types, and directly returning values to the program.
+%
+In addition, symbolic data implicitly flows through the model code.  The file model in our example implicitly accepts symbolic file names in the \codebit{name} argument of the \codebit{open} system call.
+
+However, some environment features are expensive to capture at the guest level, such as complex control flow abstractions like interrupts and concurrency.
+%
+In those cases, symbolic execution engines provide models that are built into the engine implementation itself.  For example, the S2E platform~\cite{s2eSystem} provides models for symbolic hardware as built-in platform plugins.
+%
+Despite their generality, built-in models are harder to write, since they explicitly handle the symbolic program state.
+
+\paragraph{Functional Models}
+
+Models may not only be executable, but also functional, expressed as predicates~\cite{slam-project,klover} or abstract types with theories~\cite{cutie-py,saxena-kudzu,klover}.
+%
+For instance, the model of a function can be provided as a function summary, consisting of pre-condition and post-condition predicates over the program state~\cite{klover,slam-project}.
+In our running example, the summary of the \codebit{open} system call could be $(\mathit{fd} = -1) \vee (\mathit{fd} \geq 3)$.
+%
+Function summaries may be more efficient than executable code, as they avoid branching the program state and result in more concise symbolic expressions.
+
+Another form of functional modeling is to treat the environment calls as uninterpreted functions~\cite{cutie-py,saxena-kudzu}.
+%
+The idea is to \emph{lazily} record each environment call as an opaque operation during execution, and provide a decision procedure that interprets the operation at constraint solving time.
+%
+A benefit of this approach is that specialized decision procedures may be significantly more efficient than executing symbolically the environment implementation.  For example, symbolic execution of web applications~\cite{saxena-kudzu,symjs,jalangi} benefits from constraint solvers that support strings~\cite{Z3,hampi,z3-str,s3-str}, as strings are ubiquitous in this domain.
+%
+Another benefit is that the interpretation step may end up being skipped if the function call is not relevant for satisfiability~\cite{cutie-py}, as opposed to an executable model, which would be executed regardless of whether the results are used or not.
+
+\paragraph{}
 
 Although they are effective at reducing path explosion, models are expensive to write correctly and completely.  As a result, they tend to be employed only for simple or stable environment semantics, or when the model accuracy is less important (e.g., security testing~\cite{aeg}).
 
