@@ -1,24 +1,76 @@
+In this section, we first present the design space of an operating system model (Section~\ref{sec:cloud9:modelspace}).  We then present our approach of a split model (Section~\ref{sec:cloud9:approach}) and how we leverage it using symbolic tests.
+
+
+\subsection{The Design Space of Operating System Models}
+\label{sec:cloud9:modelspace}
+
 The goal of a symbolic model is to simulate the behavior of a real execution environment, while maintaining the necessary symbolic state behind the environment interface.
 %
 The symbolic execution engine (SEE) can then seamlessly transition back and forth between the program and the environment.
 
-While writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}, for operating system interfaces, a model provides distinct advantages.
+Writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}.
 %
-First, symbolic execution with a model can be substantially faster than without.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc. Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
-%
-Second, when an interface is as stable as POSIX, investing the time to model it becomes worthwhile.
+However, for operating system interfaces, which are typically stable and well documented, investing the time to model them becomes worthwile.
 
-Ideally, a symbolic model would be implemented as guest code and be directly run by the SEE.
+Ideally, a symbolic model would be implemented as code that gets executed by the symbolic execution engine (i.e., guest-level code), substituting the implementation of the operating system and the C library.
 %
-With this approach, the model would handle symbolic data implicitly, as opposed to explicitly build symbolic expressions using the internal engine API.
-%
-As a result, the resulting implementation would be significantly shorter and less prone to errors.
+Such a model can be substantially faster.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc.  Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
 
-However, modeling an operating system interface as guest code is challenging.
+However, not all operating system abstractions can be directly expressed as guest code.
 %
-On the one hand, the operating system provides abstractions that cannot be expressed in the guest, such as threads and synchronization.
+In general, the problematic abstractions are those \emph{incompatible} with the execution model of the symbolic execution engine.
 %
-On the other hand, implementing the model inside the symbolic execution engine constitutes a significant engineering effort.
+For example, providing support for multiple execution threads may not be achievable in the guest of a symbolic execution engine designed to run sequentially, unless the guest can manipulate the current stack and program counter.
+%
+There are other abstractions incompatible with the typical sequential single-process execution model of a symbolic execution engine, such as processes, synchronization, and shared memory.
+
+A possible alternative is to implement the operating system model inside the symbolic execution engine, where we can define any abstraction.
+%
+However, this approach is undesirable.  A model built into a symbolic execution engine is significantly more expensive to produce, because the model code has to handle explicitly symbolic data and the program state.
+%
+For example, while a guest model of the \codebit{open} system call could directly use the file name string buffer, a built-in model needs to explictly invoke read operations for the string bytes, then extract the character values from the symbolic AST expressions.
+
+
+\subsection{A Split Operating System Model}
+\label{sec:cloud9:approach}
+
+Our key idea is to take the best from both worlds and provide an operating system model that is \emph{split} between a set of built-in primitives and guest-level code.
+%
+The built-in primitives model only the minimal operating system abstractions that would be more expensive or impossible to model at the guest level.
+%
+In turn, the guest-level code implements a complete operating system interface on top of these primitives.
+%
+In analogy to the system calls exposed by an operating system to user programs, the symbolic execution engine provides its primitives to the guest through a set of ``symbolic system calls''.
+
+The built-in primitives provide the operating system abstractions that depend on the execution model of the symbolic execution engine.
+%
+We identified two such abstractions that are prevalent in operating systems: \emph{multiple threads} and \emph{address spaces}.
+%
+We designed their support in the symbolic execution engine according to two goals: (1) minimizing the complexity of the guest code using them, and (2) capturing all possible behaviors in the real operating system, including corner-case, hard-to-reproduce scenarios.
+%
+The latter is especially relevant when using the symbolic execution engine to find bugs occurring in the program interaction with the operating system.
+
+We next describe the two abstractions and their design in the symbolic execution engine.
+
+\paragraph{Multithreading}
+
+%% A symbolic execution engine is essentially an interpreter of program statements.
+%% %
+To provide support for multiple threads, the symbolic execution engine maintains in each execution state a set of per-thread stacks, holding the current program location, the execution call chain, and local variables.
+%
+During symbolic execution, the execution alternates between the threads, governed by a thread scheduler built into the symbolic execution engine.
+
+To simplify synchronization inside the guest model, we use a cooperative scheduler.  An enabled thread runs uninterrupted (atomically), until either (a) the thread goes to sleep, (b) the thread is explicitly preempted, or (c) the thread is terminated via a symbolic system call.
+
+The scheduler can be configured to schedule the next thread deterministically, or to fork the execution state for each possible next thread.
+%
+The latter case is useful when looking for concurrency bugs.  At the same time, it can be a significant source of path explosion, so it can be selectively disabled when not needed.
+
+The symbolic execution engine can detect hangs in the system, such as deadlocks, when a thread goes to sleep and no other thread can be scheduled.
+
+\paragraph{Address Spaces}
+
+
 
 Our approach takes the best from both worlds.
 %
