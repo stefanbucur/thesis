@@ -11,7 +11,7 @@ A cluster-based symbolic execution engine \emph{scales} with the number of worke
 
 First, we measure how fast \cnine\ can exhaustively explore a fixed number of paths in the symbolic execution tree.  For this, we use a symbolic test case that generates all the possible paths involved in receiving and processing two symbolic messages in the memcached server.  Figure~\ref{fig:scalab-time-vs-workers} shows the time required to finish the test case with a variable number of workers: every doubling in the number of workers roughly halves the time to completion.  With 48 workers, the time to complete is about 10 minutes; for 1 worker,  exploration time exceeds our 10-hour limit on the experiment.  
 
-%The results of the experiment show an important aspect: while the path explosion problem cannot simply be solved by thowing more hardware at it, the size of the problems for which symbolic execution can be useful today are within the range in which a parallel symbolic execution engine can make a significant difference.
+%The results of the experiment show an important aspect: while the path explosion problem cannot simply be solved by throwing more hardware at it, the size of the problems for which symbolic execution can be useful today are within the range in which a parallel symbolic execution engine can make a significant difference.
 
 \begin{figure}
   \centering

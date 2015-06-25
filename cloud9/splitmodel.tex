@@ -10,7 +10,7 @@ The symbolic execution engine can then seamlessly transition back and forth betw
 
 Writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}.
 %
-However, for operating system interfaces, which are typically stable and well documented, investing the time to model them becomes worthwile.
+However, for operating system interfaces, which are typically stable and well documented, investing the time to model them becomes worthwhile.
 
 Ideally, a symbolic model would be implemented as code that gets executed by the symbolic execution engine (i.e., guest-level code), substituting the implementation of the operating system and the C library.
 %
@@ -28,7 +28,7 @@ A possible alternative is to implement the operating system model inside the sym
 %
 However, this approach is undesirable.  A model built into a symbolic execution engine is significantly more expensive to produce, because the model code has to handle explicitly symbolic data and the program state.
 %
-For example, while a guest model of the \codebit{open} system call could directly use the string buffer of the file name passed as argument, a built-in model needs to explictly invoke read operations for the string bytes, then extract the character values from the symbolic AST expressions.
+For example, while a guest model of the \codebit{open} system call could directly use the string buffer of the file name passed as argument, a built-in model needs to explicitly invoke read operations for the string bytes, then extract the character values from the symbolic AST expressions.
 
 
 \subsection{A Split Operating System Model}

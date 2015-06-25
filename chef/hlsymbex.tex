@@ -62,14 +62,14 @@ If the state completeness model allows the state to advance on the path, the sta
 If not, the high-level strategy communicates its choice to the low-level strategy, which selects a low-level state on the path that helps unblock the abstract high-level state.
 
 
-This state selection process both (a) provides an adapter mechanism for selecting \emph{low-level} interpreter states for execution based on a \emph{high-level} strategy, and (b) still preseves the high-level abstractions by hiding the interpreter and its states.
+This state selection process both (a) provides an adapter mechanism for selecting \emph{low-level} interpreter states for execution based on a \emph{high-level} strategy, and (b) still preserves the high-level abstractions by hiding the interpreter and its states.
 
 
 The abstract high-level states only contain the current HLPC and a path condition.
 %
 Unlike the low-level states, they do not include program data, as its semantics are language-dependent.
 %
-Instead, the program data is implictly encoded and distributed across the low-level states on the path and manipulated by the interpreter.
+Instead, the program data is implicitly encoded and distributed across the low-level states on the path and manipulated by the interpreter.
 
 %%% Local Variables: 
 %%% mode: latex

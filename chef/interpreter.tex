@@ -136,7 +136,7 @@ After all memory writes are collected, \chef groups them by address and discards
 %
 Among the remaining groups, \chef discards those with fewer writes than the number of statements in the calibration program.  For this step, we assume that each statement corresponds to one or more bytecode instructions.
 %
-Finally, \chef discrads the groups whose write value deltas are larger than the size of a bytecode instruction.  We empirically determined an upper bound threshold of 1KB.
+Finally, \chef discards the groups whose write value deltas are larger than the size of a bytecode instruction.  We empirically determined an upper bound threshold of 1KB.
 
 At the end, there should be exactly one remaining group, whose address refers to the HLPC variable of the frame of the recorded execution.
 

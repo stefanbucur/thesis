@@ -1,8 +1,8 @@
 In the previous chapter, we showed how to efficiently create accurate models for operating system interfaces, which are stable and well documented.
 %
-For interfaces with unstable and incomplete specifications, such as those of dynamic languges, such as Python, Ruby, or JavaScript, the environment problem mandates a different approach.
+For interfaces with unstable and incomplete specifications, such as those of dynamic languages, such as Python, Ruby, or JavaScript, the environment problem mandates a different approach.
 %
-In this chapeter, we present \chef, a symbolic execution platform for interpreted languages that relies on using the language interpreter as an ``executable specification''.
+In this chapter, we present \chef, a symbolic execution platform for interpreted languages that relies on using the language interpreter as an ``executable specification''.
 
 \input{chef/algorithm}
 
@@ -31,7 +31,7 @@ In this chapeter, we present \chef, a symbolic execution platform for interprete
 
 Implementing and maintaining a symbolic execution engine is a significant engineering effort. It is particularly hard for interpreted dynamic languages, due to their rich semantics, rapid evolution, and lack of precise specifications.
 %
-\chef provides an engine platform that is instantiated with a language interpreter, which implicity defines the complete language semantics, and results in a correct and theoretically complete symbolic execution engine for the language.
+\chef provides an engine platform that is instantiated with a language interpreter, which implicitly defines the complete language semantics, and results in a correct and theoretically complete symbolic execution engine for the language.
 %
 A language-agnostic strategy for selecting paths to explore in the interpreter allows the generated engine to systematically explore and test code in the target language effectively and efficiently.
 %
