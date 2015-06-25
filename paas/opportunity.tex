@@ -36,7 +36,9 @@ The recent progress in automated test case generation and, in particular, symbol
 %
 Unfortunately, these tools are challenging to apply to cloud apps: the number of execution paths successfully crossing all application layers is dwarfed by the vast number of possible error paths (dark vs.~light arrows in Figure~\ref{fig:running-example}).  Yet, most error paths are irrelevant to testing the high-level logic of the app itself (i.e., the innermost layer), because they test code that is part of the PaaS.
 
-We introduce \textit{layered parameterized tests} (LPTs) for integration testing of PaaS-based cloud applications (Section~\ref{sec:paas:abstractions}). LPTs describe families of integration tests (in the spirit of parameterized unit tests~\cite{tillmann-puts}) across several application layers. We rely on developer-provided \textit{onion objects} to describe the layering of the data abstractions in the application; onion objects encode the multiple interpretations of input data as, e.g., an HTTP request, a JSON object, etc.
+We leverage the modularity of each layer in modern web application stacks and introduce \textit{layered parameterized tests} (LPTs) for integration testing of PaaS-based cloud applications (Section~\ref{sec:paas:abstractions}).
+%
+LPTs describe families of integration tests (in the spirit of parameterized unit tests~\cite{tillmann-puts}) across several application layers. We rely on developer-provided \textit{onion objects} to describe the layering of the data abstractions in the application; onion objects encode the multiple interpretations of input data as, e.g., an HTTP request, a JSON object, etc.
 
 For the automatic generation of thorough test cases from LPTs, we introduce \emph{layered symbolic execution} (LSE), an automated program analysis that is tailored for the layered structure of cloud applications (Section~\ref{sec:paas:layeredsymbex}).
 

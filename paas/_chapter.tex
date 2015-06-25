@@ -30,7 +30,17 @@ Finally, we show how all pieces fit together in our S2E-based platform (Section~
 \label{sec:paas:fedsymbex}
 \input{paas/platform}
 
+\section{Summary}
 
+This chapter presented the vision of an automated testing platform that changes the way software testing has been traditionally done, by providing a cloud-based ``in-vivo'' testing service of an application in the same environment as the one used in production.
+%
+The testing platform is based on symbolic execution.  It leverages the modularity of modern web application stacks to scale symbolic execution, by using layered parameterized tests (LPTs).
+%
+In LPTs, developers write onion objects that concisely describe the nested structure of the application input.
+%
+LPTs are executed using layered symbolic execution (LSE), which navigates the complexity of the application stack and avoids exploring errors paths in irrelevant application layers.
+%
+We parallelize the symbolic execution in clouds of commodity hardware, using an algorithm that demonstrates linear scalability.
 
 
 %%% Local Variables: 
