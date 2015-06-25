@@ -97,53 +97,12 @@ The symbolic execution engine provides a symbolic system call for \emph{sharing}
 %
 Shared memory can be used by the guest model to provide multiple forms of inter-process communication, such as sockets, files, and pipes.
 %
-For example, a bi-directional socket can be modeled as a pair of memory buffers shared between the client and the server processes.
+For example, a socket can be modeled as a pair of memory buffers, one of each direction, shared between the client and the server processes.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-Our approach takes the best from both worlds.
-%
-We provide a general ``symbolic system call'' interface to the SEE, which provides built-in building blocks for thread context switching, address space isolation, memory sharing, and sleep operations (Table~\ref{table:cloud9:primitives}).
-
-
-\paragraph{Address Spaces}
-
-An SEE already supports cloning a program execution state at a symbolic branch.
-%
-We reuse this functionality to provide multiple address spaces within the same execution state.  Cloning the current address space is available to the guest through the \codebit{\cninesuffix\_process\_fork} primitive, which is used, for instance, to model the POSIX \codebit{fork()} call.
-
-The address space in an execution state is typically represented as a mapping from memory locations (variables) to slots holding symbolic values.
-%
-We extend this functionality to allow locations from different mappings to point to the same slots.  This permits memory sharing between processes.
-%
-A memory location can be marked as shared by calling \codebit{\cninesuffix\_\allowbreak{}make\_\allowbreak{}shared}; it is then automatically mapped in the address spaces of the other processes in the execution state.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the others.  The shared memory objects can then be used by the model as global memory for inter-process communication.
-
-\paragraph{Multithreading and Scheduling}
-
-The symbolic execution state of a program contains a stack holding the call chain and the local variables.
-%
-We implement support for multiple threads by maintaining multiple stacks within a state, each associated to an address space.
-%
-Threads are created in the currently executing process by calling \codebit{\cninesuffix\_\allowbreak{}thread\_\allowbreak{}create}.  \cnine's POSIX threads (pthreads) model makes use of this primitive in its own \codebit{pthread\_create()} routine.
-
-To simplify synchronization inside the model, \cnine implements a cooperative scheduler.
-%
-An enabled thread runs uninterrupted (atomically), until either (a) the thread goes to sleep; (b) the thread is explicitly preempted by a \codebit{\cninesuffix\_\allowbreak{}thread\_\allowbreak{}preempt} call; or (c) the thread is terminated via symbolic system calls for process/thread termination. Preemption occurs at explicit points in the model code, but it is straightforward to extend \cnine to automatically insert preemptions calls at instruction level (as would be necessary, for instance, when testing for race conditions).
-
-When \codebit{\cninesuffix\_\allowbreak{}thread\_sleep} is called, the SEE places the current thread on a specified waiting queue, and an enabled thread is selected for execution.
-%
-Another thread may call \codebit{\cninesuffix\_thread\_\allowbreak{}notify} on the waiting queue and wake up one or all of the queued threads.
-
-\cnine can be configured to schedule the next thread deterministically, or to fork the execution state for each possible next thread.
-%
-The latter case is useful when looking for concurrency bugs, but it can be a significant source of path explosion, so it should be disabled when not needed.
-
-If no thread can be scheduled when the current thread goes to sleep, then a hang is detected, the execution state is terminated,  and a corresponding test case is generated.
 
 \paragraph{Symbolic System Calls}
 
-Table~\ref{table:cloud9:primitives} shows the symbolic system calls that the engine provides to the guest to support multithreading and address spaces.
+Table~\ref{table:cloud9:primitives} shows the symbolic system calls that the engine provides to the guest to support multithreading and address spaces.  We detail below the most important system calls.
 
 \begin{table}
 \centering
@@ -174,6 +133,16 @@ Table~\ref{table:cloud9:primitives} shows the symbolic system calls that the eng
 \caption{Symbolic system calls for multithreading (first block), address spaces (second block).  Third block contains introspection primitives.  The multithreading block is further divided into thread lifecycle management, explicit scheduling, and synchronization.}
 \label{table:cloud9:primitives}
 \end{table}
+
+Threads are created in the currently executing process by calling \codebit{thread\_\allowbreak{}create}.  For instance, the POSIX threads (pthreads) model makes use of this primitive in its own \codebit{pthread\_create()} routine.
+%
+When \codebit{thread\_sleep} is called, the symbolic execution engine places the current thread on a specified waiting queue, and an enabled thread is selected for execution.
+%
+Another thread may call \codebit{thread\_\allowbreak{}notify} on the waiting queue and wake up one or all of the queued threads.
+
+Cloning the current address space is available to the guest through the \codebit{process\_fork} primitive, which is used, for instance, to model the POSIX \codebit{fork()} call.
+%
+A memory location can be marked as shared by calling \codebit{make\_\allowbreak{}shared}; it is then automatically mapped in the address spaces of the other processes in the execution state.  Whenever a shared object is modified in one address space, the new version is automatically propagated to the others.
 
 
 %%% Local Variables: 
