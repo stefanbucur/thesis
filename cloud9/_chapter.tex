@@ -9,20 +9,20 @@ In this chapter, we present an approach to modeling the operating system interfa
 %
 We leverage the operating system model to expose hard-to-reproduce scenarios in program execution by providing a \emph{symbolic test} interface for developers (Section~\ref{sec:cloud9:symtests}).
 %
-Finally, we report on our experience applying these principles in the \cnine symbolic execution platform for POSIX applications, with support for threads, processes, sockets, pipes, polling, and more (Section~\ref{sec:cloud9:posix}).
+Finally, we report on our experience applying these principles when building a POSIX operating system model with support for threads, processes, sockets, pipes, polling, and more (Section~\ref{sec:cloud9:posix}).
 
 
 \section{Splitting Operating System Environment in Built-in Primitives and Guest Model}
 \label{sec:cloud9:splitmodel}
 \input{cloud9/splitmodel}
 
+\section{Symbolic Tests}
+\label{sec:cloud9:symtests}
+\input{cloud9/symtests}
+
 \section{Case Study: A Symbolic POSIX Interface Model}
 \label{sec:cloud9:posix}
 \input{cloud9/posixmodel}
-
-\section{Symbolic Test Suites}
-\label{sec:cloud9:symtests}
-\input{cloud9/symtests}
 
 \section{Summary}
 
@@ -30,13 +30,11 @@ Operating systems expose a complex stateful interface to user programs.
 %
 In this chapter, we showed a way to provide an operating system environment for symbolic execution by employing a split operating system model.  A core set of primitives built into the symbolic execution engine serves as a base, on top of which a full operating system interface is emulated inside the guest.
 %
-As few as three primitives are sufficient to support complex operating system interfaces: threads and processes, synchronization, and address spaces with shared memory.
-%
-%% Additionally, these primitives can be implemented efficiently in a symbolic execution engine, by reusing existing symbolic execution components.
+As few as two primitives are sufficient to support complex operating system interfaces: threads  with synchronization and address spaces with shared memory.
 %
 We showed how to use the core primitives to provide an accurate model of the POSIX interface.
 %
-Our POSIX model includes extensions that developers can use to control non-deterministic operating system events, such as thread scheduling and network flow control, in order to increase the coverage in the target programs.
+Our POSIX model includes extensions that developers can use in symbolic tests to control non-deterministic operating system events, such as thread scheduling and network flow control, in order to increase the coverage in the target programs.
 
 %%% Local Variables: 
 %%% mode: latex

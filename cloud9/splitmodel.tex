@@ -6,7 +6,7 @@ In this section, we first present the design space of an operating system model 
 
 The goal of a symbolic model is to simulate the behavior of a real execution environment, while maintaining the necessary symbolic state behind the environment interface.
 %
-The symbolic execution engine (SEE) can then seamlessly transition back and forth between the program and the environment.
+The symbolic execution engine can then seamlessly transition back and forth between the program and the environment.
 
 Writing and maintaining a model can be laborious and prone to error~\cite{s2eSystem}.
 %
@@ -14,7 +14,7 @@ However, for operating system interfaces, which are typically stable and well do
 
 Ideally, a symbolic model would be implemented as code that gets executed by the symbolic execution engine (i.e., guest-level code), substituting the implementation of the operating system and the C library.
 %
-Such a model can be substantially faster.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our \cnine's POSIX model achieves the same functionality in about 1.5 \kloc.  Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
+Such a model can be substantially faster.  For instance, in the Linux kernel, transferring a packet between two hosts exercises the entire TCP/IP networking stack and the associated driver code, amounting to over 30 \kloc.  In contrast, our POSIX model achieves the same functionality in about 1.5 \kloc.  Requirements that complicate a real environment/OS implementation, such as performance and extensibility, can be ignored in a symbolic model.
 
 However, not all operating system abstractions can be directly expressed as guest code.
 %
