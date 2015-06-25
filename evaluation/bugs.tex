@@ -98,7 +98,15 @@ To discover and diagnose this bug without \cnine is difficult. First, a concrete
 
 \subsection{Comparing \cnine to KLEE}
 
-\cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions. We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).  Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model allows \cnine to reach more paths and explore deeper portions of the tested program's code---this exposes additional potentially buggy situations. \cnine also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
+\cnine inherits \klee's capabilities, being able to recognize memory errors and failed assertions.
+%
+We did not add much in terms of bug detection, only two mechanisms for detecting hangs: check if all symbolic threads are sleeping (deadlock) and set a threshold for the maximum number of instructions executed per path (infinite loop or livelock).
+%
+Even so, \cnine can find bugs beyond \klee's abilities because the POSIX model and symbolic tests allow \cnine to exercise additional interactions of the program with the operating system.
+%
+The case studies showed that \cnine can explore conditions that are hard to produce reliably by running the concrete operating system, such as fragmentation patterns in network traffic and the occurrence of faults.
+
+Our parallel \cnine prototype also has more total memory and CPU available, due to its distributed nature, so it can afford to explore more paths than \klee.  As we have shown above, it is feasible to offer proofs for certain program properties: despite the exponential nature of exhaustively exploring paths, one can build small but useful symbolic test cases that can be exhaustively executed.
 
 
 \subsection{Case Study \#5: Exploratory Bug Finding in Python and Lua Packages}
