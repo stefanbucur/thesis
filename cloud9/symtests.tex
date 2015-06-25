@@ -15,50 +15,41 @@ The \cnine symbolic testing API (Tables~\ref{table:globalapi} and~\ref{table:ioc
 A test suite needs to simply include a \codebit{cloud9.h} header file and make the requisite calls.
 
 \begin{table}
-\addtolength{\tabcolsep}{-2.5pt}
-{
-\small
 \centering
-\begin{tabular}{|l|p{50mm}|}
+\begin{tabular}{|l|l|}
 \hline
-\textbf{~~~~~Function Name} & \textbf{~~~~~~~~~~~~~~~~~~Description} \\
+\textbf{Function Name} & \textbf{Description} \\
 \hline
-\cninesuffix\_make\_symbolic & Mark memory regions as symbolic \\
+\codebit{make\_symbolic} & Mark memory regions as symbolic \\
 \hline
-\cninesuffix\_fi\_enable & \multirow{2}{4cm}{Enable/disable the injection of faults} \\
-\cninesuffix\_fi\_disable & \\
+\codebit{fi\_enable} & Enable/disable the injection of faults \\
+\codebit{fi\_disable} & \\
 \hline
-\cninesuffix\_set\_max\_heap & Set heap size for symbolic \codebit{malloc} \\
+\codebit{set\_max\_heap} & Set heap size for symbolic \codebit{malloc} \\
 \hline
-\cninesuffix\_set\_scheduler & Set scheduler policy (e.g., round-robin)\\
+\codebit{set\_scheduler} & Set scheduler policy (e.g., round-robin)\\
 \hline
 \end{tabular}
-\vspace{-4pt}
 \caption{\cnine API for setting global behavior parameters.}
 \label{table:globalapi}
-}
 \end{table}
 
 \begin{table}
-\addtolength{\tabcolsep}{-2.5pt}
-{
-\small
 \centering
-\begin{tabular}{|l|p{4.8cm}|}
+\begin{tabular}{|l|l|}
 \hline
-\textbf{~~Extended Ioctl Code} & \textbf{~~~~~~~~~~~~~~~~Description} \\
+\textbf{Extended Ioctl Code} & \textbf{Description} \\
 \hline
-SIO\_SYMBOLIC & Turns this file or socket into a source of symbolic input \\
+\codebit{SIO\_SYMBOLIC} & Turn a file or socket into a source of symbolic input \\
 \hline
-SIO\_PKT\_FRAGMENT & Enables packet fragmentation on this socket (must be a stream socket) \\
+\codebit{SIO\_PKT\_FRAGMENT} & Enable packet fragmentation on a stream socket\\
 \hline
-SIO\_FAULT\_INJ & Enables fault injection for operations on this descriptor \\
+\codebit{SIO\_FAULT\_INJ} & Enable fault injection for operations on descriptor \\
 \hline
 \end{tabular}
-\vspace{-4pt}
+
 \caption{\cnine extended \codebit{ioctl} codes to control environmental events on a per-file-descriptor basis.}
 \label{table:ioctlapi}
-}
 \end{table}
 
 \paragraph{Symbolic Data and Streams}
