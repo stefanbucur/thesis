@@ -28,7 +28,7 @@ A possible alternative is to implement the operating system model inside the sym
 %
 However, this approach is undesirable.  A model built into a symbolic execution engine is significantly more expensive to produce, because the model code has to handle explicitly symbolic data and the program state.
 %
-For example, while a guest model of the \codebit{open} system call could directly use the file name string buffer, a built-in model needs to explictly invoke read operations for the string bytes, then extract the character values from the symbolic AST expressions.
+For example, while a guest model of the \codebit{open} system call could directly use the string buffer of the file name passed as argument, a built-in model needs to explictly invoke read operations for the string bytes, then extract the character values from the symbolic AST expressions.
 
 
 \subsection{A Split Operating System Model}
@@ -44,11 +44,29 @@ In analogy to the system calls exposed by an operating system to user programs, 
 
 The built-in primitives provide the operating system abstractions that depend on the execution model of the symbolic execution engine.
 %
-We identified two such abstractions that are prevalent in operating systems: \emph{multiple threads} and \emph{address spaces}.
+The execution model includes aspects such as the program memory model and the control flow mechanisms.
 %
-We designed their support in the symbolic execution engine according to two goals: (1) minimizing the complexity of the guest code using them, and (2) capturing all possible behaviors in the real operating system, including corner-case, hard-to-reproduce scenarios.
+For performance reasons, these aspects are typically encoded in the logic of the symbolic execution engine.
+
+We identified two abstractions that are prevalent in operating systems and that should be built into the symbolic execution engine: \emph{multithreading} and \emph{address spaces}.
 %
-The latter is especially relevant when using the symbolic execution engine to find bugs occurring in the program interaction with the operating system.
+Multithreading is best provided as a built-in primitive that is integrated with the control flow mechanisms of the symbolic execution engine.
+%
+Similarly, providing multiple isolated address spaces is best provided by the memory model of the symbolic execution engine.  For example, the functionality needed to support address spaces (e.g., cloning) is shared with the requirements of cloning the execution state after a symbolic branch.
+
+Many other common abstractions do not need to be built into the symbolic execution engine, but can be emulated as guest code on top of threads and address spaces.
+%
+Such derived abstractions include mechanisms for inter-process communication, such as sockets, pipes and files.
+%
+Various synchronization mechanisms, such as mutexes, semaphores, condition variables, and barriers can be provided on top of basic multi-threading primitives that put a thread to sleep and wake it up later.
+
+We designed the support for multithreading and address spaces according to two goals: (1) minimizing the complexity of the guest code using them, and (2) capturing all possible behaviors in the real operating system, including corner-case, hard-to-reproduce scenarios.
+%
+The latter is especially relevant when using the symbolic execution engine to find bugs occurring in the program interaction with the operating system, as we later show in the evaluation (Section~\ref{sec:eval:bug-finding}).
+
+
+\subsection{Built-in Primitives: Multithreading and Address Spaces}
+
 
 We next describe the two abstractions and their design in the symbolic execution engine.
 
@@ -83,39 +101,33 @@ On top of this interface, we build as guest code models for complete operating s
 The symbolic system call primitives can be implemented with little effort in an existing symbolic execution engine, by reusing existing functionality, as shown next.
 
 \begin{table}
-\renewcommand{\arraystretch}{1.1}
-\addtolength{\tabcolsep}{-2pt}
-{\small
 \centering
+  
 \begin{tabular}{|l|l|}
 \hline
-~~~~~\textbf{Primitive Name} & ~~~~~~~~~~~~~~~~\textbf{Description} \\
-\hline
- \cninesuffix\_make\_shared & Share memory across address spaces \\
+\textbf{Primitive Name} & \textbf{Description} \\
 \hline
 \hline
-  \cninesuffix\_thread\_create & \multirow{2}{4cm}{Create and destroy threads}\\
-  \cninesuffix\_thread\_terminate & \\
-  \cline{1-2}
-   \cninesuffix\_process\_fork & \multirow{2}{4cm}{Fork and terminate the current process}\\
-  \cninesuffix\_process\_terminate & \\
-  \cline{1-2}
-   \cninesuffix\_get\_context & Get the current context (pid and tid) \\
+ \codebit{thread\_create(\&func)} & Create new thread that runs \codebit{func} \\
+ \codebit{thread\_terminate()} & Terminate current thread \\
+\hline
+ \codebit{thread\_preempt()} & Preempt the current thread  \\
+\hline
+ \codebit{create\_wqueue()} & Create a new waiting queue \\
+ \codebit{thread\_sleep(wq)} & Put current thread to sleep on waiting queue \\
+ \codebit{thread\_notify(wq)} & Wake threads from waiting queue \\
 \hline
 \hline
- \cninesuffix\_thread\_preempt & Preempt a thread  \\
- \hline 
- \cninesuffix\_thread\_sleep & Thread sleep on waiting queue \\
- \hline
- \cninesuffix\_thread\_notify & Wake threads from waiting queue \\
- \hline
- \cninesuffix\_get\_wlist & Create a new waiting queue \\
+ \codebit{process\_fork()} & Fork the current address space and thread \\
+ \codebit{make\_shared(\&buf, size)} & Share memory across address spaces \\
+\hline
+\hline
+ \codebit{get\_context()} & Get the current context (process and thread ID) \\
 \hline
 \end{tabular}
-\caption{\cnine  primitives used to build the POSIX model.}
+
+\caption{Symbolic system calls for multithreading (first block), address spaces (second block).  Third block contains introspection primitives.  The multithreading block is further divided into thread lifecycle management, explicit scheduling, and synchronization.}
 \label{table:cloud9:primitives}
-}
-\vspace{-3mm}
 \end{table}
 
 \paragraph{Address Spaces}
