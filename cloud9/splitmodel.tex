@@ -67,8 +67,7 @@ The latter is especially relevant when using the symbolic execution engine to fi
 
 \subsection{Built-in Primitives: Multithreading and Address Spaces}
 
-
-We next describe the two abstractions and their design in the symbolic execution engine.
+We next describe the design of multithreading support and address spaces in a symbolic execution engine.
 
 \paragraph{Multithreading}
 
@@ -78,7 +77,7 @@ To provide support for multiple threads, the symbolic execution engine maintains
 %
 During symbolic execution, the execution alternates between the threads, governed by a thread scheduler built into the symbolic execution engine.
 
-To simplify synchronization inside the guest model, we use a cooperative scheduler.  An enabled thread runs uninterrupted (atomically), until either (a) the thread goes to sleep, (b) the thread is explicitly preempted, or (c) the thread is terminated via a symbolic system call.
+To simplify synchronization inside the guest model, we use a cooperative scheduler.  An enabled thread runs uninterrupted (atomically), until either (a) the thread goes to sleep, (b) the thread is explicitly preempted, or (c) the thread is terminated with a symbolic system call.
 
 The scheduler can be configured to schedule the next thread deterministically, or to fork the execution state for each possible next thread.
 %
@@ -88,47 +87,25 @@ The symbolic execution engine can detect hangs in the system, such as deadlocks,
 
 \paragraph{Address Spaces}
 
+In symbolic execution, program memory is typically represented as a mapping from memory locations (e.g., variables or addresses) to slots holding symbolic expressions.
+%
+To provide support for address spaces, we built into the symbolic execution engine support for multiple such mappings per execution state.
+
+Each thread in the execution state is bound to one address space and each address space with its threads forms a process in the execution state.
+
+The symbolic execution engine provides a symbolic system call for \emph{sharing} slots among multiple memory mappings.  This mechanism provides the foundation for implementing shared memory across multiple processes.
+%
+Shared memory can be used by the guest model to provide multiple forms of inter-process communication, such as sockets, files, and pipes.
+%
+For example, a bi-directional socket can be modeled as a pair of memory buffers shared between the client and the server processes.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 Our approach takes the best from both worlds.
 %
 We provide a general ``symbolic system call'' interface to the SEE, which provides built-in building blocks for thread context switching, address space isolation, memory sharing, and sleep operations (Table~\ref{table:cloud9:primitives}).
-%
-These are the minimal set of primitives that could not be easily emulated by guest code.
-%
-On top of this interface, we build as guest code models for complete operating system interfaces, such as POSIX.
 
-The symbolic system call primitives can be implemented with little effort in an existing symbolic execution engine, by reusing existing functionality, as shown next.
-
-\begin{table}
-\centering
-  
-\begin{tabular}{|l|l|}
-\hline
-\textbf{Primitive Name} & \textbf{Description} \\
-\hline
-\hline
- \codebit{thread\_create(\&func)} & Create new thread that runs \codebit{func} \\
- \codebit{thread\_terminate()} & Terminate current thread \\
-\hline
- \codebit{thread\_preempt()} & Preempt the current thread  \\
-\hline
- \codebit{create\_wqueue()} & Create a new waiting queue \\
- \codebit{thread\_sleep(wq)} & Put current thread to sleep on waiting queue \\
- \codebit{thread\_notify(wq)} & Wake threads from waiting queue \\
-\hline
-\hline
- \codebit{process\_fork()} & Fork the current address space and thread \\
- \codebit{make\_shared(\&buf, size)} & Share memory across address spaces \\
-\hline
-\hline
- \codebit{get\_context()} & Get the current context (process and thread ID) \\
-\hline
-\end{tabular}
-
-\caption{Symbolic system calls for multithreading (first block), address spaces (second block).  Third block contains introspection primitives.  The multithreading block is further divided into thread lifecycle management, explicit scheduling, and synchronization.}
-\label{table:cloud9:primitives}
-\end{table}
 
 \paragraph{Address Spaces}
 
@@ -163,6 +140,40 @@ Another thread may call \codebit{\cninesuffix\_thread\_\allowbreak{}notify} on t
 The latter case is useful when looking for concurrency bugs, but it can be a significant source of path explosion, so it should be disabled when not needed.
 
 If no thread can be scheduled when the current thread goes to sleep, then a hang is detected, the execution state is terminated,  and a corresponding test case is generated.
+
+\paragraph{Symbolic System Calls}
+
+Table~\ref{table:cloud9:primitives} shows the symbolic system calls that the engine provides to the guest to support multithreading and address spaces.
+
+\begin{table}
+\centering
+  
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Primitive Name} & \textbf{Description} \\
+\hline
+\hline
+ \codebit{thread\_create(\&func)} & Create new thread that runs \codebit{func} \\
+ \codebit{thread\_terminate()} & Terminate current thread \\
+\hline
+ \codebit{thread\_preempt()} & Preempt the current thread  \\
+\hline
+ \codebit{create\_wqueue()} & Create a new waiting queue \\
+ \codebit{thread\_sleep(wq)} & Put current thread to sleep on waiting queue \\
+ \codebit{thread\_notify(wq)} & Wake threads from waiting queue \\
+\hline
+\hline
+ \codebit{process\_fork()} & Fork the current address space and thread \\
+ \codebit{make\_shared(\&buf, size)} & Share memory across address spaces \\
+\hline
+\hline
+ \codebit{get\_context()} & Get the current context (process and thread ID) \\
+\hline
+\end{tabular}
+
+\caption{Symbolic system calls for multithreading (first block), address spaces (second block).  Third block contains introspection primitives.  The multithreading block is further divided into thread lifecycle management, explicit scheduling, and synchronization.}
+\label{table:cloud9:primitives}
+\end{table}
 
 
 %%% Local Variables: 
