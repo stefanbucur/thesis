@@ -1,14 +1,65 @@
-This thesis addressed two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
+Symbolic execution is an automated test generation technique that stands out for its soundness, completeness, and flexibility.
+%
+Alas, it faces significant hurdles on its way to adoption in the real world, because of path explosion and the excessive complexity of the symbolic formulae handled by the constraint solver.
 
-To address the environment problem for stable operating system interfaces, this thesis introduced \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
+Exploiting the system modularity and the natural boundaries between components is the most promising approach for handling the large systems encountered in the real world.
 %
-\cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
+However, to effectively provide the environment interface of a system component, a symbolic execution engine has to find the right balance between efficiency, accuracy, and completeness---a conundrum known as the environment problem.
 
-For incomplete and unstable dynamic language semantics, this thesis introduced \emph{\chef}, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In \chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
+This thesis explores the trade-offs approached by existing symbolic execution engines and proposes new techniques to improve them on one axis of the program environment design space: the stability of its interface.
+
+\begin{enumerate}
+\item Operating systems expose a complex stateful interface to user programs.
 %
-%% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
+In this chapter, we showed a way to provide an operating system environment for symbolic execution by employing a split operating system model.  A core set of primitives built into the symbolic execution engine serves as a base, on top of which a full operating system interface is emulated inside the guest.
 %
-To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduced Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
+As few as two primitives are sufficient to support complex operating system interfaces: threads  with synchronization and address spaces with shared memory.
+%
+We showed how to use the core primitives to provide an accurate model of the POSIX interface.
+%
+Our POSIX model includes extensions that developers can use in symbolic tests to control non-deterministic operating system events, such as thread scheduling and network flow control, in order to increase the coverage in the target programs.
+
+\item Implementing and maintaining a symbolic execution engine is a significant engineering effort. It is particularly hard for interpreted dynamic languages, due to their rich semantics, rapid evolution, and lack of precise specifications.
+%
+\chef provides an engine platform that is instantiated with a language interpreter, which implicitly defines the complete language semantics, and results in a correct and theoretically complete symbolic execution engine for the language.
+%
+A language-agnostic strategy for selecting paths to explore in the interpreter allows the generated engine to systematically explore and test code in the target language effectively and efficiently.
+\end{enumerate}
+
+
+%% * This thesis explores this trade-off on related work and proposes new technique to improve it on one axis of program environments: interface stability.
+
+%% * It provides accurate solutions that are more efficient and more complete for two classes of software systems.
+
+%% * Together, the two techniques target a large part of the software stack.  We plan to build an automated testing service based on them.
+
+\paragraph{Looking Forward}
+
+%% * The lesson is that hand-written models outperform the ones inferred from the implementation, yet bridging the gap is crucial for automation.
+
+%% * Looking forward, we need to bridge the performance gap between hand-written engines and the ones obtained from interpreters:
+
+%% - reduce redundancy in symbolic analysis (state merging, compositionality);
+
+%% - replace implementations with abstractions evaluated lazily by dedicated decision procedures;
+
+%% - automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% This thesis addressed two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
+
+%% To address the environment problem for stable operating system interfaces, this thesis introduced \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
+%% %
+%% \cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
+
+%% For incomplete and unstable dynamic language semantics, this thesis introduced \emph{\chef}, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In \chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
+%% %
+%% %% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
+%% %
+%% To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduced Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
 
 
 %%% Local Variables: 
