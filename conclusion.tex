@@ -1,65 +1,66 @@
 Symbolic execution is an automated test generation technique that stands out for its soundness, completeness, and flexibility.
 %
-Alas, it faces significant hurdles on its way to adoption in the real world, because of path explosion and the excessive complexity of the symbolic formulae handled by the constraint solver.
+Alas, it faces significant hurdles on its way to adoption for the large systems encountered in the real world, because of path explosion and the excessive complexity of symbolic formulae.
 
-Exploiting the system modularity and the natural boundaries between components is the most promising approach for handling the large systems encountered in the real world.
+
+Exploiting the system modularity and the natural boundaries between components is the most promising approach for handling large systems.
 %
 However, to effectively provide the environment interface of a system component, a symbolic execution engine has to find the right balance between efficiency, accuracy, and completeness---a conundrum known as the environment problem.
 
-This thesis explores the trade-offs approached by existing symbolic execution engines and proposes new techniques to improve them on one axis of the program environment design space: the stability of its interface.
 
-\begin{enumerate}
-\item Operating systems expose a complex stateful interface to user programs.
-%
-In this chapter, we showed a way to provide an operating system environment for symbolic execution by employing a split operating system model.  A core set of primitives built into the symbolic execution engine serves as a base, on top of which a full operating system interface is emulated inside the guest.
+This thesis examines the trade-offs employed by existing symbolic execution engines and proposes new techniques to improve these trade-offs on one axis of the program environment design space: the stability of its interface.
+
+
+\paragraph{Stable Operating System Interfaces}
+
+On the one end of the axis, this thesis addresses the environment problem for system software interacting with the operating system, which has a stable and well-documented interface.
+
+This thesis shows that it is economical to provide an accurate and practically complete model-based operating system environment, by splitting the model into a core set of primitives built into the symbolic execution engine, on top of which a full operating system interface is emulated inside the guest (Chapter~\ref{ch:cloud9}).
 %
 As few as two primitives are sufficient to support complex operating system interfaces: threads  with synchronization and address spaces with shared memory.
 %
-We showed how to use the core primitives to provide an accurate model of the POSIX interface.
+The operating system model engenders a more effective way for developers to test their software with the symbolic execution engine, by writing symbolic tests.  Symbolic tests control the operating system model to explore conditions that are hard to produce reliably in a concrete test case.
+
+We prototyped the split model approach and symbolic tests in the \cnine symbolic execution platform, which exposes hard-to-reproduce bugs in systems such as UNIX utilities, web servers, and distributed systems.
 %
-Our POSIX model includes extensions that developers can use in symbolic tests to control non-deterministic operating system events, such as thread scheduling and network flow control, in order to increase the coverage in the target programs.
+\cnine is available at {\urlstyle{same}\url{http://cloud9.epfl.ch}}.
 
-\item Implementing and maintaining a symbolic execution engine is a significant engineering effort. It is particularly hard for interpreted dynamic languages, due to their rich semantics, rapid evolution, and lack of precise specifications.
+
+\paragraph{Fast-Changing Interpreted Languages}
+
+On the other end of the axis, this thesis addresses the problem of building complete and correct symbolic execution engines for interpreted languages, such as Python, Ruby, or JavaScript.
 %
-\chef provides an engine platform that is instantiated with a language interpreter, which implicitly defines the complete language semantics, and results in a correct and theoretically complete symbolic execution engine for the language.
+The environment of an interpreted program consists of the language semantics and the library of functions built into the interpreter.
 %
-A language-agnostic strategy for selecting paths to explore in the interpreter allows the generated engine to systematically explore and test code in the target language effectively and efficiently.
-\end{enumerate}
+Building a symbolic execution engine by hand for a modern interpreted language is a significant engineering effort, due to their rich semantics, rapid evolution, and lack of precise specifications.
+
+This thesis introduces the idea of using the language interpreter itself as an ``executable specification'' (Chapter~\ref{ch:chef}).
+%
+The idea is to run the interpreter executable inside a binary-level symbolic execution engine, while running the target program.  The resulting system acts as a high-level symbolic execution engine for the program.
+%
+To circumvent the path explosion arising in the interpreter, Class-Uniform Path Analysis (CUPA) groups the execution paths in the symbolic execution tree into equivalence classes that isloate the sources of path explosion in the interpreter.
+%
+We prototyped these ideas in the form of \chef, a symbolic execution platform for interpreted languages that generates up to 1000 times more tests in popular Python and Lua packages compared to a plain execution of the interpreters.
+%
+\chef is available at {\urlstyle{same}\url{http://dslab.epfl.ch/proj/chef/}}.
 
 
-%% * This thesis explores this trade-off on related work and proposes new technique to improve it on one axis of program environments: interface stability.
+\paragraph{Towards an Automated Software Testing Service}
 
-%% * It provides accurate solutions that are more efficient and more complete for two classes of software systems.
+Together, the two techniques target a large part of the software stack.  We plan to build an automated testing service based on them.
 
-%% * Together, the two techniques target a large part of the software stack.  We plan to build an automated testing service based on them.
 
 \paragraph{Looking Forward}
 
-%% * The lesson is that hand-written models outperform the ones inferred from the implementation, yet bridging the gap is crucial for automation.
+The lesson is that hand-written models outperform the ones inferred from the implementation, yet bridging the gap is crucial for automation.
 
-%% * Looking forward, we need to bridge the performance gap between hand-written engines and the ones obtained from interpreters:
+Looking forward, we need to bridge the performance gap between hand-written engines and the ones obtained from interpreters:
 
-%% - reduce redundancy in symbolic analysis (state merging, compositionality);
+Reduce redundancy in symbolic analysis (state merging, compositionality);
 
-%% - replace implementations with abstractions evaluated lazily by dedicated decision procedures;
+Replace implementations with abstractions evaluated lazily by dedicated decision procedures;
 
-%% - automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%% This thesis addressed two instances of the environment problem, which collectively cover a wide range of real-world software: (1) system software interacting with the operating system, and (2) high-level programs written in dynamic languages, such as Python, Ruby, or JavaScript.  The two instances exhibit opposite characteristics: while the operating system interfaces are typically stable and well-documented (e.g., POSIX), the specifications of dynamic languages are incomplete and unstable.
-
-%% To address the environment problem for stable operating system interfaces, this thesis introduced \emph{\cnine}, a symbolic execution platform that provides an accurate and efficient model of the POSIX interface, as used by systems such as system utilities, web servers, or distributed systems.
-%% %
-%% \cnine relies on the insight that, for the purpose of testing, the operating system interface can be modeled as guest code on top of a set of basic abstractions: threads and processes, synchronization, and address spaces with shared memory. These abstractions need to be provided as primitives by the symbolic execution engine, while the rest of the model can be emulated as guest code.
-
-%% For incomplete and unstable dynamic language semantics, this thesis introduced \emph{\chef}, a platform for obtaining symbolic execution engines for interpreted languages by reusing their interpreters as executable specifications.  In \chef, the target program is bundled with the interpreter, running in a low-level (e.g., x86) symbolic execution engine, such that the aggregate system acts as a high-level execution engine for the program.
-%% %
-%% %% Chef automatically maps the low-level interpreter paths to high-level program paths by segmenting each low-level path into distinct high-level instructions.
-%% %
-%% To circumvent the complexity of symbolically executing the entire interpreter, this thesis introduced Class-uniform Path Analysis (CUPA), a heuristic for prioritizing paths that works by grouping paths into equivalence classes according to a coverage goal.
+Automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
 
 
 %%% Local Variables: 
