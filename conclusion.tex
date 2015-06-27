@@ -47,20 +47,27 @@ We prototyped these ideas in the form of \chef, a symbolic execution platform fo
 
 \paragraph{Towards an Automated Software Testing Service}
 
-Together, the two techniques target a large part of the software stack.  We plan to build an automated testing service based on them.
+Together, the two techniques introduced in this thesis enable effective symbolic execution for a wide range of software, from low-level system utilities, to web servers and interpreted programs.
+%
+This software forms the modern web application stack, which consists of a high-level application logic written against a platform-as-a-service (PaaS) API, transparently scaled in the cloud across machines running the system software.
 
+The work presented in this thesis enables the vision of an automated software testing service based on symbolic execution that targets applications running ``in-vivo'' in their production environments (Chapter~\ref{ch:paas}).
+%
+The testing service focuses on each application layer at a time, from the low-level web server to the high-level application logic, avoiding the combinatorial explosion of paths across layers.
+%
+The service scales to large clusters of commodity hardware owing to a symbolic execution parallelization algorithm that is the first to demonstrate linear scalability.
 
 \paragraph{Looking Forward}
 
-The lesson is that hand-written models outperform the ones inferred from the implementation, yet bridging the gap is crucial for automation.
+%% The lesson is that hand-written models outperform the ones inferred from the implementation, yet bridging the gap is crucial for automation.
 
-Looking forward, we need to bridge the performance gap between hand-written engines and the ones obtained from interpreters:
+%% Looking forward, we need to bridge the performance gap between hand-written engines and the ones obtained from interpreters:
 
-Reduce redundancy in symbolic analysis (state merging, compositionality);
+%% Reduce redundancy in symbolic analysis (state merging, compositionality);
 
-Replace implementations with abstractions evaluated lazily by dedicated decision procedures;
+%% Replace implementations with abstractions evaluated lazily by dedicated decision procedures;
 
-Automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
+%% Automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
 
 
 %%% Local Variables: 
