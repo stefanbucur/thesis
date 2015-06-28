@@ -63,7 +63,7 @@
 }
 
 @InProceedings{parallelSymbex,
-  author =   {Matt Staats and Corina P\u{a}s\u{a}reanu},
+  author =   {Matt Staats and Corina S. P\u{a}s\u{a}reanu},
   title =    {Parallel symbolic execution for structural test generation},
   booktitle =    ISSTA,
   year =   2010
@@ -100,7 +100,7 @@
 }
 
 @techreport{sage2012,
-  author = {Ella Bounimova and Patrica Godefroid and David Molnar},
+  author = {Ella Bounimova and Patrice Godefroid and David Molnar},
   title = {Billions and Billions of Constraints: Whitebox Fuzz Testing in Production},
   institution = {Microsoft Research},
   year = {2012},
@@ -115,10 +115,10 @@
 }
 
 @inproceedings{aeg,
-        author = {Thanassis Avgerinos and Sang Kil Cha and Brent Lim Tze Hao and David Brumley},
-        title = {{AEG}: Automatic Exploit Generation},
-        booktitle = {Network and Distributed System Security Symposium},
-        year = {2011}
+  author = {Thanassis Avgerinos and Sang Kil Cha and Brent Lim Tze Hao and David Brumley},
+  title = {{AEG}: Automatic Exploit Generation},
+  booktitle = NDSS,
+  year = {2011}
 }
 
 @article{tillmann-pex,
@@ -138,7 +138,7 @@
 
 @InProceedings{boyer:symbolic,
   author =   {Robert S. Boyer and Bernard Elspas and Karl N. Levitt},
-  title =    {{SELECT} -- A formal system for testing and debugging programs by symbolic execution},
+  title =    {{SELECT} -- {A} formal system for testing and debugging programs by symbolic execution},
   booktitle =    ICRS,
   year =   1975
 }
@@ -243,7 +243,7 @@ author = {Isil Dillig and Thomas Dillig and Alex Aiken},
 }
 
 @inproceedings{cvc,
-  title     = {CVC3},
+  title     = {{CVC3}},
   author    = {Barrett, Clark and Tinelli, Cesare},
   booktitle = CAV,
   year      = {2007}
@@ -256,18 +256,16 @@ author = {Isil Dillig and Thomas Dillig and Alex Aiken},
   year =      2005
 }
 
-@incollection{jpf-symbex,
-  title={{JPF}--{SE}: A symbolic execution extension to Java PathFinder},
-  author={Anand, Saswat and Pasareanu, Corina and Visser, Willem},
-  booktitle={Tools and Algorithms for the Construction and Analysis of Systems},
-  pages={134--138},
-  year={2007},
-  publisher={Springer}
+@inproceedings{jpf-symbex,
+  title={{JPF}--{SE}: A symbolic execution extension to {Java PathFinder}},
+  author={Anand, Saswat and P\u{a}s\u{a}reanu, Corina S. and Visser, Willem},
+  booktitle= TACAS,
+  year={2007}
 }
 
 @inproceedings{jpf-testgen,
   title     = {Test input generation with Java PathFinder},
-  author    = {Visser, Willem and Pasareanu, Corina S and Khurshid, Sarfraz},
+  author    = {Visser, Willem and P\u{a}s\u{a}reanu, Corina S. and Khurshid, Sarfraz},
   booktitle = ISSTA,
   year      = {2004}
 }
@@ -309,7 +307,7 @@ author = {Isil Dillig and Thomas Dillig and Alex Aiken},
 }
 
 @inproceedings{generalized-symbex,
-    author = {Sarfraz Khurshid and Corina S. Pasareanu and Willem Visser},
+    author = {Sarfraz Khurshid and Corina S. P\u{a}s\u{a}reanu and Willem Visser},
     title = {Generalized Symbolic Execution for Model Checking and Testing},
     booktitle = tacas,
     year = {2003},
@@ -464,7 +462,6 @@ Robert T. Morris and Eddie Kohler},
   title = {Making Automated Testing of Cloud Applications 
            an Integral Component of {PaaS}},
   booktitle = {Proc. 4th Asia-Pacific Workshop on Systems (APSYS 2013)},
-  publisher = {ACM},
   year = 2013,
 }
 
@@ -595,7 +592,8 @@ Robert T. Morris and Eddie Kohler},
 
 @misc{afl,
   key = {AFL},
-  title = {American Fuzzy Lop},
+  author = {Michal Zalewski},
+  title = {{American Fuzzy Lop}},
   howpublished = {\urlstyle{same}\url{http://lcamtuf.coredump.cx/afl/}}
 }
 
@@ -606,10 +604,7 @@ Robert T. Morris and Eddie Kohler},
 }
 
 @inproceedings{Astree,
-  author    = {B.~Blanchet and P.~Cousot and R.~Cousot
-               and J.~Feret
-               and L.~Mauborgne and A.~Min\'{e}
-               and D.~Monniaux and X.~Rival},
+  author    = {Blanchet, Bruno and Cousot, Patrick and Cousot, Radhia and Feret, J{\'e}rome and Mauborgne, Laurent and Min{\'e}, Antoine and Monniaux, David and Rival, Xavier},
   title     = {A Static Analyzer for Large Safety-Critical Software},
   booktitle = PLDI,
   year      = 2003,
@@ -671,18 +666,20 @@ Robert T. Morris and Eddie Kohler},
 
 @article{sony-hack,
   author = {Brooks Barnes and Michael Cieply},
-  title = {Intrusion on Sony Unit Prompts a Shutdown of Messaging Systems},
+  title = {Intrusion on {Sony} Unit Prompts a Shutdown of Messaging Systems},
   journal = {The New York Times},
-  date = {11/29/2014},
-  year = {2014}
+  year = {2014},
+  month = {November},
+  day = {29}
 }
 
 @article{target-hack,
-  author = {Rachel Abrams}, 
+  author = {Rachel Abrams},
   title = {Target Puts Data Breach Costs at \$148 Million, and Forecasts Profit Drop},
   journal = {The New York Times},
-  date = {08/05/2014},
   year = {2014},
+  month = {August},
+  day = {5}
 }
 
 @article{psp-hack,
@@ -710,7 +707,7 @@ Robert T. Morris and Eddie Kohler},
 
 @misc{sulley,
   title={Sulley fuzzing framework},
-  author={Amini, Pedram and Portnoy, A},
+  author={Amini, Pedram and Portnoy, Aaron},
   year={2010},
   howpublished={{\urlstyle{same}\url{http://www.fuzzing.org/wp-content/SulleyManual.pdf}}}
 }
@@ -734,7 +731,7 @@ Robert T. Morris and Eddie Kohler},
 
 @inproceedings{practice-symbex,
   title={Symbolic execution for software testing in practice: preliminary assessment},
-  author={Cadar, Cristian and Godefroid, Patrice and Khurshid, Sarfraz and P{\u{a}}s{\u{a}}reanu, Corina S and Sen, Koushik and Tillmann, Nikolai and Visser, Willem},
+  author={Cadar, Cristian and Godefroid, Patrice and Khurshid, Sarfraz and P{\u{a}}s{\u{a}}reanu, Corina S. and Sen, Koushik and Tillmann, Nikolai and Visser, Willem},
   booktitle=ICSE,
   year={2011},
 }
@@ -824,21 +821,21 @@ Robert T. Morris and Eddie Kohler},
 
 @inproceedings{unit-system,
   title={Combining unit-level symbolic execution and system-level concrete execution for testing {NASA} software},
-  author={Pasareanu, Corina S and Mehlitz, Peter C and Bushnell, David H and Gundy-Burlet, Karen and Lowry, Michael and Person, Suzette and Pape, Mark},
+  author={P\u{a}s\u{a}reanu, Corina S. and Mehlitz, Peter C and Bushnell, David H and Gundy-Burlet, Karen and Lowry, Michael and Person, Suzette and Pape, Mark},
   booktitle=ISSTA,
   year={2008}
 }
 
 @inproceedings{slam-project,
-  title={The {SLAM} project: debugging system software via static analysis},
-  author={Ball, Thomas and Rajamani, Sriram K},
+  title={The {SLAM} project: Debugging system software via static analysis},
+  author={Ball, Thomas and Rajamani, Sriram K.},
   booktitle=POPL,
   year={2002}
 }
 
 @phdthesis{banabic-elusive,
   author={Banabic, Radu},
-  title={Techniques for Identifying Elusive Corner-Case Bugs in Systems Software},
+  title={Techniques for identifying elusive corner-case bugs in systems software},
   school={{EPFL}},
   year={2015}
 }
