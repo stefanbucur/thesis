@@ -3,12 +3,10 @@
 Table~\ref{table:tested} shows a selection of the systems we tested with \cnine, covering several types of software.  We confirmed that each system can be tested properly under our POSIX model. In the rest of this section, we focus our in-depth evaluation on several networked servers and tools, as they are frequently used in settings where reliability matters.
 
 \begin{table}
-\addtolength{\tabcolsep}{-2pt}
 \centering
-\small
-\begin{tabular}{| l | r@{.}p{1pt} | l |}
+\begin{tabular}{| l | r@{.}p{12pt} | l |}
 \hline
-\textbf{~~~~~~~System} & \multicolumn{2}{|l|}{\textbf{Size (\kloc)}} & \textbf{~~~~Type of Software} \\
+\textbf{System} & \multicolumn{2}{|l|}{\textbf{Size (\kloc)}} & \textbf{Type of Software} \\
 \hline
 Apache httpd 2.2.16 & ~~~~~~~226 & 4 & \multirow{3}{*}{Web servers}\\
 Lighttpd 1.4.28         &                 39 & 5 & \\
@@ -35,7 +33,7 @@ We conclude that \cnine is practical and capable of testing a wide range of real
 
 \subsection{Testing Python and Lua Packages with Chef}
 
-\begin{table*}[!ht]
+\begin{table}
 \centering
 \footnotesize
 \begin{tabular}{@{\hspace*{5pt}}l@{\hspace*{11pt}}r@{\hspace*{11pt}}l@{\hspace*{11pt}}l|r|c|c@{\hspace*{5pt}}}
@@ -58,7 +56,7 @@ cliargs 2.1-2 & 370 & System & Command-line interface & 273 & --- & --- \\
 haml 0.2.0-1 & 984 & Web & HTML description markup & 775 & --- & --- \\
 sb-JSON v2007 & 454 & Web & JSON format parser & 329 & --- & $\checkmark$ \\
 markdown 0.32 & 1,057 & Web & Text-to-HTML conversion & 673 & --- & --- \\
-moonscript 0.2.4-1 & 4,634 & System & Language that compiles to Lua & 3,577 & --- & --- \\[2pt]
+moonscript 0.2.4-1 & 4,634 & System & Language compiler & 3,577 & --- & --- \\[2pt]
 %
 \hline
 \rule{0pt}{12pt}\textbf{TOTAL} & 18,493 & & & 12,852 & & \\
@@ -69,7 +67,7 @@ moonscript 0.2.4-1 & 4,634 & System & Language that compiles to Lua & 3,577 & --
   Exception numbers indicate total / undocumented exception types
   discovered.}
 \label{tab:targets}
-\end{table*}
+\end{table}
 
 We evaluated the symbolic execution engines for Python and Lua on 6 Python and 5 Lua packages, respectively, including system, web, and office libraries. In total, the tested code in these packages amounts to about $12.8$ KLOC.  We chose the latest versions of widely used packages from the Python standard library, the Python Package Index, and the Luarocks repository.  Whenever possible, we chose the pure interpreted implementation of the package over the native optimized one (e.g., the Python \codebit{simplejson} package). The first five columns of Table~\ref{tab:targets} summarize the package characteristics; LOC numbers were obtained with the \codebit{cloc} tool~\cite{cloc}.
 
