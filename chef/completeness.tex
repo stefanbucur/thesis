@@ -49,7 +49,7 @@ In case a high-level path consists of a single low-level path, the transition go
 
 \paragraph{The State Completeness Models}
 
-The partial and completeness models are defined with respect to the path segments on which the abstract high-level states are allowed to reside.
+The partial and complete state models are defined with respect to the path segments on which the abstract high-level states are allowed to reside.
 
 In the partial model, the abstract high-level states are allowed to reside anywhere on the high-level execution path, i.e., on both its complete and partial segment.
 %
@@ -119,7 +119,7 @@ In turn, the high-level execution strategy has knowledge of all paths forking of
 
 Table~\ref{tab:chef:hl-states} summarizes the trade-offs between the partial and complete state models.
 %
-On the one hand, the partial state model lacks precision, as it does not expose to the high-level engine interface any pending high-level states, but gains efficiency, as it uses as little as one low-level state to explore a high-level path, once discovered.
+On the one hand, the partial state model lacks precision, as it does not expose to the high-level engine interface any pending high-level states.  However, it gains efficiency, as it uses as little as one low-level state to explore a high-level path, once discovered.
 %
 On the other hand, the complete state model provides full precision, as it is able to determine all feasible branches along each explored path, at the expense of a more costly path exploration.
 

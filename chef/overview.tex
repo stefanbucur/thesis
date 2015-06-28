@@ -24,7 +24,7 @@ We illustrate the functionality of \chef using the Python example in Figure~\ref
 %
 The function \codebit{validateEmail} receives an e-mail address string and raises an exception if the address is malformed.
 %
-We symbolically execute the function using a \chef engine obtained by plugging the Python interpreter.
+We symbolically execute the function using a \chef engine obtained by plugging in it the Python interpreter.
 
 The \chef engine receives the Python program together with a symbolic test that marks the \codebit{email} input argument as symbolic.
 
@@ -38,7 +38,7 @@ There are two execution states in our example: $S_1$, which executes the excepti
 %
 A strategy may randomly select states to uniformly cover the set of possible paths, or it may favor the states that are triggering exceptions in the program, such as $S_1$.
 
-At the end of each execution state, \chef generates a concrete string value for the \codebit{email} argument, which constitutes a test case.
+At the end of each execution path, \chef generates a concrete string value for the \codebit{email} argument, which constitutes a test case.
 %
 Each test case takes the Python program along the same execution path, when replayed in the same interpreter.
 

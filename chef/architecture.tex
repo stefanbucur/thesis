@@ -1,6 +1,6 @@
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{chef/figures/iface-adapter}
+  \includegraphics[width=1.0\textwidth]{chef/figures/iface-adapter}
   \caption{The architecture of \chef.}
   \label{fig:chef:arch}
 \end{figure}
@@ -20,7 +20,7 @@ Through the strategy-facing part, the engine sends the active execution states t
 
 Figure~\ref{fig:chef:arch} shows the architecture of \chef, consisting of the base and an interpreter module.
 %
-The base contains the \emph{low-level} binary symbolic execution engine (S2E) that runs the interpreter, its state selection strategy, and an \emph{adapter} that converts from the low-level interpreter paths to the high-level program paths.
+The base contains the \emph{low-level} binary symbolic execution engine (S2E) that runs the interpreter, the low-level state selection strategy, and an \emph{adapter} that creates high-level program paths based on the observed low-level interpreter paths.
 %
 An external high-level strategy communicates with the base to provide the next high-level state to run.
 
@@ -34,7 +34,7 @@ The outer engine operates with corresponding high-level abstractions: it runs an
 
 The interpreter module \emph{by construction} adapts the program-facing part of the two interfaces, as shown in Figure~\ref{fig:chef:arch}.
 %
-Reusing the interpreter provides substantial savings in terms of development effort.  For instance, the Python interpreter has over 400 KLOC; an equivalent hand-written symbolic execution engine would reimplement from scratch the same language semantics in an implementation of the same order of magnitude.
+Reusing the interpreter provides substantial savings in terms of development effort.  For instance, the Python interpreter has over 400 KLOC; a hand-written symbolic execution engine would reimplement from scratch the same language semantics in an implementation of the same order of magnitude.
 
 The main task left for \chef is to provide the low-level strategy for choosing the interpreter paths that maximize \chef's effectiveness as a high-level symbolic execution engine.
 %

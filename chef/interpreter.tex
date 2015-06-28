@@ -31,7 +31,7 @@ In principle, \chef can run unmodified interpreters for major popular languages,
 %
 \chef automatically obtains from the running interpreter the stream of high-level program counters (HLPCs) for each execution path, required by the state adapter to reconstruct the high-level symbolic execution tree (Section~\ref{sec:chef:hlcf}).
 
-In practice, however, applying a number of optimizations in the interpreter implementation significantly improve symbolic execution performance (Section~\ref{sec:chef:optimizeforsymbex}).
+In practice, however, applying a number of optimizations in the interpreter implementation significantly improves symbolic execution performance (Section~\ref{sec:chef:optimizeforsymbex}).
 
 
 \paragraph{The Symbolic Test Library}
@@ -150,7 +150,7 @@ Finally, the opcode fetch point corresponds to the first memory read of the HLPC
 
 In case the calibration ends with no remaining memory write group, or more than one group remaining, the calibration fails.
 %
-This could happen, for instance, when the calibration is attempted on a non-conforming interpreter, or when the calibration script is too short.  To this end, we empirically determined that a 100-statement calibration script is sufficient for a successful calibration for all interpreters we tested.
+This could happen, for instance, when the calibration is attempted on a non-conforming interpreter, or when the calibration script is too short.  For all interpreters we tested (Python, JavaScript, and Lua), a 100-statement calibration script was sufficient.
 
 In principle, defining program statements at an intermediate representation risks missing paths at the high-level.
 %
@@ -162,7 +162,7 @@ In particular, interpreters perform little or no optimization on the bytecode.
 
 \paragraph{Manually Annotating the High-level Program Counter}
 
-When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information.
+When the interpreter structure diverges from our assumptions, \chef provides a fallback option of manually annotating the interpreter with the HLPC information, by placing calls to \codebit{log\_pc} (Table~\ref{tab:chef:api}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
