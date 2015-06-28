@@ -38,7 +38,7 @@ This thesis introduces the idea of using the language interpreter itself as an `
 %
 The idea is to run the interpreter executable inside a binary-level symbolic execution engine, while running the target program.  The resulting system acts as a high-level symbolic execution engine for the program.
 %
-To circumvent the path explosion arising in the interpreter, Class-Uniform Path Analysis (CUPA) groups the execution paths in the symbolic execution tree into equivalence classes that isloate the sources of path explosion in the interpreter.
+To circumvent the path explosion arising in the interpreter, Class-Uniform Path Analysis (CUPA) groups the execution paths in the symbolic execution tree into equivalence classes that isolate the sources of path explosion in the interpreter.
 %
 We prototyped these ideas in the form of \chef, a symbolic execution platform for interpreted languages that generates up to 1000 times more tests in popular Python and Lua packages compared to a plain execution of the interpreters.
 %
@@ -71,13 +71,13 @@ Reconciling the two conflicting perspectives requires researching new symbolic e
 We identify three major directions to pursue in order to achieve this research vision:
 
 \begin{enumerate}
-\item \textbf{Eliminate formula redundancy.}  A symbolic execution engine spends most of its resources perfoming constraint solving~\cite{klee}.  Essentially, its role is to convert the target program and its properties to a representation that can be directly handled by a solver.
+\item \textbf{Eliminate formula redundancy.}  A symbolic execution engine spends most of its resources performing constraint solving~\cite{klee}.  Essentially, its role is to convert the target program and its properties to a representation that can be directly handled by a solver.
 %
 Unfortunately, a straightforward symbolic execution algorithm that separately executes each program path will unnecessarily explore the same program statements multiple times and repeat the formulas sent to the solver.
 %
 To minimize this redundancy, techniques such as state merging~\cite{state-merging} and compositionality~\cite{godefroid:compdyntest} bundle execution states as disjunctive formulas.
 %
-More work is needed, though, to avoid creating formulas that are too complex for the constraint solver and make the merging of states disadvatageous.
+More work is needed, though, to avoid creating formulas that are too complex for the constraint solver and make the merging of states disadvantageous.
 
 
 \item \textbf{Automatically substitute implementations with lazy abstractions.}  Eliminating formula redundancy is not enough to scale symbolic execution to large systems.
@@ -91,7 +91,7 @@ Operations on common data structures, such as strings, lists, and maps, are the 
   
 \item \textbf{Automated abstraction discovery.}  Today, an experienced developer can study a large code base and build an intuition on the role of each system component.
 %
-To ultimately reach their full potential, program analysis tools should be able to perform this task on their own, orders of mangitude faster than a human.
+To ultimately reach their full potential, program analysis tools should be able to perform this task on their own, orders of magnitude faster than a human.
 %
 Achieving this goal is a cross-disciplinary effort, which spreads from traditional formal methods into machine learning techniques and artificial intelligence.
 \end{enumerate}
