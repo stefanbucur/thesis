@@ -3,9 +3,9 @@ Symbolic execution is an automated test generation technique that stands out for
 Alas, it faces significant hurdles on its way to adoption for the large systems encountered in the real world, because of path explosion and the excessive complexity of symbolic formulae.
 
 
-Exploiting the system modularity and the natural boundaries between components is the most promising approach for handling large systems.
+The system modularity and the natural boundaries between components permit symbolic execution to handle large systems by executing the different parts of the system separately.
 %
-However, to effectively provide the environment interface of a system component, a symbolic execution engine has to find the right balance between efficiency, accuracy, and completeness---a conundrum known as the environment problem.
+However, a symbolic execution engine has to find the right balance between efficiency, accuracy, and completeness to effectively provide the environment interface of a component---a conundrum known as the environment problem.
 
 
 This thesis examines the trade-offs employed by existing symbolic execution engines and proposes new techniques to improve these trade-offs on one axis of the program environment design space: the stability of its interface.
@@ -13,13 +13,13 @@ This thesis examines the trade-offs employed by existing symbolic execution engi
 
 \paragraph{Stable Operating System Interfaces}
 
-On the one end of the axis, this thesis addresses the environment problem for system software interacting with the operating system, which has a stable and well-documented interface.
+On the one end of the axis, this thesis addresses the environment problem for software interacting with the operating system, which has a stable and well-documented interface.
 
-This thesis shows that it is economical to provide an accurate and practically complete model-based operating system environment, by splitting the model into a core set of primitives built into the symbolic execution engine, on top of which a full operating system interface is emulated inside the guest (Chapter~\ref{ch:cloud9}).
+This thesis shows that it is economical to provide an accurate and practically complete operating system model, by splitting it into a core set of primitives built into the symbolic execution engine and a guest-level model that provides the full operating system interface (Chapter~\ref{ch:cloud9}).
 %
-As few as two primitives are sufficient to support complex operating system interfaces: threads  with synchronization and address spaces with shared memory.
+As few as two built-in primitives are sufficient to support complex operating system interfaces: threads with synchronization and address spaces with shared memory.
 %
-The operating system model engenders a more effective way for developers to test their software with the symbolic execution engine, by writing symbolic tests.  Symbolic tests control the operating system model to explore conditions that are hard to produce reliably in a concrete test case.
+Moreover, the operating system model engenders a more effective way for developers to test their software with the symbolic execution engine, by writing symbolic tests.  Symbolic tests control the operating system model to explore conditions that are hard to produce reliably in a concrete test case.
 
 We prototyped the split model approach and symbolic tests in the \cnine symbolic execution platform, which exposes hard-to-reproduce bugs in systems such as UNIX utilities, web servers, and distributed systems.
 %
@@ -77,7 +77,7 @@ Unfortunately, a straightforward symbolic execution algorithm that separately ex
 %
 To minimize this redundancy, techniques such as state merging~\cite{state-merging} and compositionality~\cite{godefroid:compdyntest} bundle execution states as disjunctive formulas.
 %
-More work is needed, though, to avoid creating formulas that are too complex for the constraint solver and make the merging of states disadvantageous.
+More work is needed, though, to avoid creating formulas that are too complex for the constraint solver and that make the merging of states disadvantageous.
 
 
 \item \textbf{Automatically substitute implementations with lazy abstractions.}  Eliminating formula redundancy is not enough to scale symbolic execution to large systems.
@@ -86,22 +86,15 @@ Even in the optimal case, the size of the formulae grows linearly in the program
 %
 Hence, scaling the analysis beyond this limit can only be done by reducing the size of symbolic formulae through \emph{abstraction}.  The idea is to replace an operation in the system with an uninterpreted function that is handled by a specialized decision procedure.
 %
-Operations on common data structures, such as strings, lists, and maps, are the most obvious candidates.  The main challenges are (a) to automatically detect abstraction opportunities in systems and (b) to further expand the set of decision procedures available in the solver.
+Operations on common data structures, such as strings, lists, and maps, are the most obvious candidates, but other common system primitives, such as memory allocators, can also be abstracted.  The main challenges are (a) to automatically detect abstraction opportunities in systems and (b) to further expand the set of abstractions and decision procedures available in the solver.
 
   
 \item \textbf{Automated abstraction discovery.}  Today, an experienced developer can study a large code base and build an intuition on the role of each system component.
 %
-To ultimately reach their full potential, program analysis tools should be able to perform this task on their own, orders of magnitude faster than a human.
+To ultimately reach their full potential, program analysis tools should be able to perform this task on their own and orders of magnitude faster than a human.
 %
 Achieving this goal is a cross-disciplinary effort, which spreads from traditional formal methods into machine learning techniques and artificial intelligence.
 \end{enumerate}
-
-
-%% Reduce redundancy in symbolic analysis (state merging, compositionality);
-
-%% Replace implementations with abstractions evaluated lazily by dedicated decision procedures;
-
-%% Automate the process of abstraction.  Intuitively, this is how a human developer parses a codebase to get an intuition of what's going on there.  We need to automate this.  This is a cross-disciplinary effort, spreading from program analysis into machine learning and artificial intelligence.
 
 
 %%% Local Variables: 

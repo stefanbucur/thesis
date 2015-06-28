@@ -25,7 +25,7 @@ To address the environment problem for operating system interfaces, this thesis 
 %
 a core set of operating system primitives is built into the symbolic execution engine and the full operating system interface is emulated on top, as guest code.
 
-Our insight is that as few as \emph{three} primitives are sufficient to support complex operating system interfaces such as POSIX: threads and processes, synchronization, and address spaces with shared memory.
+Our insight is that as few as \emph{two} primitives are sufficient to support complex operating system interfaces such as POSIX: threads with synchronization, and address spaces with shared memory.
 %
 This results in a substantially simpler implementation in the symbolic execution engine, with opportunities of reusing existing symbolic execution components.
 
