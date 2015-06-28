@@ -51,7 +51,7 @@ This result suggests that, for large packages, a \emph{portfolio} of interpreter
 \begin{figure}
   \centering
   \includegraphics[width=0.7\textwidth]{evaluation/graphs/chef/optimizations-bars-python}
-  \caption{The contribution of interpreter optimizations for Python as number of high-level paths explored.  Number of paths is relative to full optimizations ($100\%$) for each package.}
+  \caption[The contribution of interpreter optimizations for Python as number of high-level paths explored.]{The contribution of interpreter optimizations for Python as number of high-level paths explored.  Number of paths is relative to full optimizations ($100\%$) for each package.}
   \label{fig:optimizations}
 \end{figure}
 
@@ -101,8 +101,7 @@ Advanced control flow & $\compsupp^{\hphantom{*}}$ & \compsupp  &  \unsupp   & \
 Native methods        & $\compsupp^{\hphantom{*}}$ & \partsupp  &  \unsupp   & \unsupp     \\
 \end{tabular} \\
 \rule{0pt}{12pt}\compsupp Complete \hspace{12pt} \partsupp Partial \hspace{12pt} \unsupp Not supported
-\caption{Language feature support comparison for \chef and dedicated Python symbolic execution engines.  %% A full bullet means complete concrete and symbolic support for the feature available in the implementation.  A half-full bullet means a partial implementation, while an empty bullet means no support for the feature.
-  Complete support with (*) refers to the internal program data flow and not to the initial symbolic variables.}
+\caption[Language feature support comparison for \chef and dedicated Python symbolic execution engines.]{Language feature support comparison for \chef and dedicated Python symbolic execution engines.  Complete support with (*) refers to the internal program data flow and not to the initial symbolic variables.}
 \label{tab:langfeats}
 \end{table}
 
@@ -140,7 +139,7 @@ The downside of \chef is that the symbolic execution engines produced are slower
 \begin{figure}
   \centering
   \includegraphics[width=0.7\textwidth]{evaluation/graphs/chef/nice-optimizations}
-  \caption{Average overhead of \chef compared to \nicese, computed as ratio of average per-path execution times.  The average divides total tool execution time by number of high-level paths generated.}
+  \caption[Average overhead of \chef compared to \nicese, computed as ratio of average per-path execution times.]{Average overhead of \chef compared to \nicese, computed as ratio of average per-path execution times.  The average divides total tool execution time by number of high-level paths generated.}
   \label{fig:nice-overhead}
 \end{figure}
 
